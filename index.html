@@ -45,7 +45,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:14px;b
 input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;padding:5px 8px;border:1px solid #ccc;border-radius:5px;background:#fff;color:#222;transition:.15s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.1)}
 textarea{resize:vertical;min-height:50px;line-height:1.5}
-.ing-table{width:100%;border-collapse:collapse;font-size:12px}
+.ing-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 .ing-table th{background:#eef2f7;padding:5px 6px;border:1px solid #ccc;font-size:11px;font-weight:700;text-align:center}
 .ing-table td{border:1px solid #ddd;padding:2px 3px;vertical-align:middle}
 .ing-table td input,.ing-table td select{font-size:12px;padding:3px 5px;border:none;background:transparent;width:100%}
@@ -119,8 +119,8 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 /* PAGES */
 .page{display:none;}.page.active{display:block;}
 /* CARDS */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);margin-bottom:16px;overflow:hidden;}
-.card.organic-card{border-color:var(--organic);box-shadow:0 0 12px var(--orgdim);}
+#fc-root .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);margin-bottom:16px;overflow:hidden;}
+#fc-root .card.organic-card{border-color:var(--organic);box-shadow:0 0 12px var(--orgdim);}
 .ch{padding:11px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
 .ci{font-size:14px;}.ct{font-size:13px;font-weight:700;}.cs{font-size:11px;color:var(--text3);margin-left:auto;}
 .cb{padding:16px;}
@@ -1400,8 +1400,11 @@ function renderList() {
   specListCache.forEach(function(s) {
     var d = s.updatedAt ? new Date(s.updatedAt.toDate()).toLocaleDateString('ja-JP') : '';
     var active = s.id === currentSpecId ? ' active' : '';
-    html += '<div class="spec-item'+active+'" onclick="openSpec(\''+s.id+'\')">';
-    html += '<div class="spec-item-name">'+h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）')+'</div>';
+    var isSample = s.isSample ? true : false;
+    var itemStyle = isSample ? 'opacity:0.5;border-style:dashed;' : '';
+    var badge = isSample ? '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;border-radius:3px;padding:1px 5px;margin-left:4px">見本</span>' : '';
+    html += '<div class="spec-item'+active+'" onclick="openSpec(\''+s.id+'\')" style="'+itemStyle+'">';
+    html += '<div class="spec-item-name">'+h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）')+badge+'</div>';
     html += '<div class="spec-item-meta">'+h(s.basic && s.basic.ptype ? s.basic.ptype : '')+' | '+d+'</div>';
     html += '</div>';
   });
@@ -1418,7 +1421,7 @@ function makeEmptySpec() {
       contami:'直射日光、高温多湿を避けて常温で保存してください。',
       mfr:'合同会社 エニクック', maddr:'福岡県筑紫野市阿志岐133-1', created:todayStr()
     },
-    ings: JSON.parse(JSON.stringify(DEFAULT_INGS)),
+    ings: [],
     nutrition: {e:214, p:6.2, f:14.9, c:15.5, s:0.6, w:92.5, sf:'', su:'', unit:'1袋130g', note:'推定値'},
     pkg: {
       puD:'2', puW:'120', puH:'160', puN:'1', puWt:'4', puMat:'プラスチック',
@@ -1464,6 +1467,14 @@ async function openSpec(id) {
     toast('読込失敗: '+e.message, true);
     console.error(e);
   }
+}
+
+// ===== 見本フラグ切替 =====
+function toggleSample() {
+  if (!currentSpec) return;
+  currentSpec.isSample = !currentSpec.isSample;
+  saveSpec();
+  renderEditor();
 }
 
 // ===== 保存 =====
@@ -1566,9 +1577,11 @@ function renderEditor() {
   }).join('');
 
   var html = '';
+  var sampleBadge = (currentSpec && currentSpec.isSample) ? '<span style="font-size:11px;background:#e8f0f8;color:#1a3a5c;padding:2px 8px;border-radius:4px;margin-left:8px">見本</span>' : '';
   html += '<div id="toolbar">';
-  html += '<strong style="font-size:15px;flex:1">'+h(b.pname||'（新規規格書）')+'</strong>';
-  html += '<button class="btn btn-primary" onclick="saveSpec()">💾 Firestoreに保存</button>';
+  html += '<strong style="font-size:15px;flex:1">'+h(b.pname||'（新規規格書）')+sampleBadge+'</strong>';
+  html += '<button class="btn btn-primary" onclick="saveSpec()">💾 保存</button>';
+  html += '<button class="btn btn-sm" onclick="toggleSample()" style="font-size:12px">'+(currentSpec&&currentSpec.isSample?'📌 見本解除':'📌 見本にする')+'</button>';
   html += '<button class="btn" onclick="swTab(\'preview\')">📄 プレビュー</button>';
   html += deleteBtn;
   html += '</div>';
@@ -1805,43 +1818,96 @@ function ingCost(ing) {
   return ((ing.amount||0) * (ing.unitPrice||0)) / 1000;
 }
 
+function updateIngField(i, field, val) {
+  currentSpec.ings[i][field] = (field === 'amount' || field === 'unitPrice') ? +val : val;
+  if (field === 'amount') calcNutritionSilent();
+  if (field === 'name') autoLabelText();
+  if (field === 'allergens') syncAllergens();
+  updateIngSummary();
+}
+
+function updateIngSummary() {
+  var total = calcRatio();
+  var totalCost = currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); }, 0);
+  // フッター更新
+  var fw = document.getElementById('foot-weight');
+  var fc2 = document.getElementById('foot-cost');
+  if (fw) fw.textContent = total.toFixed(1) + 'g';
+  if (fc2) fc2.textContent = totalCost > 0 ? totalCost.toFixed(1) + '円' : '—';
+  // バナー更新
+  var bm = document.getElementById('banner-mat');
+  var bw = document.getElementById('banner-weight');
+  if (bm) bm.textContent = totalCost.toFixed(1) + ' 円';
+  if (bw) bw.textContent = total.toFixed(1) + ' g';
+  // 配合比セル更新（再描画なし）
+  currentSpec.ings.forEach(function(ing, i) {
+    var rCell = document.getElementById('ratio-cell-'+i);
+    var cCell = document.getElementById('cost-cell-'+i);
+    if (rCell) rCell.textContent = (ing.ratio || '0.0') + '%';
+    if (cCell) {
+      var c = ingCost(ing);
+      cCell.textContent = c > 0 ? c.toFixed(1) + ' 円' : '—';
+      cCell.style.color = c > 0 ? '#0f5132' : '#bbb';
+      cCell.style.fontWeight = c > 0 ? '700' : '400';
+    }
+  });
+  recalcCost();
+}
+
 function renderIngTbody() {
   var tbody = document.getElementById('ing-tbody');
   if (!tbody) return;
-  var total = calcRatio();
+  calcRatio();
   var html = '';
   currentSpec.ings.forEach(function(ing, i) {
     var gmoOpts = ['','非組換え','組換え','不分別'].map(function(o){
       return '<option'+(ing.gmo===o?' selected':'')+'>'+o+'</option>';
     }).join('');
     var cost = ingCost(ing);
-    html += '<tr>';
-    html += '<td style="text-align:center;color:#999">'+(i+1)+'</td>';
-    html += '<td><input type="text" value="'+h(ing.name)+'" oninput="currentSpec.ings['+i+'].name=this.value;autoLabelText()"></td>';
-    html += '<td><input type="text" value="'+h(ing.country)+'" oninput="currentSpec.ings['+i+'].country=this.value"></td>';
-    html += '<td><input type="text" value="'+h(ing.allergens)+'" oninput="currentSpec.ings['+i+'].allergens=this.value;syncAllergens()"></td>';
-    html += '<td><input type="number" value="'+(ing.amount||0)+'" min="0" step="0.1" style="text-align:right" oninput="currentSpec.ings['+i+'].amount=+this.value;renderIngTbody();calcNutritionSilent();"></td>';
-    html += '<td><input type="number" value="'+(ing.unitPrice||0)+'" min="0" step="1" style="text-align:right" oninput="currentSpec.ings['+i+'].unitPrice=+this.value;renderIngTbody();"></td>';
-    html += '<td style="text-align:right;padding-right:6px;color:'+(cost>0?'#1a3a5c':'#bbb')+'">'+cost.toFixed(1)+'</td>';
-    html += '<td style="text-align:center;background:#f8fbff;font-size:12px;color:#1a3a5c;font-weight:500">'+h(ing.ratio||'0.0')+'%</td>';
-    html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="currentSpec.ings['+i+'].feature=this.value"></td>';
-    html += '<td><input type="text" value="'+h(ing.addUse)+'" oninput="currentSpec.ings['+i+'].addUse=this.value"></td>';
-    html += '<td><select onchange="currentSpec.ings['+i+'].gmo=this.value">'+gmoOpts+'</select></td>';
-    html += '<td><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')">✕</button></td>';
+    var rowBg = i % 2 === 0 ? '#fff' : '#fafcff';
+    html += '<tr style="background:'+rowBg+'">';
+    html += '<td style="text-align:center;color:#aaa;font-size:11px;width:28px">'+(i+1)+'</td>';
+    // 原材料名
+    html += '<td><input type="text" value="'+h(ing.name)+'" style="font-weight:500" oninput="updateIngField('+i+',\'name\',this.value)"></td>';
+    // 国名
+    html += '<td><input type="text" value="'+h(ing.country)+'" oninput="updateIngField('+i+',\'country\',this.value)"></td>';
+    // アレルゲン
+    var alStyle = ing.allergens ? 'color:#c62828;font-weight:500' : '';
+    html += '<td><input type="text" value="'+h(ing.allergens)+'" style="'+alStyle+'" oninput="updateIngField('+i+',\'allergens\',this.value)"></td>';
+    // 重量(g) - onchangeでフォーカスを維持しながら更新
+    html += '<td style="background:#f0faf4">';
+    html += '<input type="number" id="amt-'+i+'" value="'+(ing.amount||0)+'" min="0" step="0.1"';
+    html += ' style="text-align:right;font-weight:600;width:100%"';
+    html += ' onchange="updateIngField('+i+',\'amount\',this.value)">';
+    html += '</td>';
+    // 単価(円/kg)
+    html += '<td style="background:#f0faf4">';
+    html += '<input type="number" id="prc-'+i+'" value="'+(ing.unitPrice||0)+'" min="0" step="1"';
+    html += ' style="text-align:right;width:100%"';
+    html += ' onchange="updateIngField('+i+',\'unitPrice\',this.value)">';
+    html += '</td>';
+    // 原材料費（自動計算）
+    var costTxt = cost > 0 ? cost.toFixed(1)+' 円' : '—';
+    var costColor = cost > 0 ? '#0f5132' : '#bbb';
+    var costFw = cost > 0 ? '700' : '400';
+    html += '<td id="cost-cell-'+i+'" style="text-align:right;padding:0 8px;background:#f0faf4;';
+    html += 'color:'+costColor+';font-size:12px;font-weight:'+costFw+'">'+costTxt+'</td>';
+    // 配合比（自動）
+    html += '<td id="ratio-cell-'+i+'" style="text-align:center;background:#e8f4fd;';
+    html += 'font-size:12px;color:#1a3a5c;font-weight:600">'+(ing.ratio||'0.0')+'%</td>';
+    // 特色原材料
+    html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
+    // 添加物用途
+    html += '<td><input type="text" value="'+h(ing.addUse)+'" oninput="updateIngField('+i+',\'addUse\',this.value)"></td>';
+    // 遺伝子組換え
+    html += '<td><select style="font-size:11px" onchange="updateIngField('+i+',\'gmo\',this.value)">'+gmoOpts+'</select></td>';
+    // 削除ボタン
+    html += '<td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')" style="padding:2px 6px">✕</button></td>';
     html += '</tr>';
   });
   tbody.innerHTML = html;
-  // 合計行
-  var totalCost = currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0);
-  var sumEl = document.getElementById('ing-summary');
-  if (sumEl) {
-    var pct = total > 0 ? '100.0' : '0.0';
-    sumEl.innerHTML = '<span style="color:#555">合計重量：</span><strong>'+total.toFixed(1)+'g</strong>'
-      +'<span style="margin-left:12px;color:#555">配合比合計：</span><strong>'+pct+'%</strong>'
-      +(totalCost>0?'<span style="margin-left:12px;color:#555">原材料費合計：</span><strong style="color:#1a3a5c">'+totalCost.toFixed(1)+'円</strong>':'');
-  }
+  updateIngSummary();
   autoLabelText();
-  recalcCost();
 }
 
 function removeIng(i) { currentSpec.ings.splice(i,1); renderIngTbody(); syncAllergens(); }
