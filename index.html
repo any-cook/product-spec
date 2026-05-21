@@ -142,23 +142,6 @@ textarea{resize:vertical;min-height:52px;line-height:1.5}
   </div>
 </div>
 
-<!-- Firebase設定モーダル -->
-<div class="modal-overlay" id="config-modal">
-  <div class="modal">
-    <h2>🔧 Firebase設定</h2>
-    <p style="font-size:13px;color:#666;margin-bottom:12px">初回のみ設定が必要です。Firebaseコンソールから取得した設定値を入力してください。</p>
-    <div class="field"><label class="fl">API Key</label><input type="text" id="cfg-apikey" placeholder="AIza..."></div>
-    <div class="field"><label class="fl">Auth Domain</label><input type="text" id="cfg-authdomain" placeholder="xxx.firebaseapp.com"></div>
-    <div class="field"><label class="fl">Project ID</label><input type="text" id="cfg-projectid" placeholder="my-project-id"></div>
-    <div class="field"><label class="fl">Storage Bucket</label><input type="text" id="cfg-bucket" placeholder="xxx.appspot.com"></div>
-    <div class="field"><label class="fl">Messaging Sender ID</label><input type="text" id="cfg-senderid" placeholder="123456789"></div>
-    <div class="field"><label class="fl">App ID</label><input type="text" id="cfg-appid" placeholder="1:123:web:abc..."></div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" onclick="saveConfig()">保存して接続</button>
-    </div>
-  </div>
-</div>
-
 <!-- 削除確認モーダル -->
 <div class="modal-overlay" id="del-modal">
   <div class="modal">
@@ -176,6 +159,17 @@ textarea{resize:vertical;min-height:52px;line-height:1.5}
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// Firebase設定（product-spec-5a6e5）
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC0o3ucOqzQumlnldzAr1Shx25Xvv1VPmo",
+  authDomain: "product-spec-5a6e5.firebaseapp.com",
+  projectId: "product-spec-5a6e5",
+  storageBucket: "product-spec-5a6e5.firebasestorage.app",
+  messagingSenderId: "329157321733",
+  appId: "1:329157321733:web:5bccbff1bfa9c8fd2c686c"
+};
+</script>
 
 <script>
 // ===== Firebase初期化 =====
@@ -184,8 +178,6 @@ let currentSpecId = null;
 let deleteTargetId = null;
 let specListCache = [];
 
-function getConfig() {
-  try { return JSON.parse(localStorage.getItem('anycook_fb_config') || 'null'); } catch(e) { return null; }
 }
 
 function initFirebase(config) {
@@ -208,20 +200,6 @@ function setStatus(ok) {
   document.getElementById('status-text').textContent = ok ? 'Firestore 接続済み' : '未接続';
 }
 
-function saveConfig() {
-  const cfg = {
-    apiKey: v('cfg-apikey'),
-    authDomain: v('cfg-authdomain'),
-    projectId: v('cfg-projectid'),
-    storageBucket: v('cfg-bucket'),
-    messagingSenderId: v('cfg-senderid'),
-    appId: v('cfg-appid')
-  };
-  if (!cfg.apiKey || !cfg.projectId) { showToast('API KeyとProject IDは必須です', true); return; }
-  localStorage.setItem('anycook_fb_config', JSON.stringify(cfg));
-  document.getElementById('config-modal').classList.remove('open');
-  initFirebase(cfg);
-}
 
 // ===== 規格書リスト =====
 async function loadList() {
@@ -939,13 +917,7 @@ function showToast(msg, isError=false) {
 
 // ===== 起動 =====
 window.onload = () => {
-  const cfg = getConfig();
-  if (cfg && cfg.apiKey) {
-    initFirebase(cfg);
-  } else {
-    document.getElementById('config-modal').classList.add('open');
-    setStatus(false);
-  }
+  initFirebase(FIREBASE_CONFIG);
 };
 </script>
 </body>
