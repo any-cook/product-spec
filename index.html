@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商品規格書管理システム | エニクック</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:14px;background:#f5f5f0;color:#222;min-height:100vh}
+/* ===== ヘッダー ===== */
+.header{background:#1a3a5c;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header h1{font-size:16px;font-weight:700;letter-spacing:1px}
+.header-right{display:flex;align-items:center;gap:10px;font-size:13px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#aaa;display:inline-block}
+.status-dot.online{background:#4caf50}
+/* ===== レイアウト ===== */
+.app{display:flex;height:calc(100vh - 44px)}
+.sidebar{width:240px;background:#fff;border-right:1px solid #ddd;display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:12px;border-bottom:1px solid #ddd;background:#f9f9f7}
+.sidebar-header h3{font-size:13px;font-weight:700;color:#555;margin-bottom:8px}
+.btn{padding:7px 14px;border-radius:6px;font-size:13px;cursor:pointer;border:1px solid #ccc;background:#fff;color:#333;transition:.15s;white-space:nowrap}
+.btn:hover{background:#f0f0ec}
+.btn-primary{background:#1a3a5c;color:#fff;border-color:#1a3a5c}
+.btn-primary:hover{background:#0f2740}
+.btn-danger{background:#fff;color:#c62828;border-color:#e0a0a0}
+.btn-danger:hover{background:#fdecea}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-block{width:100%;margin-bottom:6px;text-align:left}
+.spec-list{flex:1;overflow-y:auto;padding:8px}
+.spec-item{padding:10px;border-radius:6px;border:1px solid #e0e0d8;background:#fff;margin-bottom:6px;cursor:pointer;transition:.15s}
+.spec-item:hover{border-color:#1a3a5c;background:#f0f4f8}
+.spec-item.active{border-color:#1a3a5c;background:#e8f0f8;font-weight:500}
+.spec-item-name{font-size:13px;font-weight:500;margin-bottom:3px}
+.spec-item-meta{font-size:11px;color:#888}
+.main{flex:1;overflow-y:auto;padding:16px}
+/* ===== タブ ===== */
+.tabs{display:flex;gap:4px;border-bottom:1px solid #ddd;margin-bottom:16px;flex-wrap:wrap;background:#fff;border-radius:8px 8px 0 0;padding:8px 8px 0}
+.tab{padding:7px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:#666;border-bottom:2px solid transparent;transition:.15s}
+.tab.active{color:#1a3a5c;border-bottom-color:#1a3a5c;font-weight:700}
+.tab:hover:not(.active){color:#333}
+.panel{display:none}.panel.active{display:block}
+/* ===== カード ===== */
+.card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.card h3{font-size:13px;font-weight:700;color:#1a3a5c;margin-bottom:10px;border-bottom:1px solid #e0e8f0;padding-bottom:6px}
+/* ===== グリッド ===== */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+/* ===== フォーム ===== */
+.field{margin-bottom:8px}
+label.fl{font-size:12px;color:#555;display:block;margin-bottom:3px;font-weight:500}
+input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;padding:6px 9px;border:1px solid #ccc;border-radius:5px;background:#fff;color:#222;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.1)}
+textarea{resize:vertical;min-height:52px;line-height:1.5}
+/* ===== 原材料テーブル ===== */
+.ing-table{width:100%;border-collapse:collapse;font-size:12px}
+.ing-table th{background:#eef2f7;padding:5px 6px;border:1px solid #ccc;font-size:11px;font-weight:700;white-space:nowrap;text-align:center}
+.ing-table td{border:1px solid #ddd;padding:3px 4px;vertical-align:middle}
+.ing-table td input,.ing-table td select{font-size:12px;padding:3px 5px;border:none;background:transparent;width:100%}
+.ing-table td input:focus,.ing-table td select:focus{background:#fff;border:1px solid #1a3a5c;border-radius:3px}
+.ing-table tr:hover td{background:#f8f9fc}
+/* ===== 検索 ===== */
+.search-box{position:relative}
+.search-results{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #bbb;border-radius:6px;z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none}
+.sr-item{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #eee}
+.sr-item:hover{background:#f0f4f8}
+/* ===== 工程 ===== */
+.proc-row{display:grid;grid-template-columns:2fr 3fr auto;gap:6px;align-items:center;margin-bottom:5px}
+/* ===== アレルゲン ===== */
+.allergen-grid{display:flex;flex-wrap:wrap;gap:5px}
+.al-chip{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px;border:1px solid #ddd;border-radius:20px;cursor:pointer;transition:.15s}
+.al-chip:hover{border-color:#1a3a5c;background:#f0f4f8}
+.al-chip input{width:auto;margin:0;padding:0;border:none}
+/* ===== プレビュー ===== */
+.preview-wrap{background:#ccc;padding:16px;border-radius:8px;overflow:auto}
+.a4{background:#fff;color:#111;width:794px;min-height:1123px;margin:0 auto;padding:14mm 12mm;font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:8pt;line-height:1.35;box-shadow:0 4px 24px rgba(0,0,0,.3)}
+.a4 h1{font-size:12pt;font-weight:700;text-align:center;border:2px solid #111;padding:4px;margin-bottom:8px;letter-spacing:2px}
+.a4 .sec{font-size:8pt;font-weight:700;background:#ccc;border:1px solid #999;padding:2px 5px;margin:5px 0 2px}
+.a4 table{width:100%;border-collapse:collapse;font-size:7.5pt}
+.a4 table th,.a4 table td{border:1px solid #999;padding:2px 4px;vertical-align:top}
+.a4 table th{background:#e8e8e8;font-weight:700;white-space:nowrap}
+.a4 .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:5px}
+.a4 .tgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:5px}
+.a4 .lbox{border:1px solid #999;padding:3px 5px;font-size:7.5pt;line-height:1.4;margin-bottom:3px}
+.a4 .note{font-size:6.5pt;color:#555;line-height:1.3;margin-top:2px}
+.a4 .footer{font-size:6.5pt;color:#666;border-top:1px solid #999;margin-top:6px;padding-top:3px}
+/* ===== モーダル ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;padding:24px;width:480px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#1a3a5c}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* ===== ローディング ===== */
+.loading{text-align:center;padding:40px;color:#888;font-size:14px}
+.spinner{width:32px;height:32px;border:3px solid #ddd;border-top-color:#1a3a5c;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ===== 通知 ===== */
+.toast{position:fixed;bottom:24px;right:24px;background:#1a3a5c;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:400;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.error{background:#c62828}
+/* ===== 印刷 ===== */
+@media print{
+  .header,.sidebar,.tabs,.btn,#toolbar{display:none!important}
+  .main{padding:0!important;overflow:visible!important}
+  .preview-wrap{background:none;padding:0}
+  .a4{box-shadow:none;width:100%;min-height:auto;padding:0}
+}
+.empty-state{text-align:center;padding:40px 20px;color:#999}
+.empty-state p{font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 商品規格書管理システム ｜ エニクック</h1>
+  <div class="header-right">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">接続中...</span>
+    <span id="user-info" style="font-size:12px;opacity:.8"></span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- サイドバー -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3>規格書一覧</h3>
+      <button class="btn btn-primary btn-block btn-sm" onclick="newSpec()">＋ 新規作成</button>
+      <button class="btn btn-block btn-sm" onclick="loadList()">↻ 更新</button>
+    </div>
+    <div class="spec-list" id="spec-list">
+      <div class="loading"><div class="spinner"></div>読込中...</div>
+    </div>
+  </div>
+
+  <!-- メインエリア -->
+  <div class="main" id="main-area">
+    <div class="empty-state">
+      <div style="font-size:48px">📄</div>
+      <p>左の一覧から規格書を選ぶか、<br>「新規作成」で開始してください</p>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase設定モーダル -->
+<div class="modal-overlay" id="config-modal">
+  <div class="modal">
+    <h2>🔧 Firebase設定</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:12px">初回のみ設定が必要です。Firebaseコンソールから取得した設定値を入力してください。</p>
+    <div class="field"><label class="fl">API Key</label><input type="text" id="cfg-apikey" placeholder="AIza..."></div>
+    <div class="field"><label class="fl">Auth Domain</label><input type="text" id="cfg-authdomain" placeholder="xxx.firebaseapp.com"></div>
+    <div class="field"><label class="fl">Project ID</label><input type="text" id="cfg-projectid" placeholder="my-project-id"></div>
+    <div class="field"><label class="fl">Storage Bucket</label><input type="text" id="cfg-bucket" placeholder="xxx.appspot.com"></div>
+    <div class="field"><label class="fl">Messaging Sender ID</label><input type="text" id="cfg-senderid" placeholder="123456789"></div>
+    <div class="field"><label class="fl">App ID</label><input type="text" id="cfg-appid" placeholder="1:123:web:abc..."></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveConfig()">保存して接続</button>
+    </div>
+  </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal">
+    <h2>削除の確認</h2>
+    <p id="del-msg" style="font-size:13px;margin-bottom:8px"></p>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeDelModal()">キャンセル</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ===== Firebase初期化 =====
+let db = null;
+let currentSpecId = null;
+let deleteTargetId = null;
+let specListCache = [];
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem('anycook_fb_config') || 'null'); } catch(e) { return null; }
+}
+
+function initFirebase(config) {
+  try {
+    if (firebase.apps.length === 0) firebase.initializeApp(config);
+    else firebase.app();
+    db = firebase.firestore();
+    setStatus(true);
+    loadList();
+    return true;
+  } catch(e) {
+    setStatus(false);
+    showToast('Firebase接続エラー: ' + e.message, true);
+    return false;
+  }
+}
+
+function setStatus(ok) {
+  document.getElementById('status-dot').className = 'status-dot' + (ok ? ' online' : '');
+  document.getElementById('status-text').textContent = ok ? 'Firestore 接続済み' : '未接続';
+}
+
+function saveConfig() {
+  const cfg = {
+    apiKey: v('cfg-apikey'),
+    authDomain: v('cfg-authdomain'),
+    projectId: v('cfg-projectid'),
+    storageBucket: v('cfg-bucket'),
+    messagingSenderId: v('cfg-senderid'),
+    appId: v('cfg-appid')
+  };
+  if (!cfg.apiKey || !cfg.projectId) { showToast('API KeyとProject IDは必須です', true); return; }
+  localStorage.setItem('anycook_fb_config', JSON.stringify(cfg));
+  document.getElementById('config-modal').classList.remove('open');
+  initFirebase(cfg);
+}
+
+// ===== 規格書リスト =====
+async function loadList() {
+  if (!db) return;
+  const el = document.getElementById('spec-list');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>読込中...</div>';
+  try {
+    const snap = await db.collection('product_specs').orderBy('updatedAt', 'desc').get();
+    specListCache = [];
+    snap.forEach(doc => specListCache.push({ id: doc.id, ...doc.data() }));
+    renderList();
+  } catch(e) {
+    el.innerHTML = '<div style="padding:12px;color:#c62828;font-size:13px">読込失敗: ' + e.message + '</div>';
+  }
+}
+
+function renderList() {
+  const el = document.getElementById('spec-list');
+  if (!specListCache.length) {
+    el.innerHTML = '<div class="empty-state"><p>規格書がありません</p></div>';
+    return;
+  }
+  el.innerHTML = specListCache.map(s => `
+    <div class="spec-item ${s.id === currentSpecId ? 'active' : ''}" onclick="openSpec('${s.id}')">
+      <div class="spec-item-name">${s.basic?.pname || '（名称未設定）'}</div>
+      <div class="spec-item-meta">${s.basic?.ptype || ''} | ${s.updatedAt ? new Date(s.updatedAt.toDate()).toLocaleDateString('ja-JP') : '日付不明'}</div>
+    </div>
+  `).join('');
+}
+
+// ===== 規格書データ =====
+const DEFAULT_INGS = [
+  {name:"有機牛肉",country:"国産",allergens:"牛肉",ratio:"",feature:"有機",addUse:"",gmo:"非組換え",amount:0,e:235,p:20.7,f:16.7,c:0.5,s:0.08},
+  {name:"有機きくらげ",country:"国産",allergens:"",ratio:"",feature:"有機",addUse:"",gmo:"",amount:0,e:23,p:4.2,f:0.2,c:6.8,s:0},
+  {name:"有機塩こうじ",country:"国内製造",allergens:"",ratio:"",feature:"有機",addUse:"",gmo:"",amount:0,e:108,p:3.5,f:0.5,c:22.5,s:9.2},
+  {name:"有機片栗粉",country:"国内製造",allergens:"",ratio:"",feature:"有機",addUse:"",gmo:"",amount:0,e:338,p:0.1,f:0.1,c:81.6,s:0},
+  {name:"有機人参",country:"国産",allergens:"",ratio:"",feature:"有機",addUse:"",gmo:"",amount:0,e:39,p:0.7,f:0.2,c:9.3,s:0.07},
+  {name:"有機しいたけ",country:"国産",allergens:"",ratio:"",feature:"有機",addUse:"",gmo:"",amount:0,e:23,p:3.0,f:0.4,c:6.4,s:0},
+  {name:"みりん",country:"国内製造",allergens:"",ratio:"",feature:"",addUse:"",gmo:"",amount:0,e:241,p:0.3,f:0.1,c:54.5,s:0},
+  {name:"有機醤油",country:"国内製造",allergens:"大豆・小麦",ratio:"",feature:"有機",addUse:"",gmo:"非組換え",amount:0,e:71,p:7.7,f:0,c:7.9,s:14.5},
+  {name:"塩",country:"国内製造",allergens:"",ratio:"",feature:"",addUse:"",gmo:"",amount:0,e:0,p:0,f:0,c:0,s:99.5},
+  {name:"有機しょうが",country:"国産",allergens:"",ratio:"",feature:"有機",addUse:"",gmo:"",amount:0,e:30,p:0.9,f:0.3,c:6.6,s:0.01},
+  {name:"にんにく",country:"国産",allergens:"",ratio:"",feature:"",addUse:"",gmo:"",amount:0,e:136,p:6.4,f:0.9,c:27.5,s:0.01},
+  {name:"ごま油",country:"国内製造",allergens:"ごま",ratio:"",feature:"",addUse:"",gmo:"",amount:0,e:921,p:0,f:100,c:0,s:0},
+];
+
+const DEFAULT_PROCESSES = [
+  {name:"材料計量",ctrl:"規定量"},{name:"材料混合",ctrl:""},{name:"加熱",ctrl:"70℃以上"},
+  {name:"充填",ctrl:""},{name:"加熱加圧殺菌",ctrl:"120℃－30分"},{name:"密閉",ctrl:""},
+  {name:"計量",ctrl:"規定量"},{name:"ウェイトチェッカー",ctrl:"規定量以上"},
+  {name:"金属探知機",ctrl:"FeΦ1.2mm、SusΦ2.5mm"},{name:"シール",ctrl:"規定温度"},
+  {name:"検品",ctrl:"目視確認、シール不良"},{name:"袋詰め",ctrl:"ダンボール詰め 100袋入り"},
+];
+
+const EMPTY_SPEC = () => ({
+  basic: {
+    pname:'',ptype:'有機そうざい',amount:'130g×100袋',expiry:'製造日より365日',
+    country:'日本',storage:'直射日光、高温多湿を避けて常温で保存してください。',
+    storage2:'要冷蔵',gmo:'無',preservative:'無',degradation:'本品特有の風味がなくなること',
+    contami:'直射日光、高温多湿を避けて常温で保存してください。',
+    mfr:'合同会社 エニクック',maddr:'福岡県筑紫野市阿志岐133-1',created:today()
+  },
+  ings: JSON.parse(JSON.stringify(DEFAULT_INGS)),
+  nutrition: {e:214,p:6.2,f:14.9,c:15.5,s:0.6,w:92.5,sf:'',su:'',unit:'1袋130g',note:'推定値'},
+  package: {
+    puD:'2',puW:'120',puH:'160',puN:'1',puWt:'4',puMat:'プラスチック',
+    pcD:'4700',pcW:'3600',pcH:'2200',pcN:'10',pcWt:'10500',pcMat:'段ボール'
+  },
+  processes: JSON.parse(JSON.stringify(DEFAULT_PROCESSES)),
+  labelText:'',
+  allergens:[],
+  notes:'袋のふちで手を切らないようにお気を付け下さい。開けにくい時ははさみで切って下さい。\n開封時や容器に移す時はやけどをしないようにご注意ください。\n電子レンジを使用する際は熱くなった具、ソースがはねる事がございますので、ラップを取る際にはご注意下さい。\n開封後はなるべく早くお召上がり下さい。投げたりすると破袋します。',
+  cooking:'袋（レトルトパウチ）の封を切らずにそのまま熱湯に入れ、温まるまで約5〜6分間沸騰させて下さい。\n電子レンジを使用する際は必ず別の容器に移してラップをかけて温めて下さい。\n（目安：500Wで約2分、600Wで約1分30秒）',
+  special:'ダンボール詰め 100袋入り\n・本商品は、国内流通品であり、海外法規の適合は保証できません。\n・アレルギー物質については、特定原材料等28品目のみ調査しております。'
+});
+
+let currentSpec = null;
+
+// ===== 新規作成・開く =====
+function newSpec() {
+  currentSpecId = null;
+  currentSpec = EMPTY_SPEC();
+  renderEditor();
+}
+
+async function openSpec(id) {
+  if (!db) return;
+  currentSpecId = id;
+  renderList();
+  document.getElementById('main-area').innerHTML = '<div class="loading"><div class="spinner"></div>読込中...</div>';
+  try {
+    const doc = await db.collection('product_specs').doc(id).get();
+    if (!doc.exists) { showToast('規格書が見つかりません', true); return; }
+    currentSpec = doc.data();
+    if (!currentSpec.ings) currentSpec.ings = JSON.parse(JSON.stringify(DEFAULT_INGS));
+    if (!currentSpec.processes) currentSpec.processes = JSON.parse(JSON.stringify(DEFAULT_PROCESSES));
+    renderEditor();
+  } catch(e) {
+    showToast('読込失敗: ' + e.message, true);
+  }
+}
+
+// ===== 保存 =====
+async function saveSpec() {
+  if (!db) { showToast('Firebaseに接続されていません', true); return; }
+  collectFormData();
+  currentSpec.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    if (currentSpecId) {
+      await db.collection('product_specs').doc(currentSpecId).set(currentSpec);
+      showToast('保存しました ✓');
+    } else {
+      const ref = await db.collection('product_specs').add(currentSpec);
+      currentSpecId = ref.id;
+      showToast('新規保存しました ✓');
+    }
+    loadList();
+  } catch(e) {
+    showToast('保存失敗: ' + e.message, true);
+  }
+}
+
+function askDelete(id, name) {
+  deleteTargetId = id;
+  document.getElementById('del-msg').textContent = `「${name}」を削除してもよいですか？この操作は取り消せません。`;
+  document.getElementById('del-modal').classList.add('open');
+}
+
+function closeDelModal() { document.getElementById('del-modal').classList.remove('open'); }
+
+async function confirmDelete() {
+  if (!deleteTargetId || !db) return;
+  try {
+    await db.collection('product_specs').doc(deleteTargetId).delete();
+    closeDelModal();
+    if (currentSpecId === deleteTargetId) {
+      currentSpecId = null;
+      currentSpec = null;
+      document.getElementById('main-area').innerHTML = '<div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選んでください</p></div>';
+    }
+    showToast('削除しました');
+    loadList();
+  } catch(e) { showToast('削除失敗: ' + e.message, true); }
+}
+
+// ===== フォームデータ収集 =====
+function collectFormData() {
+  if (!currentSpec) return;
+  const b = currentSpec.basic;
+  ['pname','ptype','amount','expiry','country','storage','storage2','gmo','preservative',
+   'degradation','contami','mfr','maddr','created'].forEach(k => {
+    const el = document.getElementById('f-' + k);
+    if (el) b[k] = el.value;
+  });
+  const n = currentSpec.nutrition;
+  ['e','p','f','c','s','w','sf','su','unit','note'].forEach(k => {
+    const el = document.getElementById('n-' + k);
+    if (el) n[k] = el.value;
+  });
+  const pk = currentSpec.package;
+  ['puD','puW','puH','puN','puWt','puMat','pcD','pcW','pcH','pcN','pcWt','pcMat'].forEach(k => {
+    const el = document.getElementById('pk-' + k);
+    if (el) pk[k] = el.value;
+  });
+  const ltEl = document.getElementById('label-text');
+  if (ltEl) currentSpec.labelText = ltEl.value;
+  const notesEl = document.getElementById('r-notes');
+  if (notesEl) currentSpec.notes = notesEl.value;
+  const cookEl = document.getElementById('r-cooking');
+  if (cookEl) currentSpec.cooking = cookEl.value;
+  const spEl = document.getElementById('r-special');
+  if (spEl) currentSpec.special = spEl.value;
+  currentSpec.allergens = [...document.querySelectorAll('#allergen-grid input:checked')].map(c => c.value);
+}
+
+// ===== エディタ描画 =====
+const ALL_ALLERGENS = ["卵","乳","小麦","そば","落花生（ピーナッツ）","えび","かに","くるみ","アーモンド",
+  "あわび","いか","いくら","オレンジ","カシューナッツ","キウイフルーツ","牛肉","ごま",
+  "さけ","さば","大豆","鶏肉","バナナ","豚肉","まつたけ","もも","やまいも","りんご","ゼラチン"];
+
+function renderEditor() {
+  const b = currentSpec.basic;
+  const n = currentSpec.nutrition;
+  const pk = currentSpec.package;
+  const al = currentSpec.allergens || [];
+
+  document.getElementById('main-area').innerHTML = `
+<div id="toolbar" style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+  <strong style="font-size:15px;flex:1">${b.pname || '（新規規格書）'}</strong>
+  <button class="btn btn-primary" onclick="saveSpec()">💾 Firestoreに保存</button>
+  <button class="btn" onclick="swTab('preview')">📄 プレビュー</button>
+  ${currentSpecId ? `<button class="btn btn-danger btn-sm" onclick="askDelete('${currentSpecId}','${b.pname||'この規格書'}')">🗑 削除</button>` : ''}
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-basic" onclick="swTab('basic')">① 基本情報</button>
+  <button class="tab" id="tab-ingredients" onclick="swTab('ingredients')">② 原材料</button>
+  <button class="tab" id="tab-nutrition" onclick="swTab('nutrition')">③ 栄養成分</button>
+  <button class="tab" id="tab-package" onclick="swTab('package')">④ 荷姿・製造</button>
+  <button class="tab" id="tab-remarks" onclick="swTab('remarks')">⑤ 注意・調理</button>
+  <button class="tab" id="tab-preview" onclick="swTab('preview')">📄 規格書</button>
+</div>
+
+<div id="panel-basic" class="panel active">
+  <div class="card"><h3>製品基本情報</h3>
+    <div class="g2">
+      <div class="field"><label class="fl">商品名</label><input type="text" id="f-pname" value="${esc(b.pname)}" oninput="updateTitle()"></div>
+      <div class="field"><label class="fl">名称</label><input type="text" id="f-ptype" value="${esc(b.ptype)}"></div>
+    </div>
+    <div class="g3">
+      <div class="field"><label class="fl">内容量</label><input type="text" id="f-amount" value="${esc(b.amount)}"></div>
+      <div class="field"><label class="fl">賞味期限（開封前）</label><input type="text" id="f-expiry" value="${esc(b.expiry)}"></div>
+      <div class="field"><label class="fl">製造国</label><input type="text" id="f-country" value="${esc(b.country)}"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="fl">保存方法（開封前）</label><input type="text" id="f-storage" value="${esc(b.storage)}"></div>
+      <div class="field"><label class="fl">保存方法（開封後）</label><input type="text" id="f-storage2" value="${esc(b.storage2)}"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="fl">遺伝子組み換え</label>
+        <select id="f-gmo">${['無','有','一部有'].map(o=>`<option ${b.gmo===o?'selected':''}>${o}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label class="fl">品質保持剤の有無</label>
+        <select id="f-preservative">${['無','有'].map(o=>`<option ${b.preservative===o?'selected':''}>${o}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field"><label class="fl">品質劣化内容</label><input type="text" id="f-degradation" value="${esc(b.degradation)}"></div>
+    <div class="field"><label class="fl">コンタミ注意表示</label><input type="text" id="f-contami" value="${esc(b.contami)}"></div>
+  </div>
+  <div class="card"><h3>製造者情報</h3>
+    <div class="g2">
+      <div class="field"><label class="fl">製造者名</label><input type="text" id="f-mfr" value="${esc(b.mfr)}"></div>
+      <div class="field"><label class="fl">所在地</label><input type="text" id="f-maddr" value="${esc(b.maddr)}"></div>
+    </div>
+    <div class="field"><label class="fl">作成日</label><input type="text" id="f-created" value="${esc(b.created)}"></div>
+  </div>
+</div>
+
+<div id="panel-ingredients" class="panel">
+  <div class="card"><h3>原材料・添加物一覧</h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div class="search-box" style="flex:1">
+        <input type="text" id="isearch" placeholder="食材名で検索（例：にんじん、醤油...）" oninput="searchIng()" onfocus="showSR()" onblur="hideSRd()">
+        <div class="search-results" id="sresults"></div>
+      </div>
+      <button class="btn btn-sm" onclick="showCustForm()">＋ 手動追加</button>
+    </div>
+    <div id="cust-form" style="display:none;background:#f5f5f0;padding:10px;border-radius:6px;margin-bottom:10px;border:1px solid #ddd">
+      <div class="g3" style="margin-bottom:6px">
+        <div class="field"><label class="fl">原材料名</label><input type="text" id="cn" placeholder="名称"></div>
+        <div class="field"><label class="fl">国名</label><input type="text" id="cc" placeholder="国産 / 国内製造"></div>
+        <div class="field"><label class="fl">アレルゲン</label><input type="text" id="ca" placeholder="大豆・小麦 等"></div>
+      </div>
+      <div class="g4" style="margin-bottom:6px">
+        <div class="field"><label class="fl">配合比(%)</label><input type="number" id="cr" placeholder="社外秘" step="0.1"></div>
+        <div class="field"><label class="fl">エネルギー(kcal/100g)</label><input type="number" id="ce" placeholder="0"></div>
+        <div class="field"><label class="fl">たんぱく質(g)</label><input type="number" id="cp" placeholder="0" step="0.1"></div>
+        <div class="field"><label class="fl">脂質(g)</label><input type="number" id="cf" placeholder="0" step="0.1"></div>
+      </div>
+      <div class="g4" style="margin-bottom:6px">
+        <div class="field"><label class="fl">炭水化物(g)</label><input type="number" id="cc2" placeholder="0" step="0.1"></div>
+        <div class="field"><label class="fl">食塩相当量(g)</label><input type="number" id="cs" placeholder="0" step="0.01"></div>
+        <div class="field"><label class="fl">使用量(g)</label><input type="number" id="cg" placeholder="0" step="0.1"></div>
+        <div class="field"><label class="fl">特色ある原材料</label><input type="text" id="ct" placeholder="有機 等"></div>
+      </div>
+      <div class="g2" style="margin-bottom:8px">
+        <div class="field"><label class="fl">添加物用途</label><input type="text" id="cuse" placeholder="甘味料 等"></div>
+        <div class="field"><label class="fl">遺伝子組換え区分</label>
+          <select id="cgmo"><option value="">－</option><option>非組換え</option><option>組換え</option><option>不分別</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="addCust()">追加</button>
+        <button class="btn btn-sm" onclick="document.getElementById('cust-form').style.display='none'">キャンセル</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="ing-table">
+        <thead><tr>
+          <th style="width:24px">No</th><th style="width:130px">原材料名</th><th style="width:90px">国名</th>
+          <th style="width:90px">アレルゲン</th><th style="width:60px">配合比</th>
+          <th style="width:70px">特色原材料</th><th style="width:70px">添加物用途</th>
+          <th style="width:80px">遺伝子組換え</th><th style="width:36px"></th>
+        </tr></thead>
+        <tbody id="ing-tbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px">
+      <label class="fl">一括表示用 原材料名（重量順・自動生成）</label>
+      <textarea id="label-text" rows="2">${esc(currentSpec.labelText || '')}</textarea>
+    </div>
+  </div>
+  <div class="card"><h3>アレルゲン確認（28品目）</h3>
+    <div class="allergen-grid" id="allergen-grid"></div>
+  </div>
+</div>
+
+<div id="panel-nutrition" class="panel">
+  <div class="card"><h3>栄養成分情報</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">1袋あたりの推定値。使用量(g)を原材料タブで入力後「再計算」も可能です。</p>
+    <div class="g3">
+      <div class="field"><label class="fl">エネルギー (kcal)</label><input type="number" id="n-e" value="${n.e}"></div>
+      <div class="field"><label class="fl">たんぱく質 (g)</label><input type="number" id="n-p" value="${n.p}" step="0.1"></div>
+      <div class="field"><label class="fl">脂質 (g)</label><input type="number" id="n-f" value="${n.f}" step="0.1"></div>
+    </div>
+    <div class="g3">
+      <div class="field"><label class="fl">炭水化物 (g)</label><input type="number" id="n-c" value="${n.c}" step="0.1"></div>
+      <div class="field"><label class="fl">食塩相当量 (g)</label><input type="number" id="n-s" value="${n.s}" step="0.01"></div>
+      <div class="field"><label class="fl">水分 (g)</label><input type="number" id="n-w" value="${n.w}" step="0.1"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="fl">飽和脂肪酸 (g)（任意）</label><input type="number" id="n-sf" value="${n.sf}" step="0.1"></div>
+      <div class="field"><label class="fl">糖質 (g)（任意）</label><input type="number" id="n-su" value="${n.su}" step="0.1"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="fl">表示単位</label><input type="text" id="n-unit" value="${esc(n.unit)}"></div>
+      <div class="field"><label class="fl">備考</label><input type="text" id="n-note" value="${esc(n.note)}"></div>
+    </div>
+    <button class="btn btn-sm" onclick="calcNutrition()" style="margin-top:4px">🧮 原材料から再計算</button>
+  </div>
+</div>
+
+<div id="panel-package" class="panel">
+  <div class="card"><h3>荷姿情報</h3>
+    <p style="font-size:12px;font-weight:700;margin-bottom:6px;color:#1a3a5c">個装</p>
+    <div class="g4">
+      <div class="field"><label class="fl">縦(mm)</label><input type="text" id="pk-puD" value="${esc(pk.puD)}"></div>
+      <div class="field"><label class="fl">横(mm)</label><input type="text" id="pk-puW" value="${esc(pk.puW)}"></div>
+      <div class="field"><label class="fl">高さ(mm)</label><input type="text" id="pk-puH" value="${esc(pk.puH)}"></div>
+      <div class="field"><label class="fl">入数</label><input type="text" id="pk-puN" value="${esc(pk.puN)}"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="fl">重量(g)</label><input type="text" id="pk-puWt" value="${esc(pk.puWt)}"></div>
+      <div class="field"><label class="fl">包材材質</label><input type="text" id="pk-puMat" value="${esc(pk.puMat)}"></div>
+    </div>
+    <p style="font-size:12px;font-weight:700;margin:8px 0 6px;color:#1a3a5c">ケース</p>
+    <div class="g4">
+      <div class="field"><label class="fl">縦(mm)</label><input type="text" id="pk-pcD" value="${esc(pk.pcD)}"></div>
+      <div class="field"><label class="fl">横(mm)</label><input type="text" id="pk-pcW" value="${esc(pk.pcW)}"></div>
+      <div class="field"><label class="fl">高さ(mm)</label><input type="text" id="pk-pcH" value="${esc(pk.pcH)}"></div>
+      <div class="field"><label class="fl">入数</label><input type="text" id="pk-pcN" value="${esc(pk.pcN)}"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="fl">重量(g)</label><input type="text" id="pk-pcWt" value="${esc(pk.pcWt)}"></div>
+      <div class="field"><label class="fl">包材材質</label><input type="text" id="pk-pcMat" value="${esc(pk.pcMat)}"></div>
+    </div>
+  </div>
+  <div class="card"><h3>製造工程</h3>
+    <div id="proc-list"></div>
+    <button class="btn btn-sm" onclick="addProc()" style="margin-top:6px">＋ 工程追加</button>
+  </div>
+</div>
+
+<div id="panel-remarks" class="panel">
+  <div class="card"><h3>注意表示</h3>
+    <textarea id="r-notes" rows="4">${esc(currentSpec.notes)}</textarea>
+  </div>
+  <div class="card"><h3>調理方法</h3>
+    <textarea id="r-cooking" rows="4">${esc(currentSpec.cooking)}</textarea>
+  </div>
+  <div class="card"><h3>特記事項</h3>
+    <textarea id="r-special" rows="3">${esc(currentSpec.special)}</textarea>
+  </div>
+</div>
+
+<div id="panel-preview" class="panel">
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <strong>商品規格書 A4プレビュー</strong>
+    <button class="btn btn-sm" onclick="genPreview()">↻ 更新</button>
+    <button class="btn btn-primary btn-sm" onclick="doPrint()">🖨️ 印刷・PDF保存</button>
+  </div>
+  <div class="preview-wrap">
+    <div class="a4" id="a4-body"><p style="color:#999;font-size:12px">↻ 更新ボタンを押すとプレビューが表示されます</p></div>
+  </div>
+</div>
+`;
+  renderIngTbody();
+  renderProcList();
+  initAllergens();
+}
+
+// ===== 食材DB =====
+const DB = {
+  "にんじん":{e:39,p:0.7,f:0.2,c:9.3,s:0.07,allergens:[],country:"国産"},
+  "たまねぎ":{e:37,p:1.0,f:0.1,c:8.8,s:0,allergens:[],country:"国産"},
+  "じゃがいも":{e:76,p:1.8,f:0.1,c:17.6,s:0,allergens:[],country:"国産"},
+  "キャベツ":{e:23,p:1.3,f:0.2,c:5.2,s:0,allergens:[],country:"国産"},
+  "ほうれん草":{e:20,p:2.2,f:0.4,c:3.1,s:0.04,allergens:[],country:"国産"},
+  "トマト":{e:20,p:0.7,f:0.1,c:4.7,s:0,allergens:[],country:"国産"},
+  "ブロッコリー":{e:33,p:4.3,f:0.5,c:5.2,s:0,allergens:[],country:"国産"},
+  "もやし":{e:15,p:1.7,f:0.1,c:2.6,s:0,allergens:[],country:"国産"},
+  "大根":{e:18,p:0.5,f:0.1,c:4.1,s:0.02,allergens:[],country:"国産"},
+  "ごぼう":{e:65,p:1.8,f:0.1,c:15.4,s:0,allergens:[],country:"国産"},
+  "かぼちゃ":{e:91,p:1.9,f:0.3,c:20.6,s:0,allergens:[],country:"国産"},
+  "れんこん":{e:66,p:1.9,f:0.1,c:15.5,s:0.02,allergens:[],country:"国産"},
+  "豆腐（木綿）":{e:73,p:7.0,f:4.9,c:1.2,s:0.02,allergens:["大豆"],country:"国内製造"},
+  "醤油":{e:71,p:7.7,f:0,c:7.9,s:14.5,allergens:["大豆","小麦"],country:"国内製造"},
+  "有機醤油":{e:71,p:7.7,f:0,c:7.9,s:14.5,allergens:["大豆","小麦"],country:"国内製造"},
+  "みりん":{e:241,p:0.3,f:0.1,c:54.5,s:0,allergens:[],country:"国内製造"},
+  "酢":{e:54,p:0.2,f:0,c:7.4,s:0,allergens:[],country:"国内製造"},
+  "砂糖":{e:387,p:0,f:0,c:99.3,s:0,allergens:[],country:"国内製造"},
+  "食塩":{e:0,p:0,f:0,c:0,s:99.5,allergens:[],country:"国内製造"},
+  "塩":{e:0,p:0,f:0,c:0,s:99.5,allergens:[],country:"国内製造"},
+  "ごま油":{e:921,p:0,f:100,c:0,s:0,allergens:["ごま"],country:"国内製造"},
+  "オリーブオイル":{e:921,p:0,f:100,c:0,s:0,allergens:[],country:"国内製造"},
+  "サラダ油":{e:921,p:0,f:100,c:0,s:0,allergens:[],country:"国内製造"},
+  "バター":{e:745,p:0.5,f:81.0,c:0.2,s:1.9,allergens:["乳"],country:"国内製造"},
+  "牛乳":{e:67,p:3.3,f:3.8,c:4.8,s:0.1,allergens:["乳"],country:"国産"},
+  "卵":{e:151,p:12.3,f:10.3,c:0.3,s:0.4,allergens:["卵"],country:"国産"},
+  "鶏肉":{e:145,p:22.3,f:5.9,c:0,s:0.1,allergens:[],country:"国産"},
+  "有機鶏肉":{e:145,p:22.3,f:5.9,c:0,s:0.1,allergens:[],country:"国産"},
+  "豚肉":{e:263,p:19.3,f:19.2,c:0.2,s:0.1,allergens:[],country:"国産"},
+  "牛肉":{e:235,p:20.7,f:16.7,c:0.5,s:0.08,allergens:["牛肉"],country:"国産"},
+  "有機牛肉":{e:235,p:20.7,f:16.7,c:0.5,s:0.08,allergens:["牛肉"],country:"国産"},
+  "小麦粉":{e:368,p:8.3,f:1.5,c:75.8,s:0,allergens:["小麦"],country:"国内製造"},
+  "片栗粉":{e:338,p:0.1,f:0.1,c:81.6,s:0,allergens:[],country:"国内製造"},
+  "有機片栗粉":{e:338,p:0.1,f:0.1,c:81.6,s:0,allergens:[],country:"国内製造"},
+  "ごま":{e:605,p:20.3,f:54.2,c:12.1,s:0,allergens:["ごま"],country:"国産"},
+  "にんにく":{e:136,p:6.4,f:0.9,c:27.5,s:0.01,allergens:[],country:"国産"},
+  "しょうが":{e:30,p:0.9,f:0.3,c:6.6,s:0.01,allergens:[],country:"国産"},
+  "有機しょうが":{e:30,p:0.9,f:0.3,c:6.6,s:0.01,allergens:[],country:"国産"},
+  "はちみつ":{e:329,p:0.2,f:0,c:79.7,s:0.01,allergens:[],country:"国産"},
+  "しいたけ":{e:23,p:3.0,f:0.4,c:6.4,s:0,allergens:[],country:"国産"},
+  "有機しいたけ":{e:23,p:3.0,f:0.4,c:6.4,s:0,allergens:[],country:"国産"},
+  "きくらげ":{e:23,p:4.2,f:0.2,c:6.8,s:0,allergens:[],country:"国産"},
+  "有機きくらげ":{e:23,p:4.2,f:0.2,c:6.8,s:0,allergens:[],country:"国産"},
+  "有機人参":{e:39,p:0.7,f:0.2,c:9.3,s:0.07,allergens:[],country:"国産"},
+  "塩こうじ":{e:108,p:3.5,f:0.5,c:22.5,s:9.2,allergens:["小麦"],country:"国内製造"},
+  "有機塩こうじ":{e:108,p:3.5,f:0.5,c:22.5,s:9.2,allergens:["小麦"],country:"国内製造"},
+  "マヨネーズ":{e:703,p:1.5,f:76.0,c:3.6,s:1.9,allergens:["卵","大豆"],country:"国内製造"},
+  "豆乳":{e:46,p:3.6,f:2.0,c:3.1,s:0,allergens:["大豆"],country:"国内製造"},
+};
+
+function searchIng() {
+  const q = document.getElementById('isearch').value.toLowerCase();
+  const r = document.getElementById('sresults');
+  if (q.length < 1) { r.style.display = 'none'; return; }
+  const m = Object.keys(DB).filter(k => k.includes(q));
+  if (!m.length) { r.style.display = 'none'; return; }
+  r.innerHTML = m.slice(0, 8).map(n => `<div class="sr-item" onmousedown="addIngFromDB('${n}')">${n}</div>`).join('');
+  r.style.display = 'block';
+}
+function showSR() { if (document.getElementById('isearch').value) searchIng(); }
+function hideSRd() { setTimeout(() => { const r = document.getElementById('sresults'); if(r) r.style.display = 'none'; }, 200); }
+
+function addIngFromDB(name) {
+  const d = DB[name];
+  currentSpec.ings.push({
+    name, country: d.country || '', allergens: (d.allergens || []).join('・'),
+    ratio: '', feature: '', addUse: '', gmo: '', amount: 0,
+    e: d.e, p: d.p, f: d.f, c: d.c, s: d.s
+  });
+  document.getElementById('isearch').value = '';
+  const r = document.getElementById('sresults');
+  if(r) r.style.display = 'none';
+  renderIngTbody();
+  updateDetectedAllergens();
+}
+
+function showCustForm() { document.getElementById('cust-form').style.display = 'block'; }
+
+function addCust() {
+  const n = document.getElementById('cn').value;
+  if (!n) return;
+  currentSpec.ings.push({
+    name: n, country: document.getElementById('cc').value,
+    allergens: document.getElementById('ca').value,
+    ratio: document.getElementById('cr').value || '',
+    feature: document.getElementById('ct').value, addUse: document.getElementById('cuse').value,
+    gmo: document.getElementById('cgmo').value === '－' ? '' : document.getElementById('cgmo').value,
+    amount: +document.getElementById('cg').value || 0,
+    e: +document.getElementById('ce').value || 0, p: +document.getElementById('cp').value || 0,
+    f: +document.getElementById('cf').value || 0, c: +document.getElementById('cc2').value || 0,
+    s: +document.getElementById('cs').value || 0,
+  });
+  document.getElementById('cust-form').style.display = 'none';
+  ['cn','cc','ca','cr','ct','cuse','cg','ce','cp','cf','cc2','cs'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  renderIngTbody();
+  updateDetectedAllergens();
+}
+
+function renderIngTbody() {
+  const tbody = document.getElementById('ing-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = currentSpec.ings.map((ing, i) => `
+    <tr>
+      <td style="text-align:center;color:#999">${i+1}</td>
+      <td><input type="text" value="${esc(ing.name)}" oninput="currentSpec.ings[${i}].name=this.value;updateLabelText()"></td>
+      <td><input type="text" value="${esc(ing.country)}" oninput="currentSpec.ings[${i}].country=this.value"></td>
+      <td><input type="text" value="${esc(ing.allergens)}" oninput="currentSpec.ings[${i}].allergens=this.value;updateDetectedAllergens()"></td>
+      <td><input type="text" value="${esc(ing.ratio)}" placeholder="社外秘" oninput="currentSpec.ings[${i}].ratio=this.value"></td>
+      <td><input type="text" value="${esc(ing.feature)}" oninput="currentSpec.ings[${i}].feature=this.value"></td>
+      <td><input type="text" value="${esc(ing.addUse)}" oninput="currentSpec.ings[${i}].addUse=this.value"></td>
+      <td><select onchange="currentSpec.ings[${i}].gmo=this.value">
+        ${['','非組換え','組換え','不分別'].map(o=>`<option ${ing.gmo===o?'selected':''}>${o}</option>`).join('')}
+      </select></td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeIng(${i})">✕</button></td>
+    </tr>
+  `).join('');
+  updateLabelText();
+}
+
+function removeIng(i) { currentSpec.ings.splice(i, 1); renderIngTbody(); updateDetectedAllergens(); }
+
+function updateLabelText() {
+  const el = document.getElementById('label-text');
+  if (!el) return;
+  const text = currentSpec.ings.map(i => i.name).join('、');
+  const al = [...document.querySelectorAll('#allergen-grid input:checked')].map(c => c.value);
+  el.value = text + (al.length ? `、(一部に${al.join('・')}を含む)` : '');
+}
+
+function updateDetectedAllergens() {
+  const detected = new Set();
+  currentSpec.ings.forEach(ing => {
+    if (ing.allergens) ing.allergens.split(/[・、,\s]+/).filter(Boolean).forEach(a => detected.add(a));
+  });
+  document.querySelectorAll('#allergen-grid input').forEach(cb => {
+    if (detected.has(cb.value)) cb.checked = true;
+  });
+  updateLabelText();
+}
+
+function initAllergens() {
+  const g = document.getElementById('allergen-grid');
+  if (!g) return;
+  const al = currentSpec.allergens || [];
+  g.innerHTML = ALL_ALLERGENS.map(a => `
+    <label class="al-chip">
+      <input type="checkbox" value="${a}" ${al.includes(a) ? 'checked' : ''} onchange="updateLabelText()"> ${a}
+    </label>
+  `).join('');
+  updateDetectedAllergens();
+}
+
+function calcNutrition() {
+  let e=0,p=0,f=0,c=0,s=0;
+  currentSpec.ings.forEach(ing => {
+    if (!ing.amount) return;
+    const r = ing.amount / 100;
+    e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
+    c += (ing.c||0)*r; s += (ing.s||0)*r;
+  });
+  if (e > 0) {
+    const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+    set('n-e', Math.round(e)); set('n-p', p.toFixed(1)); set('n-f', f.toFixed(1));
+    set('n-c', c.toFixed(1)); set('n-s', s.toFixed(2));
+    showToast('栄養計算しました ✓');
+  } else {
+    showToast('原材料の使用量(g)を手動追加で入力してください', true);
+  }
+}
+
+function renderProcList() {
+  const el = document.getElementById('proc-list');
+  if (!el) return;
+  el.innerHTML = currentSpec.processes.map((p, i) => `
+    <div class="proc-row">
+      <input type="text" value="${esc(p.name)}" placeholder="工程名称" oninput="currentSpec.processes[${i}].name=this.value">
+      <input type="text" value="${esc(p.ctrl)}" placeholder="管理基準" oninput="currentSpec.processes[${i}].ctrl=this.value">
+      <button class="btn btn-sm btn-danger" onclick="removeProc(${i})">✕</button>
+    </div>
+  `).join('');
+}
+function addProc() { currentSpec.processes.push({name:'',ctrl:''}); renderProcList(); }
+function removeProc(i) { currentSpec.processes.splice(i,1); renderProcList(); }
+
+// ===== タブ切替 =====
+function swTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  const tab = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  if (tab) tab.classList.add('active');
+  if (name === 'preview') genPreview();
+}
+
+// ===== プレビュー生成 =====
+function genPreview() {
+  collectFormData();
+  const b = currentSpec.basic, n = currentSpec.nutrition, pk = currentSpec.package;
+  const al = currentSpec.allergens || [];
+  const labelText = currentSpec.labelText || currentSpec.ings.map(i=>i.name).join('、');
+
+  const ingRows = currentSpec.ings.map((ing, i) => `
+    <tr>
+      <td style="text-align:center">${i+1}</td>
+      <td>${ing.name}</td><td>${ing.country}</td><td>${ing.allergens||''}</td>
+      <td style="text-align:center">${ing.ratio||'社外秘'}</td>
+      <td>${ing.feature||''}</td><td>${ing.addUse||''}</td>
+      <td style="text-align:center">${ing.gmo||''}</td>
+    </tr>
+  `).join('');
+
+  const procRows = currentSpec.processes.map((p,i) =>
+    `<tr><td style="text-align:center">${i+1}</td><td>${p.name}</td><td>${p.ctrl}</td></tr>`
+  ).join('');
+
+  const a4 = document.getElementById('a4-body');
+  if (!a4) return;
+  a4.innerHTML = `
+<h1>【商品規格書】</h1>
+<div class="mgrid">
+  <div>
+    <div class="sec">▼ 基本情報</div>
+    <table>
+      <tr><th>商品名</th><td>${b.pname}</td><th>作成日</th><td>${b.created}</td></tr>
+      <tr><th>名称</th><td>${b.ptype}</td><th>製造国</th><td>${b.country}</td></tr>
+      <tr><th>内容量</th><td colspan="3">${b.amount}</td></tr>
+      <tr><th>賞味期限</th><td colspan="3">${b.expiry}</td></tr>
+      <tr><th>保存方法（開封前）</th><td colspan="3" style="font-size:7pt">${b.storage}</td></tr>
+      <tr><th>保存方法（開封後）</th><td colspan="3">${b.storage2}</td></tr>
+      <tr><th>品質劣化内容</th><td colspan="3" style="font-size:7pt">${b.degradation}</td></tr>
+      <tr><th>遺伝子組み換え</th><td>${b.gmo}</td><th>品質保持剤</th><td>${b.preservative}</td></tr>
+    </table>
+  </div>
+  <div>
+    <div class="sec">▼ 栄養成分情報</div>
+    <table>
+      <tr><th colspan="2">分析項目名</th><th>分析値</th><th>単位</th></tr>
+      <tr><td colspan="2">エネルギー</td><td style="text-align:right">${n.e}</td><td>kcal</td></tr>
+      <tr><td colspan="2">タンパク質</td><td style="text-align:right">${n.p}</td><td>g</td></tr>
+      <tr><td colspan="2">脂質</td><td style="text-align:right">${n.f}</td><td>g</td></tr>
+      <tr><td colspan="2">炭水化物</td><td style="text-align:right">${n.c}</td><td>g</td></tr>
+      <tr><td colspan="2">水分</td><td style="text-align:right">${n.w}</td><td>g</td></tr>
+      <tr><td colspan="2">食塩相当量</td><td style="text-align:right">${n.s}</td><td>g</td></tr>
+    </table>
+    <div class="note">（${n.note}）${n.unit}</div>
+    <div class="sec" style="margin-top:5px">▼ 荷姿</div>
+    <table>
+      <tr><th></th><th>縦×横×高（mm）</th><th>入数</th><th>重量(g)</th><th>材質</th></tr>
+      <tr><th>個</th><td>${pk.puD}×${pk.puW}×${pk.puH}</td><td>${pk.puN}</td><td>${pk.puWt}</td><td>${pk.puMat}</td></tr>
+      <tr><th>ケース</th><td>${pk.pcD}×${pk.pcW}×${pk.pcH}</td><td>${pk.pcN}</td><td>${pk.pcWt}</td><td>${pk.pcMat}</td></tr>
+    </table>
+  </div>
+</div>
+<div class="sec">▼ 原材情報</div>
+<table>
+  <tr><th style="width:4%">No</th><th style="width:18%">原材料名・添加物</th><th style="width:10%">国名</th>
+  <th style="width:14%">アレルゲン</th><th style="width:8%">配合比</th><th style="width:10%">特色原材料</th>
+  <th style="width:10%">添加物用途</th><th style="width:12%">遺伝子組換え区分</th></tr>
+  ${ingRows}
+</table>
+<div class="note">・配合比は社外秘のため非開示　・アレルギー物質は特定原材料等28品目のみ調査　・遺伝子組み換え区分は主要原料のみ</div>
+<div class="tgrid" style="margin-top:5px">
+  <div>
+    <div class="sec">▼ 製造情報</div>
+    <div class="lbox" style="font-size:7pt">製造所：${b.mfr}<br>${b.maddr}</div>
+    <table><tr><th>No</th><th>工程名称</th><th>管理基準</th></tr>${procRows}</table>
+  </div>
+  <div>
+    <div class="sec">▼ 一括表示内容記載例</div>
+    <table>
+      <tr><th>名称</th><td>${b.ptype}</td></tr>
+      <tr><th>原材料名</th><td style="font-size:6.5pt;line-height:1.3">${labelText}</td></tr>
+      <tr><th>内容量</th><td>${b.amount}</td></tr>
+      <tr><th>賞味期限</th><td>${b.expiry}</td></tr>
+      <tr><th>保存方法</th><td style="font-size:6.5pt">${b.storage}</td></tr>
+      <tr><th>製造者</th><td style="font-size:6.5pt">${b.mfr}　${b.maddr}</td></tr>
+    </table>
+    <div style="margin-top:3px;font-size:7pt;font-weight:700">アレルギー：${al.length ? al.join('・') : 'なし'}</div>
+    <div class="note">＊コンタミ：${b.contami}</div>
+  </div>
+  <div>
+    <div class="sec">▼ 注意表示</div>
+    <div class="lbox" style="font-size:6.5pt;line-height:1.3">${(currentSpec.notes||'').replace(/\n/g,'<br>')}</div>
+    <div class="sec">▼ 調理方法</div>
+    <div class="lbox" style="font-size:6.5pt;line-height:1.3">${(currentSpec.cooking||'').replace(/\n/g,'<br>')}</div>
+  </div>
+</div>
+<div class="footer">▼ 特記事項：${(currentSpec.special||'').replace(/\n/g,' ')}</div>
+`;
+}
+
+function doPrint() {
+  genPreview();
+  const content = document.getElementById('a4-body').innerHTML;
+  const w = window.open('', '_blank', 'width=900,height=750');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>商品規格書</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic Pro','Meiryo','MS Gothic',sans-serif;font-size:8pt;color:#111;background:white}
+@page{size:A4;margin:10mm}
+h1{font-size:12pt;font-weight:700;text-align:center;border:2px solid #111;padding:4px;margin-bottom:8px;letter-spacing:2px}
+.sec{font-size:8pt;font-weight:700;background:#ccc;border:1px solid #999;padding:2px 5px;margin:5px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:7.5pt}
+table th,table td{border:1px solid #999;padding:2px 4px;vertical-align:top}
+table th{background:#e8e8e8;font-weight:700;white-space:nowrap}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:5px}
+.tgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:5px}
+.lbox{border:1px solid #999;padding:3px 5px;font-size:7.5pt;line-height:1.4;margin-bottom:3px}
+.note{font-size:6.5pt;color:#555;line-height:1.3;margin-top:2px}
+.footer{font-size:6.5pt;color:#666;border-top:1px solid #999;margin-top:6px;padding-top:3px}
+</style></head><body>${content}</body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+
+// ===== ユーティリティ =====
+function v(id) { const el=document.getElementById(id); return el?el.value:''; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function today() { return new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'}); }
+function updateTitle() {
+  const el=document.getElementById('f-pname');
+  if(el && currentSpec) currentSpec.basic.pname=el.value;
+}
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError?' error':'') + ' show';
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ===== 起動 =====
+window.onload = () => {
+  const cfg = getConfig();
+  if (cfg && cfg.apiKey) {
+    initFirebase(cfg);
+  } else {
+    document.getElementById('config-modal').classList.add('open');
+    setStatus(false);
+  }
+};
+</script>
+</body>
+</html>
