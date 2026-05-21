@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>商品規格書管理システム | エニクック</title>
 <style>
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:14px;background:#f5f5f0;color:#222;min-height:100vh}
 .header{background:#1a3a5c;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
@@ -83,158 +84,9 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 .empty-state{text-align:center;padding:40px 20px;color:#999}
 #toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
 
-/* ===== 原価計算システム (スコープ) ===== */
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
-#fc-root {
-  --bg:#1a1c20;--bg2:#22252b;--bg3:#2a2e36;--surface:#2e3340;--surface2:#363c4a;
-  --border:#3d4456;--border2:#4a5268;
-  --accent:#4fc08d;--adim:rgba(79,192,141,0.15);
-  --accent2:#f5a623;--a2dim:rgba(245,166,35,0.15);
-  --danger:#e05c5c;--info:#5b9cf6;--idim:rgba(91,156,246,0.15);--purple:#a78bfa;
-  --organic:#c0ac3e;--orgdim:rgba(192,172,62,0.18);
-  --text:#e8eaf0;--text2:#9aa0b4;--text3:#5c6278;
-  --mono:'JetBrains Mono',monospace;--sans:'Noto Sans JP',sans-serif;--rad:10px;
-}
-#fc-root * {box-sizing:border-box;margin:0;padding:0;}
-#fc-root {font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
-.shell{display:flex;min-height:100vh;}
-/* SIDEBAR */
-.sb{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto;display:flex;flex-direction:column;}
-.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
-.sb-logo .lt{font-size:12px;font-weight:900;letter-spacing:.08em;color:var(--accent);line-height:1.4;}
-.sb-logo .ls{font-size:10px;color:var(--text3);margin-top:2px;}
-.nav-sec{padding:12px 8px 4px;}
-.nav-lbl{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.1em;padding:0 8px;margin-bottom:4px;}
-.nav-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:7px;cursor:pointer;transition:all .15s;font-size:13px;color:var(--text2);border:none;background:none;width:100%;text-align:left;font-family:var(--sans);}
-.nav-item:hover{background:var(--surface);color:var(--text);}
-.nav-item.active{background:var(--adim);color:var(--accent);font-weight:700;}
-.ni{font-size:15px;flex-shrink:0;}
-/* MAIN */
-.main{margin-left:220px;flex:1;}
-.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
-.pt{font-size:15px;font-weight:700;}.ps{font-size:11px;color:var(--text3);}
-.tba{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
-.content{padding:18px 22px 60px;}
-/* PAGES */
-.page{display:none;}.page.active{display:block;}
-/* CARDS */
-#fc-root .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);margin-bottom:16px;overflow:hidden;}
-#fc-root .card.organic-card{border-color:var(--organic);box-shadow:0 0 12px var(--orgdim);}
-.ch{padding:11px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
-.ci{font-size:14px;}.ct{font-size:13px;font-weight:700;}.cs{font-size:11px;color:var(--text3);margin-left:auto;}
-.cb{padding:16px;}
-/* GRID */
-.fg{display:grid;gap:12px;}
-.g2{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr 1fr 1fr;}.g4{grid-template-columns:1fr 1fr 1fr 1fr;}
-/* FIELD */
-.field{display:flex;flex-direction:column;gap:4px;}
-.field label{font-size:11px;font-weight:500;color:var(--text2);letter-spacing:.03em;}
-.req{color:var(--danger);}
-.field input,.field select{padding:8px 11px;background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;font-family:var(--sans);transition:border-color .15s;width:100%;}
-.field input[type="number"]{font-family:var(--mono);}
-.field input:focus,.field select:focus{outline:none;border-color:var(--accent);}
-.hint{font-size:10px;color:var(--text3);}
-.calc-result{font-size:13px;color:var(--accent);font-family:var(--mono);font-weight:600;padding:8px 11px;background:var(--adim);border:1.5px solid rgba(79,192,141,.3);border-radius:7px;}
-/* BUTTONS */
-.btn{padding:8px 16px;border-radius:7px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
-.btn-p{background:var(--accent);color:#0d1f18;}.btn-p:hover{filter:brightness(1.1);}
-.btn-s{background:var(--surface);color:var(--text);border:1px solid var(--border);}.btn-s:hover{background:var(--surface2);}
-.btn-d{background:rgba(224,92,92,.15);color:var(--danger);border:1px solid rgba(224,92,92,.3);}.btn-d:hover{background:rgba(224,92,92,.25);}
-.btn-a2{background:var(--accent2);color:#1a1000;}.btn-a2:hover{filter:brightness(1.1);}
-.btn-org{background:var(--orgdim);color:var(--organic);border:1px solid var(--organic);}.btn-org:hover{filter:brightness(1.2);}
-.btn-csv{background:rgba(91,156,246,.15);color:var(--info);border:1px solid rgba(91,156,246,.3);}.btn-csv:hover{background:rgba(91,156,246,.25);}
-.btn-sm{padding:5px 11px;font-size:11px;}
-/* TABLE */
-.dt{width:100%;border-collapse:collapse;}
-.dt th{font-size:11px;font-weight:600;color:var(--text3);padding:8px 10px;text-align:left;background:var(--bg3);border-bottom:1px solid var(--border);}
-.dt td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
-.dt tr:last-child td{border-bottom:none;}
-.dt tr:hover td{background:var(--surface);}
-.dt td input,.dt td select{padding:6px 8px;background:var(--bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--mono);width:100%;}
-.dt td input:focus,.dt td select:focus{outline:none;border-color:var(--accent);}
-.mono{font-family:var(--mono);}
-.tr{text-align:right;}
-.ca{color:var(--accent);font-weight:600;}.ca2{color:var(--accent2);font-weight:600;}.ci2{color:var(--info);}
-.corg{color:var(--organic);font-weight:600;}
-/* BADGE */
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
-.b-r{background:rgba(79,192,141,.2);color:var(--accent);}
-.b-c{background:rgba(91,156,246,.2);color:var(--info);}
-.b-f{background:rgba(167,139,250,.2);color:var(--purple);}
-.b-org{background:var(--orgdim);color:var(--organic);}
-.b-lim{background:rgba(167,139,250,.2);color:var(--purple);}
-/* STAT */
-.sg{display:grid;gap:12px;margin-bottom:14px;}
-.sg4{grid-template-columns:repeat(4,1fr);}.sg3{grid-template-columns:repeat(3,1fr);}
-.sc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:14px;}
-.sc .sl{font-size:11px;color:var(--text3);margin-bottom:5px;}
-.sc .sv{font-size:20px;font-family:var(--mono);font-weight:700;}
-.sc .ss{font-size:10px;color:var(--text3);margin-top:2px;}
-.sc.hl{border-color:var(--accent);background:var(--adim);}.sc.hl .sv{color:var(--accent);}
-.sc.hl2{border-color:var(--accent2);background:var(--a2dim);}.sc.hl2 .sv{color:var(--accent2);}
-.sc.hl-org{border-color:var(--organic);background:var(--orgdim);}.sc.hl-org .sv{color:var(--organic);}
-/* BREAKDOWN */
-.bb-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
-.bbl{width:90px;font-size:11px;color:var(--text2);flex-shrink:0;}
-.bbt{flex:1;background:var(--bg3);border-radius:4px;height:8px;overflow:hidden;}
-.bbf{height:100%;border-radius:4px;transition:width .5s ease;}
-.bbv{width:110px;font-family:var(--mono);font-size:11px;color:var(--text2);text-align:right;}
-/* TABS */
-.tabs{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border);}
-.tab{padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text3);font-family:var(--sans);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-/* TOAST */
-.toast{position:fixed;top:18px;right:18px;padding:11px 17px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;animation:sIn .3s ease,fOut .3s ease 2.3s forwards;}
-.toast.success{background:var(--accent);color:#0d1f18;}
-.toast.error{background:var(--danger);color:white;}
-.toast.info{background:var(--info);color:white;}
-@keyframes sIn{from{transform:translateX(80px);opacity:0}to{transform:none;opacity:1}}
-@keyframes fOut{to{opacity:0;transform:translateX(20px)}}
-/* MODAL */
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;}
-.mo.open{display:flex;}
-.md{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:22px;width:92%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
-.md-t{font-size:15px;font-weight:700;margin-bottom:16px;}
-.md-a{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
-/* INFO/WARN/ORG */
-.info-box{background:var(--idim);border:1px solid rgba(91,156,246,.3);border-radius:7px;padding:9px 13px;font-size:12px;color:var(--info);margin-bottom:12px;}
-.warn-box{background:var(--a2dim);border:1px solid rgba(245,166,35,.3);border-radius:7px;padding:9px 13px;font-size:12px;color:var(--accent2);}
-.org-box{background:var(--orgdim);border:1px solid rgba(192,172,62,.4);border-radius:7px;padding:9px 13px;font-size:12px;color:var(--organic);margin-bottom:12px;}
-/* SHIP OPTIONS */
-.ship-opt{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:7px;background:var(--bg3);}
-.ship-opt:hover{border-color:var(--accent);}
-.ship-opt.sel{border-color:var(--accent);background:var(--adim);}
-.son{font-size:13px;font-weight:600;}.sot{font-size:11px;color:var(--text3);}
-.sop{margin-left:auto;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent2);}
-/* TOGGLE */
-.tog-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.tog{position:relative;width:40px;height:22px;flex-shrink:0;}
-.tog input{opacity:0;width:0;height:0;}
-.tog-sl{position:absolute;inset:0;background:var(--border);border-radius:22px;cursor:pointer;transition:.2s;}
-.tog-sl:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;}
-.tog input:checked+.tog-sl{background:var(--accent);}
-.tog input:checked+.tog-sl:before{transform:translateX(18px);}
-/* FILTER */
-.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-.filter-bar select,.filter-bar input{padding:7px 11px;background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;font-family:var(--sans);}
-.sec-div{font-size:12px;font-weight:700;color:var(--text2);border-left:3px solid var(--accent);padding-left:8px;margin-bottom:9px;}
-/* Material row organic highlight */
-.mat-row-org td{background:var(--orgdim) !important;}
-.mat-row-lim td{background:rgba(167,139,250,.08) !important;}
-/* CSV export panel */
-.csv-panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px;}
-.csv-panel h4{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;}
-@media(max-width:768px){
-  .sb{width:54px;}.sb-logo .lt,.sb-logo .ls,.nav-lbl,.nav-item span:not(.ni){display:none;}
-  .main{margin-left:54px;}.sg4{grid-template-columns:1fr 1fr;}.fg.g3,.fg.g4{grid-template-columns:1fr 1fr;}
-  .content{padding:12px 10px 50px;}
-}
-
-/* fc-root ラッパー */
-#fc-root { display:none; height:calc(100vh - 44px); }
-#fc-root.active { display:block !important; }
+/* マスターパネル追加スタイル */
+.master-section-title{font-size:13px;font-weight:700;color:#1a3a5c;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #cdd8e8}
 </style>
 </head>
 <body>
@@ -257,981 +109,10 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     <div class="spec-list" id="spec-list">
       <div class="loading"><div class="spinner"></div>読込中...</div>
     </div>
-    <div style="padding:8px;border-top:1px solid #ddd">
-      <button class="btn btn-block btn-sm" style="background:#2a2e36;color:#4fc08d;border-color:#3d4456" onclick="showFcSystem()">🧮 原価試算システム</button>
-    </div>
   </div>
   <div class="main" id="main-area">
     <div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選ぶか<br>「新規作成」で開始してください</p></div>
   </div>
-</div>
-
-<!-- ===== 原価計算システム ===== -->
-<div id="fc-root">
-<div class="shell">
-
-<!-- ===== SIDEBAR ===== -->
-<aside class="sb">
-  <div style="padding:8px;border-bottom:1px solid #3d4456">
-  <button onclick="showSpecSystem()" style="width:100%;padding:6px;background:#1a3a5c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px">← 商品規格書に戻る</button>
-  <button onclick="sendIngsToFcSystem&&sendIngsToCalc()" style="width:100%;padding:6px;background:#4fc08d;color:#1a1c20;border:none;border-radius:5px;cursor:pointer;font-size:12px;margin-top:4px" id="fc-apply-btn">📋 規格書の原材料を反映</button>
-</div>
-<div class="sb-logo">
-    <div class="lt">🏭 FOOD COST<br>SYSTEM v4</div>
-    <div class="ls">食品工場 原価試算</div>
-    <div id="syncStatus" style="font-size:10px;margin-top:6px;color:var(--accent)">☁️ 接続中...</div>
-  </div>
-  <div class="nav-sec">
-    <div class="nav-lbl">MENU</div>
-    <button class="nav-item active" onclick="showPage('calc',this)"><span class="ni">🧮</span><span>原価試算</span></button>
-    <button class="nav-item" onclick="showPage('records',this)"><span class="ni">📁</span><span>試算記録</span></button>
-    <button class="nav-item" onclick="showPage('master',this)"><span class="ni">⚙️</span><span>マスター登録</span></button>
-    <button class="nav-item" onclick="showPage('csv',this)"><span class="ni">📊</span><span>CSV出力</span></button>
-  </div>
-</aside>
-
-<!-- ===== MAIN ===== -->
-<div class="main">
-
-<!-- ==================== PAGE: 原価試算 ==================== -->
-<div class="page active" id="page-calc">
-  <div class="topbar">
-    <div><div class="pt">🧮 原価試算</div><div class="ps">コストを入力して原価・売価を算出</div></div>
-    <div class="tba">
-      <button class="btn btn-s btn-sm" onclick="showPage('csv',document.querySelectorAll('.nav-item')[3])">📊 CSV出力</button>
-      <button class="btn btn-s btn-sm" onclick="loadFromFirebase()" title="Firebaseから最新データを取得">🔄 同期</button>
-      <button class="btn btn-a2" id="saveRecordBtn" onclick="saveRecord()">💾 記録に保存</button>
-    </div>
-  </div>
-  <div class="content">
-
-    <!-- 基本情報 -->
-    <div class="card" id="basicCard">
-      <div class="ch"><span class="ci">📋</span><span class="ct">基本情報</span><span id="organicBadge" style="display:none"><span class="badge b-org">🌿 有機商品 +40円/袋</span></span></div>
-      <div class="cb">
-        <div class="fg g4">
-          <div class="field"><label>会社名 <span class="req">*</span></label><select id="c_company" onchange="calc()"><option value="">— 選択 —</option></select></div>
-          <div class="field">
-            <label>商品名 <span class="req">*</span></label>
-            <div style="display:flex;align-items:center;gap:8px">
-              <input type="text" id="c_product" placeholder="例：チキンカレー200g" oninput="onProductNameChange()" style="flex:1">
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;padding:7px 10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s" id="organicChkLabel">
-                <input type="checkbox" id="c_organic" onchange="onOrganicChange()" style="width:15px;height:15px;accent-color:var(--organic)">
-                <span>🌿 有機</span>
-              </label>
-            </div>
-            <span class="hint" id="organicHint" style="color:var(--organic);display:none">🌿 有機管理料 +40円/袋 を原価に加算中</span>
-          </div>
-          <div class="field"><label>商品タイプ <span class="req">*</span></label>
-            <select id="c_type" onchange="onTypeChange()">
-              <option value="retort">🟢 レトルト</option>
-              <option value="cold">🔵 冷蔵</option>
-              <option value="frozen">🟣 冷凍</option>
-            </select>
-          </div>
-          <div class="field"><label>試算日 <span class="req">*</span></label><input type="date" id="c_date"></div>
-        </div>
-        <div class="fg g3" style="margin-top:12px">
-          <div class="field"><label>内容量（g/ml）</label><input type="number" id="c_weight" placeholder="200" oninput="calc();refreshPkgSelects()"></div>
-          <div class="field"><label>1ロット生産数（個）<span class="req">*</span></label><input type="number" id="c_lot" placeholder="1000" oninput="calc()"></div>
-          <div class="field"><label>備考</label><input type="text" id="c_memo" placeholder="任意メモ"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 材料費 -->
-    <div class="card">
-      <div class="ch">
-        <span class="ci">🥩</span><span class="ct">材料費</span>
-        <span class="cs">歩留まり10%自動 ／ 有機材料×1.2 ／ 限定材料は商品指定可</span>
-      </div>
-      <div class="cb">
-        <div style="overflow-x:auto">
-          <table class="dt" id="matTable">
-            <thead><tr>
-              <th style="width:20%">材料名</th>
-              <th style="width:5%">有機</th>
-              <th style="width:5%">限定</th>
-              <th style="width:12%">単価（円/kg）</th>
-              <th style="width:11%">使用量（g/個）</th>
-              <th style="width:10%">材料費（円/個）</th>
-              <th style="width:11%">歩留まり後</th>
-              <th style="width:11%">最終単価</th>
-              <th style="width:8%"></th>
-            </tr></thead>
-            <tbody id="matRows"></tbody>
-          </table>
-        </div>
-        <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-s btn-sm" onclick="openMatModal()">📋 マスターから追加</button>
-          <button class="btn btn-s btn-sm" onclick="addMatManual()">＋ 直接入力</button>
-          <div style="margin-left:auto;font-size:12px;color:var(--text2);text-align:right">
-            <div>材料費合計（歩留まり込み）：<span class="mono ca" id="matTotalDisp">0.00</span> 円/個</div>
-            <div id="organicMatNote" style="display:none;color:var(--organic);font-size:11px">うち有機材料（×1.2）：<span class="mono" id="organicMatAmt">0.00</span> 円/個</div>
-          </div>
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:var(--text3)">
-          ✅ <strong>有機</strong>チェック：材料費を×1.2で計算　／　🔒 <strong>限定</strong>チェック：この商品専用材料としてマスターに記録（コスト変わらず）
-        </div>
-      </div>
-    </div>
-
-    <!-- 製造コスト -->
-    <div class="card">
-      <div class="ch"><span class="ci">🏭</span><span class="ct">製造コスト</span><span class="cs">マスター値自動反映・上書き可</span></div>
-      <div class="cb">
-        <div class="fg g3" style="margin-bottom:14px">
-          <div class="field"><label>機械償却費（円/個）</label><input type="number" id="c_machine" placeholder="0" step="0.01" oninput="calc()"><span class="hint" id="h_machine">マスター未設定</span></div>
-          <div class="field"><label>検査費（円/個）</label><input type="number" id="c_insp" placeholder="0" step="0.01" oninput="calc()"><span class="hint" id="h_insp">マスター未設定</span></div>
-          <div class="field"><label>その他コスト（円/個）</label><input type="number" id="c_other" placeholder="0" step="0.01" oninput="calc()"></div>
-        </div>
-        <!-- 加工費（人件費＋光熱費から自動計算） -->
-        <div style="background:var(--adim);border:1.5px solid rgba(79,192,141,.35);border-radius:8px;padding:12px 14px;margin-bottom:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-            👷 加工費（人件費＋光熱費）
-            <button class="btn btn-s btn-sm" style="margin-left:auto;font-size:11px" onclick="showPage('master',document.querySelectorAll('.nav-item')[2]);showMTab('costs',document.querySelectorAll('.tab')[1])">⚙️ マスターで設定</button>
-          </div>
-          <!-- 商品別マスターから選択 -->
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-            <div class="field" style="flex:1;min-width:180px">
-              <label>商品別マスターから選択</label>
-              <select id="c_proc_select" onchange="applyProcFromSelect()">
-                <option value="">— 商品を選んで割合を自動入力 —</option>
-              </select>
-            </div>
-            <div style="font-size:11px;color:var(--text3);padding-top:18px">または割合を直接入力 ↓</div>
-          </div>
-          <div class="fg g4">
-            <div class="field">
-              <label>この商品の割合（%）<span class="req">*</span></label>
-              <input type="number" id="c_lr" placeholder="例：20" min="0" max="100" oninput="window._procSelected=null;document.getElementById('c_proc_select').value='';calcLU()">
-              <span class="hint">月間生産全体に占める割合</span>
-              <span id="proc_ratio_warn" style="display:none;font-size:11px;color:var(--danger)">⚠️ 割合を入力してください</span>
-            </div>
-            <div class="field">
-              <label>人件費（円/個）← 自動</label>
-              <div class="calc-result" id="r_labor_per">— 円</div>
-              <span class="hint" id="h_lm_calc">マスター未設定</span>
-            </div>
-            <div class="field">
-              <label>光熱費（円/個）← 自動</label>
-              <div class="calc-result" id="r_util_per">— 円</div>
-              <span class="hint" id="h_um_calc">マスター未設定</span>
-            </div>
-            <div class="field">
-              <label>加工費合計（円/個）← 自動</label>
-              <div class="calc-result" id="r_proc_total" style="font-size:15px;font-weight:700">— 円</div>
-              <span class="hint">人件費＋光熱費の合計</span>
-            </div>
-          </div>
-        </div>
-        <!-- 包材費（袋・箱・ラベル個別入力） -->
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-            📦 包材費
-            <span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--accent)">合計：<span id="pkgTotalDisp">0.00</span> 円/個</span>
-          </div>
-
-          <!-- 袋（自動選択） -->
-          <div style="background:var(--bg2);border-radius:7px;padding:10px 12px;margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">🛍️ 袋</div>
-            <div class="fg g3">
-              <div class="field">
-                <label>マスターから選択</label>
-                <select id="c_pkg_bag_select" onchange="applyBagFromSelect()">
-                  <option value="">— 袋を選択（または手入力）—</option>
-                </select>
-                <span class="hint" id="h_pkg_bag_select" style="color:var(--accent)"></span>
-              </div>
-              <div class="field">
-                <label>袋代（円/枚）</label>
-                <input type="number" id="c_pkg_bag" placeholder="0" step="0.01" oninput="calcPkg()">
-                <span class="hint" id="h_pkg_bag">マスター未設定</span>
-              </div>
-              <div class="field">
-                <label>袋代（円/個）← 自動</label>
-                <div class="calc-result" id="r_pkg_bag_unit">— 円</div>
-                <span class="hint">1枚＝1個分</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 外箱（マスターから選択） -->
-          <div style="background:var(--bg2);border-radius:7px;padding:10px 12px;margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📦 外箱</div>
-            <div class="fg g4">
-              <div class="field">
-                <label>マスターから選択</label>
-                <select id="c_pkg_box_select" onchange="applyBoxFromSelect()">
-                  <option value="">— 外箱を選択（または手入力）—</option>
-                </select>
-                <span class="hint" id="h_pkg_box_select" style="color:var(--accent)"></span>
-              </div>
-              <div class="field">
-                <label>外箱代（円/箱）</label>
-                <input type="number" id="c_pkg_box_price" placeholder="0" step="0.01" oninput="calcPkg()">
-                <span class="hint">1箱の単価</span>
-              </div>
-              <div class="field">
-                <label>1箱の入数（個）</label>
-                <input type="number" id="c_pkg_box_qty" placeholder="例：20" min="1" oninput="calcPkg()">
-                <span class="hint">箱代÷入数で1個あたり算出</span>
-              </div>
-              <div class="field">
-                <label>外箱（円/個）← 自動</label>
-                <div class="calc-result" id="r_pkg_box">— 円</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ラベル・その他 -->
-          <div class="fg g3">
-            <div class="field">
-              <label>ラベル・シール代（円/枚）</label>
-              <input type="number" id="c_pkg_label" placeholder="0" step="0.01" oninput="calcPkg()">
-              <span class="hint" id="h_pkg_label">マスター未設定</span>
-            </div>
-            <div class="field">
-              <label>その他包材（円/個）</label>
-              <input type="number" id="c_pkg_other" placeholder="0" step="0.01" oninput="calcPkg()">
-              <span class="hint">緩衝材・仕切り等</span>
-            </div>
-            <div class="field">
-              <label>包材費合計（円/個）← 自動</label>
-              <div class="calc-result" id="r_pkg_total">— 円</div>
-            </div>
-          </div>
-        </div>
-        <div class="fg g2">
-          <div class="field"><label>廃棄歩留まり（%）</label><input type="number" id="c_loss" value="10" step="0.5" min="0" max="50" oninput="renderMatRows();calc()"><span class="hint">材料費の歩留まり算出に反映</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 送料 -->
-    <div class="card">
-      <div class="ch"><span class="ci">🚚</span><span class="ct">送料計算</span><span class="cs">エリア・重量を選択 → 1箱あたりの送料を自動計算</span></div>
-      <div class="cb">
-
-        <!-- 配送種別（商品タイプから自動判定） -->
-        <div style="background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-            🌡️ 配送種別
-            <span id="shipTypeAutoNote" style="font-size:11px;color:var(--accent);margin-left:4px"></span>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:7px;border:1.5px solid var(--border);font-size:13px;font-weight:600;transition:all .15s" id="shipTypeLbl_normal">
-              <input type="radio" name="c_ship_type" value="normal" onchange="onShipTypeChange()" style="accent-color:var(--accent)"> 🌡️ 常温便
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:7px;border:1.5px solid var(--border);font-size:13px;font-weight:600;transition:all .15s" id="shipTypeLbl_cold">
-              <input type="radio" name="c_ship_type" value="cold" onchange="onShipTypeChange()" style="accent-color:var(--info)"> 🔵 冷蔵便
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:7px;border:1.5px solid var(--border);font-size:13px;font-weight:600;transition:all .15s" id="shipTypeLbl_frozen">
-              <input type="radio" name="c_ship_type" value="frozen" onchange="onShipTypeChange()" style="accent-color:var(--purple)"> 🟣 冷凍便
-            </label>
-          </div>
-        </div>
-
-        <!-- エリア・重量・個数 -->
-        <div class="fg g4" style="margin-bottom:14px">
-          <div class="field">
-            <label>発送エリア <span class="req">*</span></label>
-            <select id="c_ship_area" onchange="calcShipping()">
-              <option value="">— エリアを選択 —</option>
-              <option value="hokkaido">北海道</option>
-              <option value="tohoku_n">北東北（青森・岩手・秋田）</option>
-              <option value="tohoku_s">南東北（宮城・山形・福島）</option>
-              <option value="kanto">関東（東京・神奈川・千葉・埼玉・茨城・栃木・群馬・山梨）</option>
-              <option value="shinetsu">信越（新潟・長野）</option>
-              <option value="hokuriku">北陸（富山・石川・福井）</option>
-              <option value="tokai">東海（愛知・岐阜・静岡・三重）</option>
-              <option value="kansai">関西（大阪・京都・兵庫・滋賀・奈良・和歌山）</option>
-              <option value="chugoku">中国（鳥取・島根・岡山・広島・山口）</option>
-              <option value="shikoku">四国（徳島・香川・愛媛・高知）</option>
-              <option value="kyushu_n" selected>北九州（福岡・佐賀・長崎・大分）</option>
-              <option value="kyushu_s">南九州（熊本・宮崎・鹿児島）</option>
-              <option value="okinawa">沖縄・離島</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>箱の重量 <span class="req">*</span></label>
-            <select id="c_ship_weight" onchange="calcShipping()">
-              <option value="2">2kg以内（60サイズ）</option>
-              <option value="5">5kg以内（80サイズ）</option>
-              <option value="10" selected>10kg以内（100サイズ）</option>
-              <option value="20">20kg以内（140サイズ）</option>
-              <option value="30">30kg以内（160サイズ）</option>
-              <option value="50">50kg以内（170サイズ）</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>配送会社</label>
-            <select id="c_ship_carrier" onchange="calcShipping()">
-              <option value="sagawa">佐川急便</option>
-              <option value="yamato">ヤマト運輸</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>1箱あたりの個数</label>
-            <input type="number" id="c_ship_qty_per_box" placeholder="例：20" min="1" oninput="calcShipping()">
-            <span class="hint">箱単位の送料を個別換算</span>
-          </div>
-        </div>
-
-        <!-- 計算結果 -->
-        <div style="background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:14px" id="shipCalcResult">
-          <div class="fg g3">
-            <div class="field">
-              <label>1箱あたり送料（自動計算）</label>
-              <div class="calc-result" id="r_ship_per_box">エリアと重量を選択してください</div>
-              <span class="hint" id="r_ship_basis">—</span>
-            </div>
-            <div class="field">
-              <label>1個あたり送料（自動計算）</label>
-              <div class="calc-result" id="r_ship_per_unit">— 円</div>
-              <span class="hint">1箱送料 ÷ 箱あたり個数</span>
-            </div>
-            <div class="field">
-              <label>原価計算に使う送料（円/個）</label>
-              <input type="number" id="c_ship_per_unit_manual" placeholder="0" step="0.01" oninput="calc()">
-              <span class="hint">↑自動入力・手動上書き可</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 送料別トグル -->
-        <div class="tog-row" style="margin-bottom:0">
-          <label class="tog"><input type="checkbox" id="c_sep_ship" onchange="onSepShip()"><span class="tog-sl"></span></label>
-          <span style="font-size:13px;font-weight:500">送料別（売価に含めず別途請求する）</span>
-        </div>
-        <div id="sepShipNote" style="display:none;margin-top:10px" class="warn-box">⚠️ 送料別：原価に含みますが売価計算には加算しません。別途請求書等で記載してください。</div>
-      </div>
-    </div>
-
-    <!-- 売価設定 -->
-    <div class="card">
-      <div class="ch"><span class="ci">💹</span><span class="ct">売価設定</span></div>
-      <div class="cb">
-        <div class="fg g4">
-          <div class="field"><label>目標粗利率（%）</label><input type="number" id="c_margin" placeholder="30" min="0" max="90" oninput="calc()"><span class="hint">食品目安：25〜40%</span></div>
-          <div class="field"><label>販売先マージン（%）</label><input type="number" id="c_ch" placeholder="0" min="0" max="90" oninput="calc()"><span class="hint">小売・問屋の掛け率</span></div>
-          <div class="field"><label>消費税</label>
-            <select id="c_tax" onchange="calc()">
-              <option value="8" selected>8%（食品軽減）</option>
-              <option value="10">10%（標準）</option>
-              <option value="0">非課税</option>
-            </select>
-          </div>
-          <div class="field"><label>端数処理</label>
-            <select id="c_round" onchange="calc()">
-              <option value="1">1円</option><option value="5">5円</option>
-              <option value="10" selected>10円</option><option value="50">50円</option>
-              <option value="100">100円</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 結果 -->
-    <div id="resultArea" style="display:none">
-      <!-- 有機管理料表示 -->
-      <div id="organicResultCard" style="display:none" class="card organic-card">
-        <div class="ch" style="background:var(--orgdim);border-color:var(--organic)">
-          <span class="ci">🌿</span><span class="ct" style="color:var(--organic)">有機商品 加算内訳</span>
-        </div>
-        <div class="cb">
-          <div class="sg sg3" style="margin-bottom:0">
-            <div class="sc hl-org"><div class="sl">有機管理料</div><div class="sv" id="r_org_fee">40</div><div class="ss">円/袋（固定）</div></div>
-            <div class="sc hl-org"><div class="sl">有機材料 追加費用（×1.2）</div><div class="sv" id="r_org_mat">—</div><div class="ss">円/個</div></div>
-            <div class="sc hl-org"><div class="sl">有機合計加算</div><div class="sv" id="r_org_total">—</div><div class="ss">円/個</div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sg sg4">
-        <div class="sc"><div class="sl">材料費合計</div><div class="sv" id="r_mat">—</div><div class="ss">円/個（歩留まり込み）</div></div>
-        <div class="sc"><div class="sl">製造・間接コスト</div><div class="sv" id="r_mfg">—</div><div class="ss">円/個</div></div>
-        <div class="sc hl"><div class="sl">総原価</div><div class="sv" id="r_cost">—</div><div class="ss">円/個</div></div>
-        <div class="sc hl2"><div class="sl">推奨売価（税込）<span id="r_sep_note" style="display:none;font-size:10px;color:var(--accent2);margin-left:4px">+送料別</span></div><div class="sv" id="r_sell">—</div><div class="ss">円</div></div>
-      </div>
-      <div class="sg sg3">
-        <div class="sc"><div class="sl">出荷価格（税抜）</div><div class="sv mono ci2" id="r_shiprice">—</div><div class="ss">円</div></div>
-        <div class="sc"><div class="sl">粗利（1個）</div><div class="sv mono ca" id="r_profit">—</div><div class="ss">円</div></div>
-        <div class="sc"><div class="sl">1ロット粗利合計</div><div class="sv mono ca2" id="r_lot">—</div><div class="ss">円</div></div>
-      </div>
-      <!-- 送料別カード -->
-      <div id="sepShipResult" style="display:none" class="card">
-        <div class="ch"><span class="ci">🚚</span><span class="ct">送料別 請求内訳</span></div>
-        <div class="cb">
-          <div class="sg sg3" style="margin-bottom:0">
-            <div class="sc"><div class="sl">商品代金（税込）</div><div class="sv mono" style="font-size:18px" id="r_prod_only">—</div><div class="ss">円</div></div>
-            <div class="sc"><div class="sl">送料（別途請求）</div><div class="sv mono ca2" style="font-size:18px" id="r_ship_amt">—</div><div class="ss">円/個</div></div>
-            <div class="sc hl2"><div class="sl">合計請求額</div><div class="sv mono" style="font-size:18px" id="r_invoice">—</div><div class="ss">円/個</div></div>
-          </div>
-        </div>
-      </div>
-      <!-- コスト内訳 -->
-      <div class="card">
-        <div class="ch"><span class="ci">📊</span><span class="ct">コスト内訳</span></div>
-        <div class="cb" id="bbars"></div>
-      </div>
-    </div>
-
-  </div>
-</div><!-- /page-calc -->
-
-<!-- ==================== PAGE: 試算記録 ==================== -->
-<div class="page" id="page-records">
-  <div class="topbar">
-    <div><div class="pt">📁 試算記録</div><div class="ps">会社・商品・日付別の履歴管理</div></div>
-    <div class="tba">
-      <button class="btn btn-csv btn-sm" onclick="showPage('csv',document.querySelectorAll('.nav-item')[3])">📊 CSV出力へ</button>
-      <button class="btn btn-d btn-sm" onclick="clearAllRecords()">🗑 全消去</button>
-    </div>
-  </div>
-  <div class="content">
-    <div class="filter-bar">
-      <select id="f_co" onchange="renderRecords()"><option value="">全会社</option></select>
-      <select id="f_type" onchange="renderRecords()">
-        <option value="">全タイプ</option><option value="retort">レトルト</option>
-        <option value="cold">冷蔵</option><option value="frozen">冷凍</option>
-      </select>
-      <select id="f_org" onchange="renderRecords()">
-        <option value="">全商品</option><option value="1">🌿 有機のみ</option><option value="0">通常のみ</option>
-      </select>
-      <input type="text" id="f_prod" placeholder="商品名で絞込..." oninput="renderRecords()" style="flex:1;min-width:120px">
-      <input type="date" id="f_df" onchange="renderRecords()">
-      <span style="color:var(--text3);font-size:12px;align-self:center">〜</span>
-      <input type="date" id="f_dt" onchange="renderRecords()">
-    </div>
-    <div class="card" style="overflow:hidden">
-      <div style="overflow-x:auto">
-        <table class="dt">
-          <thead><tr>
-            <th>日付</th><th>会社名</th><th>商品名</th><th>タイプ</th>
-            <th class="tr">材料費</th><th class="tr">有機加算</th><th class="tr">総原価</th>
-            <th class="tr">送料</th><th class="tr">出荷価格</th><th class="tr">売価</th><th class="tr">粗利</th><th></th>
-          </tr></thead>
-          <tbody id="recBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ==================== PAGE: マスター登録 ==================== -->
-<div class="page" id="page-master">
-  <div class="topbar"><div><div class="pt">⚙️ マスター登録</div><div class="ps">会社・コスト・原材料・発送先を事前登録</div></div></div>
-  <div class="content">
-    <div class="tabs">
-      <button class="tab active" onclick="showMTab('co',this)">🏢 会社</button>
-      <button class="tab" onclick="showMTab('costs',this)">💰 コスト単価</button>
-      <button class="tab" onclick="showMTab('mat',this)">🥩 原材料</button>
-      <button class="tab" onclick="showMTab('ship',this)">🚚 発送先・送料</button>
-      <button class="tab" onclick="showMTab('pkg',this)">📦 包材</button>
-    </div>
-
-    <!-- 会社 -->
-    <div id="mt-co">
-      <div class="card">
-        <div class="ch"><span class="ci">🏢</span><span class="ct" id="coFormTitle">会社登録</span></div>
-        <div class="cb">
-          <input type="hidden" id="m_co_edit_id">
-          <div class="fg g3" style="margin-bottom:12px">
-            <div class="field"><label>会社名 <span class="req">*</span></label><input type="text" id="m_co_name" placeholder="株式会社○○食品"></div>
-            <div class="field"><label>担当者名</label><input type="text" id="m_co_ct" placeholder="田中 太郎"></div>
-            <div class="field"><label>備考</label><input type="text" id="m_co_memo" placeholder="メモ"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-p" id="coAddBtn" onclick="addCompany()">＋ 会社を追加</button>
-            <button class="btn btn-a2" id="coSaveBtn" style="display:none" onclick="saveEditCompany()">💾 変更を保存</button>
-            <button class="btn btn-s" id="coCancelBtn" style="display:none" onclick="cancelEditCompany()">キャンセル</button>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><span class="ci">📋</span><span class="ct">登録済み会社</span></div>
-        <div style="overflow-x:auto">
-          <table class="dt">
-            <thead><tr><th>会社名</th><th>担当者</th><th>備考</th><th style="width:130px"></th></tr></thead>
-            <tbody id="coList"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- コスト単価 -->
-    <div id="mt-costs" style="display:none">
-      <div class="info-box">💡 人件費・光熱費の月間費用をここで登録します。試算画面では「この商品の割合（%）」を入力するだけで加工費が自動計算されます。</div>
-
-      <!-- 月次費用マスター（拡張版） -->
-      <div class="card">
-        <div class="ch"><span class="ci">👷</span><span class="ct">月次費用マスター（人件費・光熱費）</span></div>
-        <div class="cb">
-          <div class="sec-div" style="margin-bottom:10px">月間費用の登録</div>
-          <div class="fg g3" style="margin-bottom:18px">
-            <div class="field">
-              <label>月間人件費合計（円）</label>
-              <input type="number" id="m_lm" placeholder="例：1500000" oninput="saveCM();calcLU()">
-              <span class="hint">全従業員の月額合計（給与・法定福利費・交通費含む）</span>
-            </div>
-            <div class="field">
-              <label>月間光熱費合計（円）</label>
-              <input type="number" id="m_um" placeholder="例：300000" oninput="saveCM();calcLU()">
-              <span class="hint">電気・ガス・水道の月額合計（工場分のみ）</span>
-            </div>
-            <div class="field">
-              <label>月間総生産個数（個）</label>
-              <input type="number" id="m_mp" placeholder="例：60000" oninput="saveCM();calcLU()">
-              <span class="hint">工場全体の月間生産数（全商品合計）</span>
-            </div>
-          </div>
-
-          <!-- 加工費プレビュー（割合を変えてシミュレーション＋保存） -->
-          <div style="background:var(--adim);border:1.5px solid rgba(79,192,141,.35);border-radius:8px;padding:14px">
-            <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px">📊 加工費シミュレーション＆登録</div>
-            <div class="fg g4" style="margin-bottom:12px">
-              <div class="field">
-                <label>商品名</label>
-                <input type="text" id="m_proc_product" placeholder="例：チキンカレー200g">
-                <span class="hint">保存する商品名</span>
-              </div>
-              <div class="field">
-                <label>この商品の生産割合（%）</label>
-                <input type="number" id="m_sim_ratio" placeholder="例：20" min="0" max="100" oninput="calcLUMaster()">
-                <span class="hint">全体に占めるこの商品の比率</span>
-              </div>
-              <div class="field">
-                <label>人件費（円/個）← 自動</label>
-                <div class="calc-result" id="m_r_labor">— 円</div>
-                <span class="hint">月間人件費×割合÷月間生産数</span>
-              </div>
-              <div class="field">
-                <label>光熱費（円/個）← 自動</label>
-                <div class="calc-result" id="m_r_util">— 円</div>
-                <span class="hint">月間光熱費×割合÷月間生産数</span>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <div style="flex:1;min-width:160px">
-                <div style="font-size:11px;color:var(--text2);margin-bottom:4px">加工費合計（円/個）</div>
-                <div class="calc-result" id="m_r_proc_total" style="font-size:16px;font-weight:700;color:var(--accent)">— 円</div>
-              </div>
-              <button class="btn btn-p" onclick="saveProcRecord()">💾 この商品の加工費を保存</button>
-              <button class="btn btn-s" onclick="applyProcToCalc()">→ 試算画面に反映</button>
-            </div>
-          </div>
-
-          <!-- 商品別加工費 登録テーブル -->
-          <div style="margin-top:16px">
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:8px">
-              📋 商品別 加工費マスター
-              <span style="font-size:11px;color:var(--text3);font-weight:400">（登録した割合を試算時に選択できます）</span>
-            </div>
-            <div style="overflow-x:auto">
-              <table class="dt" id="procMasterTable">
-                <thead><tr>
-                  <th>商品名</th>
-                  <th class="tr">生産割合（%）</th>
-                  <th class="tr">人件費（円/個）</th>
-                  <th class="tr">光熱費（円/個）</th>
-                  <th class="tr">加工費合計（円/個）</th>
-                  <th></th>
-                </tr></thead>
-                <tbody id="procMasterList"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card"><div class="ch"><span class="ci">💰</span><span class="ct">コスト単価マスター（1個あたり）</span></div>
-        <div class="cb">
-          <div class="fg g3">
-            <div class="field"><label>機械償却費（円/個）</label><input type="number" id="m_mach" placeholder="5" step="0.01" oninput="saveCM()"><span class="hint">月次償却÷月間生産数</span></div>
-            <div class="field"><label>検査費（円/個）</label><input type="number" id="m_insp" placeholder="3" step="0.01" oninput="saveCM()"><span class="hint">品質・細菌検査費</span></div>
-          </div>
-          <!-- 包材費マスター -->
-          <div style="margin-top:14px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px">
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-              📦 包材費マスター（内容量別に個別登録）
-              <div style="margin-left:auto;display:flex;gap:6px">
-                <button class="btn btn-csv btn-sm" onclick="exportPkgCSV()">📥 CSV出力</button>
-                <button class="btn btn-csv btn-sm" onclick="triggerImport('pkgImport')">📤 CSVインポート</button>
-                <input type="file" id="pkgImport" accept=".csv" style="display:none" onchange="importPkgCSV(event)">
-              </div>
-            </div>
-            <div class="fg g4">
-              <div class="field"><label>袋代（円/枚）</label><input type="number" id="m_pkg_bag" placeholder="例：15" step="0.01" oninput="saveCM()"><span class="hint">内容量に応じた袋の単価</span></div>
-              <div class="field"><label>外箱代（円/箱）</label><input type="number" id="m_pkg_box_price" placeholder="例：200" step="0.01" oninput="saveCM()"><span class="hint">1箱あたりの単価</span></div>
-              <div class="field"><label>1箱の入数（個）</label><input type="number" id="m_pkg_box_qty" placeholder="例：20" min="1" oninput="saveCM()"><span class="hint">箱代÷入数で按分</span></div>
-              <div class="field"><label>ラベル・シール（円/枚）</label><input type="number" id="m_pkg_label" placeholder="例：5" step="0.01" oninput="saveCM()"><span class="hint">ラベル1枚あたりの単価</span></div>
-            </div>
-          </div>
-          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-            <div class="sec-div" style="margin-bottom:10px">商品タイプ別 追加コスト（円/個）</div>
-            <div class="fg g3">
-              <div class="field"><label>🟢 レトルト 追加</label><input type="number" id="m_re" placeholder="5" step="0.01" oninput="saveCM()"><span class="hint">殺菌釜・レトルト検査</span></div>
-              <div class="field"><label>🔵 冷蔵 追加</label><input type="number" id="m_co2" placeholder="8" step="0.01" oninput="saveCM()"><span class="hint">冷蔵保管・チルド対応</span></div>
-              <div class="field"><label>🟣 冷凍 追加</label><input type="number" id="m_fr" placeholder="15" step="0.01" oninput="saveCM()"><span class="hint">急速冷凍・冷凍便</span></div>
-            </div>
-          </div>
-          <div style="margin-top:14px"><button class="btn btn-p" onclick="applyMaster()">✅ 試算画面に反映する</button></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 原材料 -->
-    <div id="mt-mat" style="display:none">
-      <div class="org-box">🌿 有機チェックを付けた材料は、試算時に材料費が×1.2で計算されます。<br>🔒 限定チェックを付けた材料は、マスター選択時に「限定品」として識別できます。</div>
-      <div class="card">
-        <div class="ch"><span class="ci">🥩</span><span class="ct" id="matFormTitle">原材料登録</span></div>
-        <div class="cb">
-          <input type="hidden" id="m_mat_edit_id">
-          <div class="fg g4" style="margin-bottom:12px">
-            <div class="field"><label>材料名 <span class="req">*</span></label><input type="text" id="m_mat_n" placeholder="鶏もも肉"></div>
-            <div class="field"><label>単価（円/kg）<span class="req">*</span></label><input type="number" id="m_mat_p" placeholder="450" step="0.01"></div>
-            <div class="field"><label>カテゴリ</label>
-              <select id="m_mat_c"><option>肉類</option><option>魚介</option><option>野菜</option><option>調味料</option><option>穀類</option><option>乳製品</option><option>その他</option></select>
-            </div>
-            <div class="field"><label>備考</label><input type="text" id="m_mat_m" placeholder="産地等"></div>
-          </div>
-          <div style="display:flex;gap:16px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--organic)">
-              <input type="checkbox" id="m_mat_org" style="width:16px;height:16px"> 🌿 有機材料（×1.2計算）
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--purple)">
-              <input type="checkbox" id="m_mat_lim" style="width:16px;height:16px"> 🔒 特定商品限定材料
-            </label>
-            <div class="field" id="limProductField" style="display:none;min-width:180px">
-              <label>対象商品名（任意）</label>
-              <input type="text" id="m_mat_lim_prod" placeholder="例：有機チキンカレー">
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-p" id="matAddBtn" onclick="addMaterial()">＋ 原材料を追加</button>
-            <button class="btn btn-a2" id="matSaveBtn" style="display:none" onclick="saveEditMaterial()">💾 変更を保存</button>
-            <button class="btn btn-s" id="matCancelBtn" style="display:none" onclick="cancelEditMaterial()">キャンセル</button>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><span class="ci">📋</span><span class="ct">登録済み原材料</span>
-          <div style="margin-left:auto;display:flex;gap:6px">
-            <button class="btn btn-csv btn-sm" onclick="exportMatCSV()">📥 CSV出力</button>
-            <button class="btn btn-csv btn-sm" onclick="triggerImport('matImport')">📤 CSVインポート</button>
-            <input type="file" id="matImport" accept=".csv" style="display:none" onchange="importMatCSV(event)">
-          </div>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="dt">
-            <thead><tr><th>材料名</th><th>単価（円/kg）</th><th>カテゴリ</th><th>有機</th><th>限定</th><th>対象商品</th><th>備考</th><th style="width:130px"></th></tr></thead>
-            <tbody id="matList"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 発送先・送料 -->
-    <div id="mt-ship" style="display:none">
-      <div class="info-box">🚚 発送先ごとに送料を登録。試算時に選択すると自動入力されます。「送料別」で売価に含めず別途請求可能です。</div>
-      <div class="card">
-        <div class="ch"><span class="ci">➕</span><span class="ct" id="shipFormTitle">発送先・送料の登録</span></div>
-        <div class="cb">
-          <input type="hidden" id="m_sh_edit_id">
-          <div class="fg g4" style="margin-bottom:12px">
-            <div class="field"><label>発送先名 <span class="req">*</span></label><input type="text" id="m_sh_n" placeholder="東京エリア / A社倉庫"></div>
-            <div class="field"><label>送料（円/個）<span class="req">*</span></label><input type="number" id="m_sh_p" placeholder="50" step="0.01"></div>
-            <div class="field"><label>配送種別</label>
-              <select id="m_sh_t">
-                <option value="normal">常温便</option><option value="cold">冷蔵便（チルド）</option>
-                <option value="frozen">冷凍便</option><option value="other">その他</option>
-              </select>
-            </div>
-            <div class="field"><label>備考</label><input type="text" id="m_sh_m" placeholder="運送会社・条件等"></div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-p" id="shipAddBtn" onclick="addShipping()">＋ 発送先を追加</button>
-            <button class="btn btn-a2" id="shipSaveBtn" style="display:none" onclick="saveEditShipping()">💾 変更を保存</button>
-            <button class="btn btn-s" id="shipCancelBtn" style="display:none" onclick="cancelEditShipping()">キャンセル</button>
-          </div>
-        </div>
-      </div>
-      <div class="card"><div class="ch"><span class="ci">📋</span><span class="ct">登録済み発送先</span>
-        <div style="margin-left:auto;display:flex;gap:6px">
-          <button class="btn btn-csv btn-sm" onclick="exportShipCSV()">📥 CSV出力</button>
-          <button class="btn btn-csv btn-sm" onclick="triggerImport('shipImport')">📤 CSVインポート</button>
-          <input type="file" id="shipImport" accept=".csv" style="display:none" onchange="importShipCSV(event)">
-        </div>
-      </div>
-        <div style="overflow-x:auto"><table class="dt"><thead><tr><th>発送先名</th><th>送料（円/個）</th><th>配送種別</th><th>備考</th><th></th></tr></thead><tbody id="shipList"></tbody></table></div>
-      </div>
-    </div>
-
-  </div>
-    <!-- 包材マスター -->
-    <div id="mt-pkg" style="display:none">
-      <div class="card">
-        <div class="ch"><span class="ci">📦</span><span class="ct" id="pkgFormTitle">包材登録</span></div>
-        <div class="cb">
-          <input type="hidden" id="m_pkg_edit_id">
-          <div class="fg g4" style="margin-bottom:12px">
-            <div class="field"><label>包材名 <span class="req">*</span></label><input type="text" id="m_pkg_name" placeholder="例：ストロングパックBR-1420H"></div>
-            <div class="field">
-              <label>種別</label>
-              <select id="m_pkg_kind" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:8px 11px;font-size:13px;font-family:var(--sans)">
-                <option value="レトルト袋">レトルト袋</option>
-                <option value="レトルトパウチ">レトルトパウチ</option>
-                <option value="スパウトパウチ">スパウトパウチ</option>
-                <option value="三方袋">三方袋</option>
-                <option value="冷蔵袋">冷蔵袋</option>
-                <option value="冷凍袋">冷凍袋</option>
-                <option value="ナイロン袋">ナイロン袋</option>
-                <option value="袋">袋（汎用）</option>
-                <option value="外箱">外箱</option>
-                <option value="仕切り">仕切り</option>
-                <option value="消耗品">消耗品</option>
-                <option value="その他">その他</option>
-              </select>
-            </div>
-            <div class="field"><label>サイズ</label><input type="text" id="m_pkg_size" placeholder="例：140×200mm"></div>
-            <div class="field"><label>入数（枚/個）</label><input type="number" id="m_pkg_qty" placeholder="例：3000" min="1"></div>
-          </div>
-          <div class="fg g4" style="margin-bottom:12px">
-            <div class="field"><label>単価（円/枚）<span class="req">*</span></label><input type="number" id="m_pkg_price" placeholder="例：17.9" step="0.01"></div>
-            <div class="field"><label>商品コード</label><input type="text" id="m_pkg_code" placeholder="例：801386"></div>
-            <div class="field"><label>仕入先</label><input type="text" id="m_pkg_maker" placeholder="例：日本食研"></div>
-            <div class="field"><label>備考</label><input type="text" id="m_pkg_note" placeholder="メモ"></div>
-          </div>
-          <!-- 自動選択用の設定 -->
-          <div style="background:var(--adim);border-radius:8px;padding:10px 12px;margin-bottom:14px">
-            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px">⚡ 自動選択設定（試算画面でg数・商品タイプに合わせて自動選択されます）</div>
-            <div class="fg g3">
-              <div class="field">
-                <label>対応g数（下限）</label>
-                <input type="number" id="m_pkg_gmin" placeholder="例：100" min="0">
-                <span class="hint">この重量以上の商品に使用</span>
-              </div>
-              <div class="field">
-                <label>対応g数（上限）</label>
-                <input type="number" id="m_pkg_gmax" placeholder="例：300" min="0">
-                <span class="hint">この重量以下の商品に使用</span>
-              </div>
-              <div class="field">
-                <label>対応商品タイプ</label>
-                <select id="m_pkg_type" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:8px 11px;font-size:13px;font-family:var(--sans)">
-                  <option value="">全タイプ共通</option>
-                  <option value="retort">🟢 レトルトのみ</option>
-                  <option value="cold">🔵 冷蔵のみ</option>
-                  <option value="frozen">🟣 冷凍のみ</option>
-                </select>
-                <span class="hint">空欄=全タイプに表示</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-p" id="pkgAddBtn" onclick="addPkgItem()">＋ 包材を追加</button>
-            <button class="btn btn-a2" id="pkgSaveBtn" style="display:none" onclick="saveEditPkgItem()">💾 変更を保存</button>
-            <button class="btn btn-s" id="pkgCancelBtn" style="display:none" onclick="cancelEditPkgItem()">キャンセル</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="ch">
-          <span class="ci">📋</span><span class="ct">登録済み包材</span>
-          <span class="cs">試算画面の包材費に反映されます</span>
-          <div style="margin-left:auto;display:flex;gap:6px">
-            <button class="btn btn-csv btn-sm" onclick="exportPkgMasterCSV()">📥 CSV出力</button>
-            <button class="btn btn-s btn-sm" onclick="triggerImport('pkgMasterImport')">📤 CSVインポート</button>
-            <input type="file" id="pkgMasterImport" accept=".csv" style="display:none" onchange="importPkgMasterCSV(event)">
-          </div>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="dt">
-            <thead><tr>
-              <th>包材名</th><th>種別</th><th>サイズ</th><th class="tr">入数</th>
-              <th class="tr">単価(円/枚)</th><th>仕入先</th><th style="width:140px"></th>
-            </tr></thead>
-            <tbody id="pkgMasterList"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-</div><!-- /page-master -->
-
-<!-- ==================== PAGE: CSV出力 ==================== -->
-<div class="page" id="page-csv">
-  <div class="topbar"><div><div class="pt">📊 CSV出力 / インポート</div><div class="ps">CSVファイルをドロップするだけで自動反映</div></div></div>
-  <div class="content">
-
-    <!-- ★ 一括ドロップインポート -->
-    <div class="card" style="border-color:var(--accent);margin-bottom:20px">
-      <div class="ch" style="background:var(--adim)"><span class="ci">⚡</span><span class="ct" style="color:var(--accent)">かんたん一括インポート</span><span class="cs">CSVをここにドロップするだけで自動判別・反映</span></div>
-      <div class="cb">
-        <div id="dropZone" style="border:2.5px dashed var(--accent);border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3)" onclick="triggerImport('bulkImport')" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-          <div style="font-size:36px;margin-bottom:10px">📂</div>
-          <div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:6px">CSVファイルをここにドラッグ＆ドロップ</div>
-          <div style="font-size:12px;color:var(--text3)">または クリックしてファイルを選択</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px">原材料 / 配送費 / 包材費 のCSVを自動判別して反映します</div>
-          <input type="file" id="bulkImport" accept=".csv" multiple style="display:none" onchange="bulkImportCSV(event)">
-        </div>
-        <div id="importResultArea" style="margin-top:14px;display:none">
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">📋 インポート結果</div>
-          <div id="importResultList"></div>
-        </div>
-        <!-- 判別ルール説明 -->
-        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-          <div style="flex:1;min-width:180px;background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:11px">
-            <div style="font-weight:700;color:var(--accent);margin-bottom:4px">🥩 原材料として判別</div>
-            <div style="color:var(--text3)">ヘッダーに「材料名」または「単価(円/kg)」を含む</div>
-          </div>
-          <div style="flex:1;min-width:180px;background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:11px">
-            <div style="font-weight:700;color:var(--accent2);margin-bottom:4px">🚚 配送費として判別</div>
-            <div style="color:var(--text3)">ヘッダーに「発送先名」または「送料」を含む</div>
-          </div>
-          <div style="flex:1;min-width:180px;background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:11px">
-            <div style="font-weight:700;color:var(--info);margin-bottom:4px">📦 包材費として判別</div>
-            <div style="color:var(--text3)">ヘッダーに「包材名」または「単価(円/枚)」を含む</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="fg g2" style="margin-bottom:16px">
-
-      <!-- 試算記録 CSV -->
-      <div class="card">
-        <div class="ch"><span class="ci">📁</span><span class="ct">試算記録 CSV出力</span></div>
-        <div class="cb">
-          <p style="font-size:12px;color:var(--text2);margin-bottom:14px">試算記録を会社・期間・タイプでフィルタしてCSV出力できます。</p>
-          <div class="fg g2" style="margin-bottom:10px">
-            <div class="field"><label>会社でフィルタ</label><select id="csv_f_co" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:8px 11px;font-family:var(--sans);font-size:13px"><option value="">全会社</option></select></div>
-            <div class="field"><label>タイプでフィルタ</label>
-              <select id="csv_f_type" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:8px 11px;font-family:var(--sans);font-size:13px">
-                <option value="">全タイプ</option><option value="retort">レトルト</option><option value="cold">冷蔵</option><option value="frozen">冷凍</option>
-              </select>
-            </div>
-          </div>
-          <div class="fg g2" style="margin-bottom:14px">
-            <div class="field"><label>期間（開始）</label><input type="date" id="csv_f_df" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:8px 11px;font-family:var(--sans);font-size:13px"></div>
-            <div class="field"><label>期間（終了）</label><input type="date" id="csv_f_dt" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:8px 11px;font-family:var(--sans);font-size:13px"></div>
-          </div>
-          <button class="btn btn-csv" onclick="exportRecordsCSV()">📥 試算記録をCSV出力</button>
-          <div style="margin-top:12px;font-size:11px;color:var(--text3)">出力項目：日付・会社名・商品名・タイプ・有機・材料費・有機加算・製造コスト・送料・総原価・出荷価格・売価・粗利・ロット数・粗利合計</div>
-        </div>
-      </div>
-
-      <!-- 原材料 CSV -->
-      <div class="card">
-        <div class="ch"><span class="ci">🥩</span><span class="ct">原材料マスター CSV</span></div>
-        <div class="cb">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-            <button class="btn btn-csv" onclick="exportMatCSV()">📥 CSV出力</button>
-            <button class="btn btn-s" onclick="triggerImport('matImport2')">📤 CSVインポート</button>
-            <button class="btn btn-s" onclick="downloadTemplate('mat')">📋 ひな型をダウンロード</button>
-            <input type="file" id="matImport2" accept=".csv" style="display:none" onchange="importMatCSV(event)">
-          </div>
-          <div class="csv-panel">
-            <h4>📋 CSVフォーマット</h4>
-            <code style="font-size:11px;color:var(--accent);font-family:var(--mono);display:block;white-space:pre-wrap">材料名,単価(円/kg),カテゴリ,有機(1/0),限定(1/0),対象商品,備考</code>
-            <div style="margin-top:6px;font-size:11px;color:var(--text3)">カテゴリ：肉類 / 魚介 / 野菜 / 調味料 / 穀類 / 乳製品 / その他</div>
-            <div style="margin-top:4px;font-size:11px;color:var(--text3)">有機・限定：1=あり、0=なし</div>
-            <div style="margin-top:4px;font-size:11px;color:var(--text3)">※同じ材料名が既にある場合は単価を上書き更新します</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="fg g2">
-
-      <!-- 包材費 CSV -->
-      <div class="card">
-        <div class="ch"><span class="ci">📦</span><span class="ct">包材費マスター CSV</span></div>
-        <div class="cb">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-            <button class="btn btn-csv" onclick="exportPkgCSV()">📥 CSV出力</button>
-            <button class="btn btn-s" onclick="triggerImport('pkgImport2')">📤 CSVインポート</button>
-            <button class="btn btn-s" onclick="downloadTemplate('pkg')">📋 ひな型をダウンロード</button>
-            <input type="file" id="pkgImport2" accept=".csv" style="display:none" onchange="importPkgCSV(event)">
-          </div>
-          <div class="csv-panel">
-            <h4>📋 CSVフォーマット</h4>
-            <code style="font-size:11px;color:var(--accent);font-family:var(--mono);display:block;white-space:pre-wrap">包材名,単価(円/枚),種別,サイズ,入数,備考</code>
-            <div style="margin-top:6px;font-size:11px;color:var(--text3)">種別：レトルト袋 / 袋 / 外箱 / ラベル / ナイロン袋 / スパウトパウチ / 仕切り / 消耗品 / その他</div>
-            <div style="margin-top:4px;font-size:11px;color:var(--text3)">※同じ包材名が既にある場合は単価を上書き更新します</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 配送費 CSV -->
-      <div class="card">
-        <div class="ch"><span class="ci">🚚</span><span class="ct">配送費マスター CSV</span></div>
-        <div class="cb">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-            <button class="btn btn-csv" onclick="exportShipCSV()">📥 CSV出力</button>
-            <button class="btn btn-s" onclick="triggerImport('shipImport2')">📤 CSVインポート</button>
-            <button class="btn btn-s" onclick="downloadTemplate('ship')">📋 ひな型をダウンロード</button>
-            <input type="file" id="shipImport2" accept=".csv" style="display:none" onchange="importShipCSV(event)">
-          </div>
-          <div class="csv-panel">
-            <h4>📋 CSVフォーマット</h4>
-            <code style="font-size:11px;color:var(--accent);font-family:var(--mono);display:block;white-space:pre-wrap">発送先名,送料(円/個),配送種別,備考</code>
-            <div style="margin-top:6px;font-size:11px;color:var(--text3)">配送種別：normal（常温）/ cold（冷蔵）/ frozen（冷凍）/ other</div>
-            <div style="margin-top:4px;font-size:11px;color:var(--text3)">※同じ発送先名が既にある場合は送料を上書き更新します</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="fg g2">
-        <div class="ch"><span class="ci">✅</span><span class="ct">インポート・操作ログ</span></div>
-        <div class="cb">
-          <div id="importLog" style="font-size:12px;color:var(--text2);min-height:80px">操作ログがここに表示されます。</div>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-</div><!-- /page-csv -->
-
-</div><!-- /main -->
-</div><!-- /shell -->
-
-<!-- Modal: 原材料選択 -->
-<div class="mo" id="modalMat">
-  <div class="md" style="max-width:620px">
-    <div class="md-t">📋 原材料を選択</div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <input type="text" id="matSearch" placeholder="材料名で検索..." oninput="filterMatModal()" style="flex:1;padding:8px 12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans)">
-      <select id="matCatFilter" onchange="filterMatModal()" style="padding:8px 11px;background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans)">
-        <option value="">全カテゴリ</option>
-        <option>肉類</option><option>魚介</option><option>野菜</option><option>調味料</option><option>穀類</option><option>乳製品</option><option>その他</option>
-      </select>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--organic)">
-        <input type="checkbox" id="matOrgFilter" onchange="filterMatModal()"> 🌿有機のみ
-      </label>
-    </div>
-    <div style="max-height:360px;overflow-y:auto">
-      <table class="dt"><thead><tr><th>材料名</th><th>単価（円/kg）</th><th>カテゴリ</th><th>属性</th><th></th></tr></thead><tbody id="matModalBody"></tbody></table>
-    </div>
-    <div class="md-a"><button class="btn btn-s" onclick="closeModal('modalMat')">閉じる</button></div>
-  </div>
-</div>
-
-<!-- Modal: 詳細 -->
-<div class="mo" id="modalDetail">
-  <div class="md" style="max-width:660px">
-    <div class="md-t">📄 試算詳細</div>
-    <div id="detailContent" style="font-size:13px;max-height:68vh;overflow-y:auto"></div>
-    <div class="md-a"><button class="btn btn-s" onclick="closeModal('modalDetail')">閉じる</button></div>
-  </div>
-</div>
 </div>
 
 <div class="modal-overlay" id="del-modal">
@@ -1250,6 +131,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
+
 // ===== Firebase設定 =====
 const FB_CFG = {
   apiKey: "AIzaSyC0o3ucOqzQumlnldzAr1Shx25Xvv1VPmo",
@@ -1463,6 +345,7 @@ async function openSpec(id) {
     if (!currentSpec.cost) currentSpec.cost = {laborCost:0,utilityCost:0,packagingCost:0,otherCost:0};
     currentSpec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
     renderEditor();
+    setTimeout(applyMasterToSpec, 300);
   } catch(e) {
     toast('読込失敗: '+e.message, true);
     console.error(e);
@@ -1560,6 +443,18 @@ function collectForm() {
 function swTab(name) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  // masterパネルは動的生成
+  if (name === 'master') {
+    var masterPanel = document.getElementById('panel-master');
+    if (!masterPanel) {
+      var mhtml = renderMasterPanel();
+      var mainEl = document.getElementById('main-area');
+      var div = document.createElement('div');
+      div.innerHTML = mhtml;
+      mainEl.appendChild(div.firstChild);
+    }
+    setTimeout(renderMasterTables, 50);
+  }
   var tab = document.getElementById('tab-'+name);
   var panel = document.getElementById('panel-'+name);
   if(tab) tab.classList.add('active');
@@ -1596,6 +491,7 @@ function renderEditor() {
     + '<button class="tab"        id="tab-package"     onclick="swTab(\'package\')">④ 荷姿・製造</button>'
     + '<button class="tab"        id="tab-remarks"     onclick="swTab(\'remarks\')">⑤ 注意・調理</button>'
     + '<button class="tab"        id="tab-cost"        onclick="swTab(\'cost\')">⑥ 原価計算</button>'
+    + '<button class="tab"        id="tab-master"     onclick="swTab(\'master\')">⑦ マスター登録</button>'
     + '<button class="tab"        id="tab-preview"     onclick="swTab(\'preview\')">&#x1F4C4; 規格書</button>'
     + '</div>';
 
@@ -1792,6 +688,8 @@ function renderEditor() {
     +   fld('その他経費（円）',    'number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
     + '</div>'
     + '<div id="cost-result" style="background:#eef2f7;border-radius:8px;padding:14px"></div>'
+    + '<div id="cost-shipping-ref" style="margin-top:8px;font-size:12px;color:#888"></div>'
+    + '<div style="margin-top:10px"><button class="btn btn-sm" onclick="applyMasterToSpec();renderIngTbody();recalcCost();">🔄 マスターから再反映</button></div>'
     + '</div></div>';
 
   // ---- 規格書プレビュー ----
@@ -2097,6 +995,16 @@ function recalcCost() {
   // バナーの1袋あたり原価を更新
   var bt = document.getElementById('banner-total');
   if (bt) bt.textContent = total.toFixed(1) + ' 円';
+  // 送料情報（参考表示）
+  var shipEl = document.getElementById('cost-shipping-ref');
+  if (shipEl && masterData.shippingCosts.length > 0) {
+    var totalW = currentSpec.ings.reduce(function(s,i){return s+(i.amount||0);},0) / 1000;
+    var matched = masterData.shippingCosts.filter(function(s){ return s.weightLimit >= totalW; });
+    matched.sort(function(a,b){return a.cost-b.cost;});
+    if (matched.length > 0) {
+      shipEl.textContent = '参考送料: ' + matched[0].region + ' ' + matched[0].cost + '円（' + matched[0].carrier + '）';
+    }
+  }
 }
 
 // ===== 栄養再計算 =====
@@ -2263,2396 +1171,468 @@ function doPrint() {
 }
 
 
-// ===== 原価試算システム 表示切替 =====
-function showFcSystem() {
-  document.getElementById('fc-root').classList.add('active');
-  document.querySelector('.app').style.display = 'none';
-}
-function showSpecSystem() {
-  document.getElementById('fc-root').classList.remove('active');
-  document.querySelector('.app').style.display = 'flex';
-}
-
-// ===== 規格書→原価試算へ原材料を連携 =====
-function sendIngsToFcSystem() {
-  if (!currentSpec || !currentSpec.ings) { alert('規格書を開いてください'); return; }
-  showFcSystem();
-  // 原価計算システムの原材料入力欄に反映
-  setTimeout(function() {
-    var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
-    var pnEl = document.getElementById('c_productName');
-    if (pnEl) pnEl.value = pname;
-    // ings → calcMats へ変換して反映
-    if (typeof window.loadSpecIngs === 'function') window.loadSpecIngs(currentSpec.ings);
-    if (typeof calc === 'function') calc();
-  }, 300);
-}
-
 // ===== 起動 =====
 window.addEventListener('load', function() {
   initFirebase();
+  initMaster();
 });
-</script>
-<script>
 
 
+// ===== マスターデータ管理 =====
+// Firestore collection: 'masters' / doc: 'material_prices', 'processing_costs', 'packaging_costs', 'shipping', 'additional_costs'
 
-// =============================================
-// Firebase 初期化
-// =============================================
-(function(){
-  const FB_CONFIG = {
-    apiKey:            "AIzaSyDTApcOt5n-xe-4cNn-cCwQi8NFMn8yobs",
-    authDomain:        "any-cook-food-cost.firebaseapp.com",
-    projectId:         "any-cook-food-cost",
-    storageBucket:     "any-cook-food-cost.firebasestorage.app",
-    messagingSenderId: "695194292187",
-    appId:             "1:695194292187:web:222832f7eb078eee05e1fe"
-  };
+var masterData = {
+  materialPrices:   [],  // 原材料価格マスター [{name, unitPrice, isOrganic, limitedTo}]
+  processingCosts:  [],  // 商品別加工費マスター [{productName, laborCost, utilityCost}]
+  packagingCosts:   [],  // 包材費マスター [{productName, cost, memo}]
+  shippingCosts:    [],  // 送料マスター [{region, weight, cost, carrier}]
+  additionalCosts:  [],  // 商品別追加コスト [{productName, itemName, cost}]
+};
 
-  let db = null;
+// ===== マスター初期化（Firestoreから読込） =====
+function initMaster() {
+  if (!db) { setTimeout(initMaster, 500); return; }
+  loadMasterFromFirestore();
+}
+
+async function loadMasterFromFirestore() {
   try {
-    if (!firebase.apps.filter(function(a){return a.name==="fc";}).length) firebase.initializeApp(FB_CONFIG, "fc");
-    db = firebase.firestore();
-    console.log('[Firebase] 初期化成功');
-  } catch(e) {
-    console.error('[Firebase] 初期化失敗:', e);
-  }
-
-  // ── DB操作 ─────────────────────────────────
-  async function fbSet(docId, data) {
-    if(!db) return false;
-    try {
-      await db.collection('fcs4').doc(docId).set({data: data});
-      return true;
-    } catch(e) { console.error('[fbSet]', docId, e.message); return false; }
-  }
-
-  async function fbGet(docId) {
-    if(!db) return null;
-    try {
-      const snap = await db.collection('fcs4').doc(docId).get();
-      return snap.exists ? snap.data().data : null;
-    } catch(e) { console.error('[fbGet]', docId, e.message); return null; }
-  }
-
-  // ── ステータス表示 ──────────────────────────
-  function setSync(s) {
-    const el = document.getElementById('syncStatus');
-    if(!el) return;
-    const txt = {syncing:'🔄 同期中...', ok:'☁️ 同期済み', error:'⚠️ オフライン'};
-    const col = {syncing:'var(--info)', ok:'var(--accent)', error:'var(--danger)'};
-    el.textContent = txt[s] || '';
-    el.style.color  = col[s] || '';
-  }
-
-  function fbToast(msg, type) {
-    const el = document.createElement('div');
-    el.className = 'toast ' + (type||'success');
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(), 3500);
-  }
-
-  // ── Firebase に全データ保存 ─────────────────
-  window.syncToFirebase = async function() {
-    if(!db){ setSync('error'); return; }
-    setSync('syncing');
-    try {
-      await Promise.all([
-        fbSet('companies',  window._companies      || []),
-        fbSet('matMaster',  window._matMaster      || []),
-        fbSet('shipMaster', window._shipMaster     || []),
-        fbSet('costMaster', window._CM             || {}),
-        fbSet('records',    window._records        || []),
-        fbSet('procMaster', window._procMaster     || []),
-        fbSet('pkgMaster',  window._pkgMasterItems || []),
-      ]);
-      setSync('ok');
-      console.log('[Firebase] 保存完了');
-    } catch(e) {
-      console.error('[Firebase] 保存エラー:', e);
-      setSync('error');
+    var doc = await db.collection('masters').doc('all').get();
+    if (doc.exists) {
+      var d = doc.data();
+      if (d.materialPrices)  masterData.materialPrices  = d.materialPrices;
+      if (d.processingCosts) masterData.processingCosts = d.processingCosts;
+      if (d.packagingCosts)  masterData.packagingCosts  = d.packagingCosts;
+      if (d.shippingCosts)   masterData.shippingCosts   = d.shippingCosts;
+      if (d.additionalCosts) masterData.additionalCosts = d.additionalCosts;
     }
-  };
-
-  // ── Firebase から全データ読み込み ────────────
-  window.loadFromFirebase = async function() {
-    if(!db){ setSync('error'); fbToast('Firebase未接続','error'); return; }
-    setSync('syncing');
-    try {
-      const [co, mat, sh, cm, rec, proc, pkg] = await Promise.all([
-        fbGet('companies'),
-        fbGet('matMaster'),
-        fbGet('shipMaster'),
-        fbGet('costMaster'),
-        fbGet('records'),
-        fbGet('procMaster'),
-        fbGet('pkgMaster'),
-      ]);
-
-      // グローバル変数＋localStorage に反映
-      function apply(val, gKey, lsKey, assign) {
-        if(val == null) return false;
-        window[gKey] = val;
-        try { localStorage.setItem(lsKey, JSON.stringify(val)); } catch(_){}
-        assign(val);
-        return true;
-      }
-
-      let loaded = false;
-      loaded |= apply(co,   '_companies',      'fcs4_co',   v=>{ companies       = v; });
-      loaded |= apply(mat,  '_matMaster',      'fcs4_mat',  v=>{ matMaster        = v; });
-      loaded |= apply(sh,   '_shipMaster',     'fcs4_ship', v=>{ shipMaster       = v; });
-      loaded |= apply(cm,   '_CM',             'fcs4_cm',   v=>{ CM               = v; });
-      loaded |= apply(rec,  '_records',        'fcs4_rec',  v=>{ records          = v; });
-      loaded |= apply(proc, '_procMaster',     'fcs4_proc', v=>{ procMaster       = v; });
-      loaded |= apply(pkg,  '_pkgMasterItems', 'fcs4_pkgm', v=>{ pkgMasterItems   = v; });
-
-      if(loaded) {
-        // 画面再描画（存在する関数だけ実行）
-        [
-          'renderCoList','renderMatList','renderShipList',
-          'refreshSelects','refreshCsvSelects','renderRecords',
-          'renderProcMasterList','refreshProcSelect','renderPkgMasterList',
-          'loadCM','setHints','calcPkg','calcLU'
-        ].forEach(fn => {
-          if(typeof window[fn] === 'function') {
-            try { window[fn](); } catch(e){ console.warn(fn, e); }
-          }
-        });
-        setSync('ok');
-        fbToast('☁️ Firebaseからデータを読み込みました');
-      } else {
-        setSync('ok');
-        fbToast('Firebase: データなし（ローカルを使用）','info');
-      }
-    } catch(e) {
-      console.error('[Firebase] 読込エラー:', e);
-      setSync('error');
-      fbToast('⚠️ 接続エラー：ローカルデータで動作中','error');
-    }
-  };
-
-  // 起動時 → initが完了してから読み込む
-  window.addEventListener('DOMContentLoaded', function(){
-    setTimeout(window.loadFromFirebase, 2500);
-  });
-
-})();
-
-
-// ========================
-// STORAGE
-// ========================
-const S={
-  get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},
-  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
-};
-let companies  = S.get('fcs4_co',[]);
-let matMaster  = S.get('fcs4_mat',[]);
-let shipMaster = S.get('fcs4_ship',[]);
-let CM = S.get('fcs4_cm',{lm:0,um:0,mp:0,mach:0,pkg:0,proc:0,insp:0,re:0,co2:0,fr:0});
-let records    = S.get('fcs4_rec',[]);
-let procMaster = S.get('fcs4_proc',[]);
-window._procMaster = procMaster;
-// グローバル参照（Firebase moduleからアクセス用）
-window._companies = companies; window._matMaster = matMaster;
-window._shipMaster = shipMaster; window._CM = CM; window._records = records;
-// Firebase自動同期付きset
-function syncSet(key, val) {
-  S.set(key, val);
-  // グローバル参照を更新
-  if(key==='fcs4_co')   { companies  = val; window._companies  = val; }
-  if(key==='fcs4_mat')  { matMaster  = val; window._matMaster  = val; }
-  if(key==='fcs4_ship') { shipMaster = val; window._shipMaster = val; }
-  if(key==='fcs4_cm')   { CM         = val; window._CM         = val; }
-  if(key==='fcs4_rec')  { records    = val; window._records    = val; }
-  if(key==='fcs4_proc') { procMaster = val; window._procMaster = val; }
-  if(key==='fcs4_pkgm') { pkgMasterItems = val; window._pkgMasterItems = val; }
-  // 500ms後にFirebaseに同期（連続保存時は最後の1回だけ実行）
-  clearTimeout(window._fbSyncTimer);
-  window._fbSyncTimer = setTimeout(()=>{ if(typeof syncToFirebase==='function') syncToFirebase(); }, 500);
-}
-let calcMats   = [];
-let nextId     = 0;
-let selShips   = new Set();
-const ORGANIC_FEE = 40; // 有機管理料固定値
-
-// ========================
-// NAV
-// ========================
-function showPage(id,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const pg = document.getElementById('page-'+id);
-  if(!pg){ console.warn('page not found: page-'+id); return; }
-  pg.classList.add('active');
-  if(btn)btn.classList.add('active');
-  if(id==='records'){ refreshSelects(); renderRecords(); }
-  if(id==='calc')   { refreshSelects(); calcLU(); }
-  if(id==='csv')    { refreshCsvSelects(); }
-  if(id==='master') {
-    // マスタータブの初期表示：最初のタブ（会社）を表示
-    const firstTab = document.querySelector('.tab');
-    if(firstTab && !document.querySelector('.tab.active')){
-      showMTab('co', firstTab);
-    }
-    renderCoList();
-  }
-}
-
-function goShipMaster(){showPage('master',document.querySelectorAll('.nav-item')[2]);showMTab('ship',document.querySelectorAll('.tab')[3]);}
-
-// ========================
-// TOAST / LOG
-// ========================
-function toast(msg,type='success'){
-  const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;
-  document.body.appendChild(el);setTimeout(()=>el.remove(),2700);
-}
-function addLog(msg){
-  const el=document.getElementById('importLog');
-  if(!el)return;
-  const now=new Date().toLocaleTimeString('ja-JP');
-  el.innerHTML=`<div style="padding:4px 0;border-bottom:1px solid var(--border);color:var(--accent)">[${now}] ${msg}</div>`+el.innerHTML;
-}
-
-// ========================
-// ORGANIC DETECTION
-// ========================
-function isOrganic(){return document.getElementById('c_organic').checked;}
-function applyOrganicUI(){
-  const org=isOrganic();
-  document.getElementById('organicBadge').style.display=org?'':'none';
-  document.getElementById('organicHint').style.display=org?'':'none';
-  document.getElementById('basicCard').className='card'+(org?' organic-card':'');
-  const lbl=document.getElementById('organicChkLabel');
-  if(lbl){lbl.style.borderColor=org?'var(--organic)':'var(--border)';lbl.style.background=org?'var(--orgdim)':'var(--bg3)';lbl.style.color=org?'var(--organic)':'var(--text2)';}
-}
-function onProductNameChange(){
-  // 商品名に「有機」が含まれたら自動でチェックON（手動チェックは維持）
-  const name=document.getElementById('c_product').value;
-  if(name.includes('有機'))document.getElementById('c_organic').checked=true;
-  applyOrganicUI();calc();
-}
-function onOrganicChange(){applyOrganicUI();calc();}
-
-// ========================
-// COMPANY（編集機能付き）
-// ========================
-function addCompany(){
-  const name=document.getElementById('m_co_name').value.trim();
-  if(!name){toast('会社名を入力してください','error');return;}
-  if(companies.find(c=>c.name===name)){toast('既に登録済みです','error');return;}
-  companies.push({id:Date.now(),name,ct:document.getElementById('m_co_ct').value,memo:document.getElementById('m_co_memo').value});
-  syncSet('fcs4_co',companies);renderCoList();refreshSelects();refreshCsvSelects();
-  ['m_co_name','m_co_ct','m_co_memo'].forEach(i=>document.getElementById(i).value='');
-  toast('会社を登録しました');
-}
-function editCo(id){
-  const c=companies.find(x=>x.id===id);if(!c)return;
-  document.getElementById('m_co_edit_id').value=id;
-  document.getElementById('m_co_name').value=c.name;
-  document.getElementById('m_co_ct').value=c.ct||'';
-  document.getElementById('m_co_memo').value=c.memo||'';
-  document.getElementById('coFormTitle').textContent='会社を編集';
-  document.getElementById('coAddBtn').style.display='none';
-  document.getElementById('coSaveBtn').style.display='';
-  document.getElementById('coCancelBtn').style.display='';
-  document.getElementById('m_co_name').focus();
-  window.scrollTo(0,0);
-}
-function saveEditCompany(){
-  const id=parseInt(document.getElementById('m_co_edit_id').value);
-  const name=document.getElementById('m_co_name').value.trim();
-  if(!name){toast('会社名を入力してください','error');return;}
-  const idx=companies.findIndex(c=>c.id===id);if(idx<0)return;
-  const old=companies[idx].name;
-  companies[idx]={...companies[idx],name,ct:document.getElementById('m_co_ct').value,memo:document.getElementById('m_co_memo').value};
-  // 試算記録の会社名も更新
-  records=records.map(r=>r.company===old?{...r,company:name}:r);
-  syncSet('fcs4_co',companies);syncSet('fcs4_rec',records);
-  renderCoList();refreshSelects();refreshCsvSelects();
-  cancelEditCompany();
-  toast('会社情報を更新しました');
-}
-function cancelEditCompany(){
-  ['m_co_name','m_co_ct','m_co_memo'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('m_co_edit_id').value='';
-  document.getElementById('coFormTitle').textContent='会社登録';
-  document.getElementById('coAddBtn').style.display='';
-  document.getElementById('coSaveBtn').style.display='none';
-  document.getElementById('coCancelBtn').style.display='none';
-}
-function delCo(id){
-  if(!confirm('この会社を削除しますか？'))return;
-  companies=companies.filter(c=>c.id!==id);
-  syncSet('fcs4_co',companies);renderCoList();refreshSelects();refreshCsvSelects();toast('削除しました');
-}
-function renderCoList(){
-  const el=document.getElementById('coList');if(!el)return;
-  el.innerHTML=companies.length?companies.map(c=>`
-    <tr>
-      <td><strong>${c.name}</strong></td>
-      <td>${c.ct||'—'}</td>
-      <td>${c.memo||'—'}</td>
-      <td style="display:flex;gap:4px">
-        <button class="btn btn-s btn-sm" onclick="editCo(${c.id})">✏️ 編集</button>
-        <button class="btn btn-d btn-sm" onclick="delCo(${c.id})">削除</button>
-      </td>
-    </tr>`).join('')
-    :'<tr><td colspan="4" style="text-align:center;padding:18px;color:var(--text3)">登録なし</td></tr>';
-}
-function refreshSelects(){
-  ['c_company','f_co'].forEach(id=>{
-    const el=document.getElementById(id);if(!el)return;
-    const cur=el.value,isF=id!=='c_company';
-    el.innerHTML=`<option value="">${isF?'全会社':'— 選択 —'}</option>`+companies.map(c=>`<option value="${c.name}"${c.name===cur?' selected':''}>${c.name}</option>`).join('');
-  });
-}
-function refreshCsvSelects(){
-  const el=document.getElementById('csv_f_co');if(!el)return;
-  const cur=el.value;
-  el.innerHTML='<option value="">全会社</option>'+companies.map(c=>`<option value="${c.name}"${c.name===cur?' selected':''}>${c.name}</option>`).join('');
-}
-
-document.addEventListener('DOMContentLoaded',function(){
-  const limEl=document.getElementById('m_mat_lim');
-  if(limEl)limEl.addEventListener('change',function(){
-    document.getElementById('limProductField').style.display=this.checked?'block':'none';
-  });
-});
-function addMaterial(){
-  const name=document.getElementById('m_mat_n').value.trim();
-  const price=parseFloat(document.getElementById('m_mat_p').value);
-  if(!name||!price){toast('材料名と単価を入力してください','error');return;}
-  if(matMaster.find(m=>m.name===name)){toast('既に登録済みです。編集する場合は一覧の✏️ボタンを使用してください','error');return;}
-  const isOrg=document.getElementById('m_mat_org').checked;
-  const isLim=document.getElementById('m_mat_lim').checked;
-  matMaster.push({id:Date.now(),name,price,cat:document.getElementById('m_mat_c').value,
-    organic:isOrg,limited:isLim,
-    limitedProduct:isLim?document.getElementById('m_mat_lim_prod').value:'',
-    memo:document.getElementById('m_mat_m').value});
-  syncSet('fcs4_mat',matMaster);renderMatList();
-  clearMatForm();
-  toast('原材料を登録しました');
-}
-function editMaterial(id){
-  const m=matMaster.find(x=>x.id===id);if(!m)return;
-  document.getElementById('m_mat_edit_id').value=id;
-  document.getElementById('m_mat_n').value=m.name;
-  document.getElementById('m_mat_p').value=m.price;
-  document.getElementById('m_mat_c').value=m.cat||'その他';
-  document.getElementById('m_mat_m').value=m.memo||'';
-  document.getElementById('m_mat_org').checked=!!m.organic;
-  document.getElementById('m_mat_lim').checked=!!m.limited;
-  document.getElementById('m_mat_lim_prod').value=m.limitedProduct||'';
-  document.getElementById('limProductField').style.display=m.limited?'block':'none';
-  document.getElementById('matFormTitle').textContent='原材料を編集';
-  document.getElementById('matAddBtn').style.display='none';
-  document.getElementById('matSaveBtn').style.display='';
-  document.getElementById('matCancelBtn').style.display='';
-  // フォームへスクロール
-  document.getElementById('mt-mat').scrollIntoView({behavior:'smooth',block:'start'});
-  document.getElementById('m_mat_n').focus();
-}
-function saveEditMaterial(){
-  const id=parseInt(document.getElementById('m_mat_edit_id').value);
-  const name=document.getElementById('m_mat_n').value.trim();
-  const price=parseFloat(document.getElementById('m_mat_p').value);
-  if(!name||!price){toast('材料名と単価を入力してください','error');return;}
-  const idx=matMaster.findIndex(m=>m.id===id);if(idx<0)return;
-  const oldName=matMaster[idx].name;
-  const isLim=document.getElementById('m_mat_lim').checked;
-  matMaster[idx]={
-    ...matMaster[idx],name,price,
-    cat:document.getElementById('m_mat_c').value,
-    organic:document.getElementById('m_mat_org').checked,
-    limited:isLim,
-    limitedProduct:isLim?document.getElementById('m_mat_lim_prod').value:'',
-    memo:document.getElementById('m_mat_m').value,
-  };
-  // 試算画面のcalcMatsにも単価・名前を反映
-  calcMats.forEach(m=>{
-    if(m.name===oldName||m.masterId===id){
-      m.name=name;m.price=price;m.masterId=id;
-    }
-  });
-  syncSet('fcs4_mat',matMaster);
-  renderMatList();renderMatRows();
-  cancelEditMaterial();
-  toast(`「${name}」の情報を更新しました`);
-}
-function cancelEditMaterial(){
-  clearMatForm();
-  document.getElementById('m_mat_edit_id').value='';
-  document.getElementById('matFormTitle').textContent='原材料登録';
-  document.getElementById('matAddBtn').style.display='';
-  document.getElementById('matSaveBtn').style.display='none';
-  document.getElementById('matCancelBtn').style.display='none';
-}
-function clearMatForm(){
-  ['m_mat_n','m_mat_p','m_mat_m','m_mat_lim_prod'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
-  document.getElementById('m_mat_org').checked=false;
-  document.getElementById('m_mat_lim').checked=false;
-  document.getElementById('limProductField').style.display='none';
-}
-function delMat(id){
-  if(!confirm('この原材料を削除しますか？'))return;
-  matMaster=matMaster.filter(m=>m.id!==id);
-  syncSet('fcs4_mat',matMaster);renderMatList();toast('削除しました');
-}
-function renderMatList(){
-  const el=document.getElementById('matList');if(!el)return;
-  el.innerHTML=matMaster.length?matMaster.map(m=>`<tr>
-    <td><strong>${m.name}</strong></td>
-    <td class="mono ca">¥${Number(m.price).toLocaleString()}</td>
-    <td>${m.cat}</td>
-    <td>${m.organic?'<span class="badge b-org">🌿有機</span>':'—'}</td>
-    <td>${m.limited?'<span class="badge b-lim">🔒限定</span>':'—'}</td>
-    <td style="font-size:11px;color:var(--text3)">${m.limitedProduct||'—'}</td>
-    <td style="font-size:11px">${m.memo||'—'}</td>
-    <td style="display:flex;gap:4px">
-      <button class="btn btn-s btn-sm" onclick="editMaterial(${m.id})">✏️ 編集</button>
-      <button class="btn btn-d btn-sm" onclick="delMat(${m.id})">削除</button>
-    </td>
-  </tr>`).join('')
-    :'<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--text3)">登録なし</td></tr>';
-}
-
-// ========================
-// SHIPPING MASTER（編集機能付き）
-// ========================
-const STL={normal:'常温便',cold:'🔵冷蔵便',frozen:'🟣冷凍便',other:'その他'};
-function addShipping(){
-  const name=document.getElementById('m_sh_n').value.trim();
-  const price=parseFloat(document.getElementById('m_sh_p').value);
-  if(!name||isNaN(price)){toast('発送先名と送料を入力してください','error');return;}
-  shipMaster.push({id:Date.now(),name,price,type:document.getElementById('m_sh_t').value,memo:document.getElementById('m_sh_m').value});
-  syncSet('fcs4_ship',shipMaster);renderShipList();renderShipOpts();
-  ['m_sh_n','m_sh_p','m_sh_m'].forEach(i=>document.getElementById(i).value='');
-  toast('発送先を登録しました');
-}
-function editShipping(id){
-  const s=shipMaster.find(x=>x.id===id);if(!s)return;
-  document.getElementById('m_sh_edit_id').value=id;
-  document.getElementById('m_sh_n').value=s.name;
-  document.getElementById('m_sh_p').value=s.price;
-  document.getElementById('m_sh_t').value=s.type||'normal';
-  document.getElementById('m_sh_m').value=s.memo||'';
-  document.getElementById('shipFormTitle').textContent='発送先を編集';
-  document.getElementById('shipAddBtn').style.display='none';
-  document.getElementById('shipSaveBtn').style.display='';
-  document.getElementById('shipCancelBtn').style.display='';
-  document.getElementById('mt-ship').scrollIntoView({behavior:'smooth',block:'start'});
-  document.getElementById('m_sh_n').focus();
-}
-function saveEditShipping(){
-  const id=parseInt(document.getElementById('m_sh_edit_id').value);
-  const name=document.getElementById('m_sh_n').value.trim();
-  const price=parseFloat(document.getElementById('m_sh_p').value);
-  if(!name||isNaN(price)){toast('発送先名と送料を入力してください','error');return;}
-  const idx=shipMaster.findIndex(s=>s.id===id);if(idx<0)return;
-  shipMaster[idx]={...shipMaster[idx],name,price,type:document.getElementById('m_sh_t').value,memo:document.getElementById('m_sh_m').value};
-  syncSet('fcs4_ship',shipMaster);
-  renderShipList();renderShipOpts();
-  cancelEditShipping();
-  toast(`「${name}」の送料情報を更新しました`);
-}
-function cancelEditShipping(){
-  ['m_sh_n','m_sh_p','m_sh_m'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
-  document.getElementById('m_sh_edit_id').value='';
-  document.getElementById('shipFormTitle').textContent='発送先・送料の登録';
-  document.getElementById('shipAddBtn').style.display='';
-  document.getElementById('shipSaveBtn').style.display='none';
-  document.getElementById('shipCancelBtn').style.display='none';
-}
-function delShip(id){
-  if(!confirm('この発送先を削除しますか？'))return;
-  shipMaster=shipMaster.filter(s=>s.id!==id);
-  selShips.delete(id);syncSet('fcs4_ship',shipMaster);renderShipList();renderShipOpts();calc();
-  toast('削除しました');
-}
-function renderShipList(){
-  const el=document.getElementById('shipList');if(!el)return;
-  el.innerHTML=shipMaster.length?shipMaster.map(s=>`<tr>
-    <td><strong>${s.name}</strong></td><td class="mono ca2">¥${s.price.toLocaleString()}/個</td>
-    <td>${STL[s.type]||s.type}</td><td>${s.memo||'—'}</td>
-    <td style="display:flex;gap:4px">
-      <button class="btn btn-s btn-sm" onclick="editShipping(${s.id})">✏️ 編集</button>
-      <button class="btn btn-d btn-sm" onclick="delShip(${s.id})">削除</button>
-    </td>
-  </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--text3)">登録なし</td></tr>';
-}
-function renderShipOpts(){
-  const el=document.getElementById('shipOpts');if(!el)return;
-  if(!shipMaster.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">発送先が未登録です。マスター登録から追加してください。</div>';return;}
-  el.innerHTML=shipMaster.map(s=>`
-    <div class="ship-opt${selShips.has(s.id)?' sel':''}" onclick="toggleShip(${s.id})">
-      <div><div class="son">${s.name}</div><div class="sot">${STL[s.type]||s.type}${s.memo?' · '+s.memo:''}</div></div>
-      <div class="sop">¥${s.price.toLocaleString()}<span style="font-size:10px;font-weight:400">/個</span></div>
-    </div>`).join('');
-  updateShipTotal();
-}
-function toggleShip(id){if(selShips.has(id))selShips.delete(id);else selShips.add(id);renderShipOpts();calc();}
-function getShipTotal(){return shipMaster.filter(s=>selShips.has(s.id)).reduce((a,s)=>a+s.price,0);}
-function updateShipTotal(){const t=getShipTotal();const el=document.getElementById('shipTotalDisp');if(el)el.textContent=t.toFixed(0);}
-function onSepShip(){const isSep=document.getElementById('c_sep_ship').checked;const n=document.getElementById('sepShipNote');if(n)n.style.display=isSep?'block':'none';calc();}
-
-// ========================
-// COST MASTER
-// ========================
-function saveCM(){
-  ['lm','um','mp','mach','proc','insp','re','co2','fr','pkg_bag','pkg_box_price','pkg_box_qty','pkg_label'].forEach(k=>{const el=document.getElementById('m_'+k);if(el)CM[k]=parseFloat(el.value)||0;});
-  syncSet('fcs4_cm',CM);
-}
-function loadCM(){
-  ['lm','um','mp','mach','proc','insp','re','co2','fr','pkg_bag','pkg_box_price','pkg_box_qty','pkg_label'].forEach(k=>{const el=document.getElementById('m_'+k);if(el&&CM[k])el.value=CM[k];});
-}
-function applyMaster(){
-  // 機械償却・検査費
-  const map={mach:'c_machine',insp:'c_insp'};
-  Object.entries(map).forEach(([mk,cid])=>{const el=document.getElementById(cid);const h=document.getElementById('h_'+mk);if(el&&CM[mk]){el.value=CM[mk];if(h)h.textContent='マスター反映';}});
-  // 包材費マスター反映
-  if(CM.pkg_bag){const e=document.getElementById('c_pkg_bag');if(e)e.value=CM.pkg_bag;const h=document.getElementById('h_pkg_bag');if(h)h.textContent='マスター反映';}
-  if(CM.pkg_box_price){const e=document.getElementById('c_pkg_box_price');if(e)e.value=CM.pkg_box_price;}
-  if(CM.pkg_box_qty){const e=document.getElementById('c_pkg_box_qty');if(e)e.value=CM.pkg_box_qty;}
-  if(CM.pkg_label){const e=document.getElementById('c_pkg_label');if(e)e.value=CM.pkg_label;const h=document.getElementById('h_pkg_label');if(h)h.textContent='マスター反映';}
-  calcLU();calcPkg();autoSetShipType();calc();
-  toast('マスター値を試算画面に反映しました');
-}
-function setHints(){
-  const map={mach:'機械償却費',insp:'検査費'};
-  Object.entries(map).forEach(([k])=>{const h=document.getElementById('h_'+k);if(h)h.textContent=CM[k]?`マスター: ${CM[k]}円/個`:'マスター未設定';});
-  const hb=document.getElementById('h_pkg_bag'),hl=document.getElementById('h_pkg_label');
-  if(hb)hb.textContent=CM.pkg_bag?`マスター: ${CM.pkg_bag}円/枚`:'マスター未設定';
-  if(hl)hl.textContent=CM.pkg_label?`マスター: ${CM.pkg_label}円/枚`:'マスター未設定';
-  const hh=document.getElementById('h_lm_calc'),hu=document.getElementById('h_um_calc');
-  if(hh)hh.textContent=CM.lm?`月額¥${CM.lm.toLocaleString()}・${(CM.mp||0).toLocaleString()}個`:'マスター未設定';
-  if(hu)hu.textContent=CM.um?`月額¥${CM.um.toLocaleString()}・${(CM.mp||0).toLocaleString()}個`:'マスター未設定';
-}
-function onTypeChange(){setHints();calc();}
-
-// ========================
-// 加工費：マスター選択 → 保存済みの数値を直接反映
-// ========================
-function applyProcFromSelect(){
-  const sel = document.getElementById('c_proc_select');
-  if(!sel) return;
-  if(!sel.value){
-    // 未選択に戻した → リセット
-    window._procSelected = null;
-    const lrEl = document.getElementById('c_lr');
-    if(lrEl) lrEl.value = '';
-    calcLU();
-    return;
-  }
-  const id = parseInt(sel.value);
-  applyProcToCalcById(id);
-}
-
-function applyProcToCalcById(id){
-  const p = procMaster.find(x => x.id === id);
-  if(!p) return;
-
-  // ① 割合をc_lrにセット
-  const lrEl = document.getElementById('c_lr');
-  if(lrEl) lrEl.value = p.ratio;
-
-  // ② プルダウンも同期
-  const sel = document.getElementById('c_proc_select');
-  if(sel) sel.value = String(id);
-
-  // ③ procMasterに保存済みの計算値を直接表示に反映
-  const el_l = document.getElementById('r_labor_per');
-  if(el_l) el_l.textContent = p.laborPer > 0 ? p.laborPer.toFixed(2) + ' 円' : '— 円';
-  const el_u = document.getElementById('r_util_per');
-  if(el_u) el_u.textContent = p.utilPer > 0 ? p.utilPer.toFixed(2) + ' 円' : '— 円';
-  const el_p = document.getElementById('r_proc_total');
-  if(el_p) el_p.textContent = p.total > 0 ? p.total.toFixed(2) + ' 円' : '— 円';
-
-  // ④ hintにも情報を表示
-  const hl = document.getElementById('h_lm_calc');
-  const hu = document.getElementById('h_um_calc');
-  if(hl) hl.textContent = `✅ ${p.product}（割合${p.ratio}%）の人件費`;
-  if(hu) hu.textContent = `✅ ${p.product}（割合${p.ratio}%）の光熱費`;
-
-  // ⑤ calc()を呼んで原価計算にも反映
-  //    ただしcalc()内のlaborPer/utilPerはCMから再計算するので
-  //    procMasterの値をwindow._procSelectedで保持しておく
-  window._procSelected = { laborPer: p.laborPer, utilPer: p.utilPer, total: p.total, id: p.id };
-
-  calc();
-  toast(`「${p.product}」人件費${p.laborPer.toFixed(1)}円・光熱費${p.utilPer.toFixed(1)}円・加工費合計${p.total.toFixed(1)}円/個`, 'info');
-}
-
-// ========================
-// 包材プルダウンの更新（商品タイプ・g数で絞り込み）
-// ========================
-function refreshPkgSelects(){
-  const type  = document.getElementById('c_type')?.value || '';
-  const grams = parseFloat(document.getElementById('c_weight')?.value) || 0;
-
-  // 袋プルダウン更新（種別が袋系のみ）
-  const bagKinds = ['レトルト袋','レトルトパウチ','スパウトパウチ','三方袋','冷蔵袋','冷凍袋','ナイロン袋','袋'];
-  const bagItems = pkgMasterItems.filter(p => {
-    if(!bagKinds.includes(p.kind)) return false;
-    // 商品タイプフィルター
-    if(p.ptype && p.ptype !== type) return false;
-    // g数フィルター
-    if(p.gmin && grams > 0 && grams < p.gmin) return false;
-    if(p.gmax && grams > 0 && grams > p.gmax) return false;
-    return true;
-  });
-
-  const bagSel = document.getElementById('c_pkg_bag_select');
-  if(bagSel){
-    const cur = bagSel.value;
-    bagSel.innerHTML = '<option value="">— 袋を選択（または手入力）—</option>' +
-      bagItems.map(p =>
-        `<option value="${p.id}">${p.name}（${p.price}円/枚）${p.gmin||p.gmax?` [${p.gmin||0}〜${p.gmax||'∞'}g]`:''}</option>`
-      ).join('');
-    if(cur) bagSel.value = cur;
-    // g数・タイプに合う袋が1つなら自動選択
-    if(bagItems.length === 1 && grams > 0){
-      bagSel.value = String(bagItems[0].id);
-      applyBagFromSelect();
-    }
-    const hint = document.getElementById('h_pkg_bag_select');
-    if(hint) hint.textContent = bagItems.length ? `${bagItems.length}件該当` : '条件に合う袋なし';
-  }
-
-  // 外箱プルダウン更新
-  const boxItems = pkgMasterItems.filter(p => p.kind === '外箱');
-  const boxSel = document.getElementById('c_pkg_box_select');
-  if(boxSel){
-    const cur = boxSel.value;
-    boxSel.innerHTML = '<option value="">— 外箱を選択（または手入力）—</option>' +
-      boxItems.map(p =>
-        `<option value="${p.id}">${p.name}（${p.price}円/箱・${p.qty||'?'}個入）</option>`
-      ).join('');
-    if(cur) boxSel.value = cur;
-    const hint = document.getElementById('h_pkg_box_select');
-    if(hint) hint.textContent = boxItems.length ? `${boxItems.length}件登録` : '外箱未登録';
-  }
-}
-
-// 袋マスターから選択して反映
-function applyBagFromSelect(){
-  const sel = document.getElementById('c_pkg_bag_select');
-  if(!sel || !sel.value){ return; }
-  const p = pkgMasterItems.find(x => x.id === parseInt(sel.value));
-  if(!p) return;
-  const bagEl = document.getElementById('c_pkg_bag');
-  if(bagEl) bagEl.value = p.price;
-  const hint = document.getElementById('h_pkg_bag');
-  if(hint) hint.textContent = `✅ ${p.name} / ${p.maker||''}`;
-  calcPkg();
-  toast(`袋：${p.name}（${p.price}円/枚）を反映`,'info');
-}
-
-// 外箱マスターから選択して反映
-function applyBoxFromSelect(){
-  const sel = document.getElementById('c_pkg_box_select');
-  if(!sel || !sel.value){ return; }
-  const p = pkgMasterItems.find(x => x.id === parseInt(sel.value));
-  if(!p) return;
-  const boxPrice = document.getElementById('c_pkg_box_price');
-  const boxQty   = document.getElementById('c_pkg_box_qty');
-  if(boxPrice) boxPrice.value = p.price;
-  if(boxQty && p.qty) boxQty.value = p.qty;
-  const hint = document.getElementById('h_pkg_box_select');
-  if(hint) hint.textContent = `✅ ${p.name} / ${p.qty||'?'}個入`;
-  calcPkg();
-  toast(`外箱：${p.name}（${p.price}円/箱・${p.qty||'?'}個入）を反映`,'info');
-}
-
-// onTypeChange に refreshPkgSelects を追加
-// ========================
-// 包材マスターのaddPkgItemにg数・タイプを保存
-// ========================
-let pkgMasterItems = S.get('fcs4_pkgm', []);
-window._pkgMasterItems = pkgMasterItems;
-
-function addPkgItem(){
-  const name=document.getElementById('m_pkg_name').value.trim();
-  const price=parseFloat(document.getElementById('m_pkg_price').value);
-  if(!name){toast('包材名を入力してください','error');return;}
-  if(isNaN(price)||price<=0){toast('単価を入力してください','error');return;}
-  const existing=pkgMasterItems.findIndex(p=>p.name===name);
-  const item={
-    id:Date.now(),name,price,
-    kind:document.getElementById('m_pkg_kind').value,
-    size:document.getElementById('m_pkg_size').value,
-    qty:parseInt(document.getElementById('m_pkg_qty').value)||0,
-    code:document.getElementById('m_pkg_code').value,
-    maker:document.getElementById('m_pkg_maker').value,
-    note:document.getElementById('m_pkg_note').value,
-    gmin:parseFloat(document.getElementById('m_pkg_gmin')?.value)||0,
-    gmax:parseFloat(document.getElementById('m_pkg_gmax')?.value)||0,
-    ptype:document.getElementById('m_pkg_type')?.value||'',
-  };
-  if(existing>=0){
-    pkgMasterItems[existing]={...pkgMasterItems[existing],...item,id:pkgMasterItems[existing].id};
-    toast(`「${name}」の単価を更新しました`);
-  } else {
-    pkgMasterItems.push(item);
-    toast(`「${name}」を登録しました`);
-  }
-  syncSet('fcs4_pkgm',pkgMasterItems);
-  window._pkgMasterItems=pkgMasterItems;
-  renderPkgMasterList();
-  refreshPkgSelects();
-  clearPkgForm();
-}
-function editPkgItem(id){
-  const p=pkgMasterItems.find(x=>x.id===id);if(!p)return;
-  document.getElementById('m_pkg_edit_id').value=id;
-  document.getElementById('m_pkg_name').value=p.name;
-  document.getElementById('m_pkg_kind').value=p.kind||'レトルト袋';
-  document.getElementById('m_pkg_size').value=p.size||'';
-  document.getElementById('m_pkg_qty').value=p.qty||'';
-  document.getElementById('m_pkg_price').value=p.price;
-  document.getElementById('m_pkg_code').value=p.code||'';
-  document.getElementById('m_pkg_maker').value=p.maker||'';
-  document.getElementById('m_pkg_note').value=p.note||'';
-  const gminEl=document.getElementById('m_pkg_gmin');if(gminEl)gminEl.value=p.gmin||'';
-  const gmaxEl=document.getElementById('m_pkg_gmax');if(gmaxEl)gmaxEl.value=p.gmax||'';
-  const ptypeEl=document.getElementById('m_pkg_type');if(ptypeEl)ptypeEl.value=p.ptype||'';
-  document.getElementById('pkgFormTitle').textContent='包材を編集';
-  document.getElementById('pkgAddBtn').style.display='none';
-  document.getElementById('pkgSaveBtn').style.display='';
-  document.getElementById('pkgCancelBtn').style.display='';
-  window.scrollTo(0,0);
-}
-function saveEditPkgItem(){
-  const id=parseInt(document.getElementById('m_pkg_edit_id').value);
-  const name=document.getElementById('m_pkg_name').value.trim();
-  const price=parseFloat(document.getElementById('m_pkg_price').value);
-  if(!name||isNaN(price)){toast('入力内容を確認してください','error');return;}
-  const idx=pkgMasterItems.findIndex(p=>p.id===id);if(idx<0)return;
-  pkgMasterItems[idx]={
-    ...pkgMasterItems[idx],name,price,
-    kind:document.getElementById('m_pkg_kind').value,
-    size:document.getElementById('m_pkg_size').value,
-    qty:parseInt(document.getElementById('m_pkg_qty').value)||0,
-    code:document.getElementById('m_pkg_code').value,
-    maker:document.getElementById('m_pkg_maker').value,
-    note:document.getElementById('m_pkg_note').value,
-  };
-  syncSet('fcs4_pkgm',pkgMasterItems);
-  window._pkgMasterItems=pkgMasterItems;
-  renderPkgMasterList();cancelEditPkgItem();
-  toast('包材情報を更新しました');
-}
-function cancelEditPkgItem(){
-  clearPkgForm();
-  document.getElementById('m_pkg_edit_id').value='';
-  document.getElementById('pkgFormTitle').textContent='包材登録';
-  document.getElementById('pkgAddBtn').style.display='';
-  document.getElementById('pkgSaveBtn').style.display='none';
-  document.getElementById('pkgCancelBtn').style.display='none';
-}
-function clearPkgForm(){
-  ['m_pkg_name','m_pkg_size','m_pkg_qty','m_pkg_price','m_pkg_code','m_pkg_maker','m_pkg_note','m_pkg_gmin','m_pkg_gmax'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
-  const pt=document.getElementById('m_pkg_type');if(pt)pt.value='';
-}
-function delPkgItem(id){
-  if(!confirm('この包材を削除しますか？'))return;
-  pkgMasterItems=pkgMasterItems.filter(p=>p.id!==id);
-  syncSet('fcs4_pkgm',pkgMasterItems);
-  window._pkgMasterItems=pkgMasterItems;
-  renderPkgMasterList();toast('削除しました');
-}
-function renderPkgMasterList(){
-  const tbody=document.getElementById('pkgMasterList');if(!tbody)return;
-  const sorted=[...pkgMasterItems].sort((a,b)=>a.kind.localeCompare(b.kind,'ja')||(a.name.localeCompare(b.name,'ja')));
-  if(!sorted.length){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--text3)">登録なし</td></tr>';return;
-  }
-  tbody.innerHTML=sorted.map(p=>`<tr>
-    <td><strong>${p.name}</strong>${p.note?`<br><span style="font-size:11px;color:var(--text3)">${p.note}</span>`:''}</td>
-    <td><span style="font-size:11px;padding:2px 7px;background:var(--bg3);border-radius:4px">${p.kind||'—'}</span></td>
-    <td style="font-size:12px">${p.size||'—'}</td>
-    <td class="mono tr">${p.qty?p.qty.toLocaleString()+'枚':'—'}</td>
-    <td class="mono tr" style="font-weight:700;color:var(--accent)">${parseFloat(p.price).toFixed(2)}円</td>
-    <td style="font-size:12px">${p.maker||'—'}</td>
-    <td style="display:flex;gap:4px;min-width:130px">
-      <button class="btn btn-s btn-sm" onclick="editPkgItem(${p.id})">✏️ 編集</button>
-      <button class="btn btn-d btn-sm" onclick="delPkgItem(${p.id})">削除</button>
-    </td>
-  </tr>`).join('');
-}
-function exportPkgMasterCSV(){
-  const header=['包材名','単価(円/枚)','種別','サイズ','入数','商品コード','仕入先','備考'];
-  const rows=[header,...pkgMasterItems.map(p=>[p.name,p.price,p.kind||'',p.size||'',p.qty||'',p.code||'',p.maker||'',p.note||''])];
-  downloadCSV(`包材マスター_${new Date().toISOString().split('T')[0]}.csv`,rows);
-  toast('包材マスターCSVを出力しました');
-}
-function importPkgMasterCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const text=ev.target.result.replace(/^\uFEFF/,'');
-    const lines=text.split(/\r?\n/).filter(l=>l.trim());
-    if(lines.length<2){toast('データがありません','error');return;}
-    let added=0,updated=0,skipped=0;
-    for(let i=1;i<lines.length;i++){
-      const c=parseCSVLine(lines[i]);
-      const name=(c[0]||'').trim();
-      const price=parseFloat(c[1]);
-      if(!name||isNaN(price)){skipped++;continue;}
-      const existing=pkgMasterItems.findIndex(p=>p.name===name);
-      const item={name,price,kind:c[2]||'その他',size:c[3]||'',qty:parseInt(c[4])||0,code:c[5]||'',maker:c[6]||'',note:c[7]||''};
-      if(existing>=0){pkgMasterItems[existing]={...pkgMasterItems[existing],...item};updated++;}
-      else{pkgMasterItems.push({id:Date.now()+i,...item});added++;}
-    }
-    syncSet('fcs4_pkgm',pkgMasterItems);
-    window._pkgMasterItems=pkgMasterItems;
-    renderPkgMasterList();
-    toast(`新規${added}件・更新${updated}件・スキップ${skipped}件`);
-    e.target.value='';
-  };
-  reader.readAsText(file,'UTF-8');
-}
-
-// showMTabに包材タブを追加
-function showMTab(t,btn){
-  // 全マスタータブを非表示
-  ['co','costs','mat','ship','pkg'].forEach(k=>{
-    const el=document.getElementById('mt-'+k);
-    if(el) el.style.display = (k===t) ? '' : 'none';
-  });
-  // タブボタンのactive切替
-  document.querySelectorAll('#page-master .tab').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  // タブ別の再描画
-  if(t==='co')    renderCoList();
-  if(t==='costs') calcLUMaster();
-  if(t==='mat')   renderMatList();
-  if(t==='ship')  renderShipList();
-  if(t==='pkg')   renderPkgMasterList();
-}
-
-// ========================
-// 商品別加工費マスター
-// ========================
-
-function saveProcRecord(){
-  const product = document.getElementById('m_proc_product')?.value.trim();
-  const ratio   = parseFloat(document.getElementById('m_sim_ratio')?.value)||0;
-  if(!product){ toast('商品名を入力してください','error'); return; }
-  if(!ratio){   toast('割合（%）を入力してください','error'); return; }
-
-  const lm=CM.lm||0, um=CM.um||0, mp=CM.mp||1;
-  const laborPer = lm>0?(lm*(ratio/100))/mp:0;
-  const utilPer  = um>0?(um*(ratio/100))/mp:0;
-  const total    = laborPer+utilPer;
-
-  const existing = procMaster.findIndex(p=>p.product===product);
-  if(existing>=0){
-    procMaster[existing]={...procMaster[existing],ratio,laborPer,utilPer,total};
-    toast(`「${product}」の加工費を更新しました`);
-  } else {
-    procMaster.push({id:Date.now(),product,ratio,laborPer,utilPer,total});
-    toast(`「${product}」の加工費を登録しました`);
-  }
-  syncSet('fcs4_proc',procMaster);
-  window._procMaster=procMaster;
-  renderProcMasterList();
-  refreshProcSelect();
-}
-
-function delProcRecord(id){
-  procMaster=procMaster.filter(p=>p.id!==id);
-  syncSet('fcs4_proc',procMaster);
-  window._procMaster=procMaster;
-  renderProcMasterList();
-  refreshProcSelect();
-  toast('削除しました');
-}
-
-function renderProcMasterList(){
-  const tbody=document.getElementById('procMasterList');
-  if(!tbody)return;
-  if(!procMaster.length){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3)">登録なし</td></tr>';
-    return;
-  }
-  tbody.innerHTML=procMaster.map(p=>`<tr>
-    <td><strong>${p.product}</strong></td>
-    <td class="mono tr">${p.ratio}%</td>
-    <td class="mono tr">${p.laborPer.toFixed(2)}</td>
-    <td class="mono tr">${p.utilPer.toFixed(2)}</td>
-    <td class="mono tr text-accent" style="font-weight:700">${p.total.toFixed(2)}</td>
-    <td style="display:flex;gap:4px">
-      <button class="btn btn-s btn-sm" onclick="applyProcToCalcById(${p.id})">→ 試算に反映</button>
-      <button class="btn btn-d btn-sm" onclick="delProcRecord(${p.id})">削除</button>
-    </td>
-  </tr>`).join('');
-}
-
-function refreshProcSelect(){
-  const sel=document.getElementById('c_proc_select');
-  if(!sel)return;
-  sel.innerHTML='<option value="">— 商品を選んで加工費を自動入力 —</option>'+
-    procMaster.map(p=>`<option value="${p.id}">${p.product}（人件費${p.laborPer.toFixed(1)}・光熱費${p.utilPer.toFixed(1)}・合計${p.total.toFixed(1)}円/個）</option>`).join('');
-  // 選択中のものを復元
-  if(window._procSelected){
-    sel.value=String(window._procSelected.id);
-  }
-}
-
-function applyProcToCalc(){
-  const ratio=parseFloat(document.getElementById('m_sim_ratio')?.value)||0;
-  const lr=document.getElementById('c_lr');
-  if(lr)lr.value=ratio;
-  calcLU();
-  // 試算画面に移動
-  showPage('calc',document.querySelectorAll('.nav-item')[0]);
-  toast('加工費の割合を試算画面に反映しました');
-}
-
-// ========================
-// LABOR/UTIL CALC（試算画面・マスタータブ共通）
-// ========================
-function calcLU(){
-  // マスターから月次費用を取得
-  const lm = CM.lm || 0;
-  const um = CM.um || 0;
-  const mp = CM.mp || 0; // 0のときは計算しない
-
-  // 試算画面の割合（未入力=0、0のときは計算せず0表示）
-  const lrEl = document.getElementById('c_lr');
-  const lr = lrEl ? (parseFloat(lrEl.value) || 0) : 0;
-
-  // 割合が入力されており、マスターの生産数も設定されている場合のみ計算
-  const lPer = (lm > 0 && mp > 0 && lr > 0) ? (lm * (lr / 100)) / mp : 0;
-  const uPer = (um > 0 && mp > 0 && lr > 0) ? (um * (lr / 100)) / mp : 0;
-  const procTotal = lPer + uPer;
-
-  // 試算画面の表示更新
-  const el_l = document.getElementById('r_labor_per');
-  if(el_l) el_l.textContent = lPer > 0 ? lPer.toFixed(2) + ' 円' : '— 円';
-  const el_u = document.getElementById('r_util_per');
-  if(el_u) el_u.textContent = uPer > 0 ? uPer.toFixed(2) + ' 円' : '— 円';
-  const el_p = document.getElementById('r_proc_total');
-  if(el_p) el_p.textContent = procTotal > 0 ? procTotal.toFixed(2) + ' 円' : '— 円';
-
-  // hint更新
-  const hl = document.getElementById('h_lm_calc');
-  const hu = document.getElementById('h_um_calc');
-  if(hl) hl.textContent = (lm > 0 && mp > 0)
-    ? `月額¥${lm.toLocaleString()}・生産${mp.toLocaleString()}個`
-    : 'マスター未設定（マスター登録→コスト単価で設定）';
-  if(hu) hu.textContent = (um > 0 && mp > 0)
-    ? `月額¥${um.toLocaleString()}・生産${mp.toLocaleString()}個`
-    : 'マスター未設定（マスター登録→コスト単価で設定）';
-
-  // 警告表示：割合未入力
-  const warnEl = document.getElementById('proc_ratio_warn');
-  if(warnEl) warnEl.style.display = (lm > 0 && lr === 0) ? '' : 'none';
-
-  calc();
-}
-
-// マスタータブのシミュレーション計算
-function calcLUMaster(){
-  const lm=fv('m_lm')||CM.lm||0;
-  const um=fv('m_um')||CM.um||0;
-  const mp=fv('m_mp')||CM.mp||1;
-  const ratio=fv('m_sim_ratio')||100;
-
-  const lPer=lm>0?(lm*(ratio/100))/mp:0;
-  const uPer=um>0?(um*(ratio/100))/mp:0;
-  const total=lPer+uPer;
-
-  const el_l=document.getElementById('m_r_labor');
-  if(el_l)el_l.textContent=lPer>0?lPer.toFixed(2)+' 円':'— 円';
-  const el_u=document.getElementById('m_r_util');
-  if(el_u)el_u.textContent=uPer>0?uPer.toFixed(2)+' 円':'— 円';
-  const el_t=document.getElementById('m_r_proc_total');
-  if(el_t)el_t.textContent=total>0?total.toFixed(2)+' 円':'— 円';
-}
-
-// ========================
-// CALC MATERIALS
-// ========================
-function openMatModal(){
-  if(!matMaster.length){toast('原材料マスターが未登録です','error');return;}
-  document.getElementById('matSearch').value='';
-  document.getElementById('matCatFilter').value='';
-  document.getElementById('matOrgFilter').checked=false;
-  renderMatModal();
-  document.getElementById('modalMat').classList.add('open');
-}
-function addMatManual(){
-  calcMats.push({id:nextId++,name:'',price:0,usage:0,organic:false,limited:false});
-  renderMatRows();
-}
-function addMatFromMaster(mid){
-  const m=matMaster.find(x=>x.id===mid);if(!m)return;
-  calcMats.push({id:nextId++,name:m.name,price:m.price,usage:0,organic:!!m.organic,limited:!!m.limited,masterId:m.id});
-  closeModal('modalMat');renderMatRows();
-}
-function removeMat(id){calcMats=calcMats.filter(m=>m.id!==id);renderMatRows();calc();}
-function updateMat(id,field,val){
-  const m=calcMats.find(x=>x.id===id);
-  if(!m)return;
-  if(field==='name')m.name=val;
-  else if(field==='organic'){m.organic=val;renderMatRows();return;}
-  else if(field==='limited'){m.limited=val;renderMatRows();return;}
-  else m[field]=parseFloat(val)||0;
-  updateMatRow(id);calc();
-}
-
-// 材料名 blur → マスター照合してオートフィル
-function onMatNameBlur(id, val){
-  const m=calcMats.find(x=>x.id===id);
-  if(!m)return;
-  const name=val.trim();
-  if(!name)return;
-  m.name=name;
-  // マスターに存在するか確認
-  const found=matMaster.find(x=>x.name===name);
-  if(found){
-    // マスターにある → 単価を自動入力
-    m.price=found.price;
-    m.organic=!!found.organic;
-    m.limited=!!found.limited;
-    m.masterId=found.id;
-    renderMatRows();
-    // 入力後にすぐ単価をフィールドに反映
-    const row=document.querySelector(`tr[data-mid="${id}"]`);
-    if(row){
-      const priceInput=row.querySelector('input[type="number"]');
-      if(priceInput)priceInput.value=found.price;
-    }
-    toast(`✅「${name}」マスターから単価¥${found.price.toLocaleString()}を自動入力`,'info');
-  }
-  // マスターにない場合は単価入力後に確認（onMatPriceBlurで処理）
-  calc();
-}
-
-// 単価 blur → 材料名もあって、マスター未登録なら登録を促す
-function onMatPriceBlur(id, val){
-  const m=calcMats.find(x=>x.id===id);
-  if(!m)return;
-  const price=parseFloat(val);
-  if(!m.name||isNaN(price)||price<=0)return;
-  m.price=price;
-  // 既にマスターと紐付き済み → スキップ
-  if(m.masterId)return;
-  // マスターに既に存在 → スキップ
-  if(matMaster.find(x=>x.name===m.name))return;
-  // マスター未登録 → 確認ダイアログ表示
-  showMatRegisterDialog(id, m.name, price);
-}
-
-// マスター未登録の材料を登録するか確認するダイアログを表示
-function showMatRegisterDialog(calcId, name, price){
-  const old=document.getElementById('matRegDialog');
-  if(old)old.remove();
-  const dlg=document.createElement('div');
-  dlg.id='matRegDialog';
-  dlg._calcId=calcId; dlg._name=name; dlg._price=price;
-  dlg.style.cssText='position:fixed;bottom:80px;right:20px;z-index:9999;background:var(--surface2);border:1.5px solid var(--accent);border-radius:12px;padding:16px 18px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,.5)';
-  dlg.innerHTML=
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
-      '<span style="font-size:20px">📝</span>'+
-      '<div style="flex:1">'+
-        '<div style="font-size:13px;font-weight:700;color:var(--accent)">マスター未登録の材料です</div>'+
-        '<div id="matRegName" style="font-size:12px;font-weight:700;color:var(--text);margin-top:2px"></div>'+
-        '<div id="matRegPrice" style="font-size:11px;color:var(--accent)"></div>'+
-      '</div>'+
-      '<button id="matRegClose" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px">✕</button>'+
-    '</div>'+
-    '<div class="fg g2" style="margin-bottom:12px">'+
-      '<div class="field">'+
-        '<label style="font-size:11px">カテゴリ</label>'+
-        '<select id="matRegCat" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:6px 10px;font-size:12px;width:100%">'+
-          '<option value="肉類">🥩 肉類</option>'+
-          '<option value="魚介">🐟 魚介</option>'+
-          '<option value="野菜">🥦 野菜</option>'+
-          '<option value="調味料">🧂 調味料</option>'+
-          '<option value="穀類">🌾 穀類</option>'+
-          '<option value="乳製品">🥛 乳製品</option>'+
-          '<option value="その他" selected>📦 その他</option>'+
-        '</select>'+
-      '</div>'+
-      '<div class="field" style="padding-top:16px">'+
-        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">'+
-          '<input type="checkbox" id="matRegOrg" style="accent-color:var(--organic);width:16px;height:16px">'+
-          '<span style="font-size:12px">🌿 有機材料</span>'+
-        '</label>'+
-      '</div>'+
-    '</div>'+
-    '<div style="display:flex;gap:8px">'+
-      '<button id="matRegBtn" class="btn btn-p" style="flex:1;font-size:13px">✅ マスターに登録</button>'+
-      '<button id="matRegSkip" class="btn btn-s" style="font-size:13px">今回のみ</button>'+
-    '</div>';
-  document.body.appendChild(dlg);
-  document.getElementById('matRegName').textContent=name;
-  document.getElementById('matRegPrice').textContent='¥'+Number(price).toLocaleString()+' 円/kg';
-  document.getElementById('matRegClose').onclick=()=>dlg.remove();
-  document.getElementById('matRegSkip').onclick=()=>dlg.remove();
-  document.getElementById('matRegBtn').onclick=()=>registerMatFromCalc(dlg._calcId,dlg._name,dlg._price);
-  setTimeout(()=>{if(document.getElementById('matRegDialog'))dlg.remove();},8000);
-}
-
-// ダイアログから原材料マスターに登録
-// ダイアログから原材料マスターに登録
-function registerMatFromCalc(calcId, name, price){
-  const cat=document.getElementById('matRegCat')?.value||'その他';
-  const organic=document.getElementById('matRegOrg')?.checked||false;
-  // マスターに追加
-  const newItem={id:Date.now(),name,price,cat,organic,limited:false,limitedProduct:'',memo:'試算画面から登録'};
-  matMaster.push(newItem);
-  syncSet('fcs4_mat',matMaster);
-  window._matMaster=matMaster;
-  // calcMats にmasterIdを紐付け
-  const m=calcMats.find(x=>x.id===calcId);
-  if(m){m.masterId=newItem.id;m.organic=organic;}
-  renderMatList();
-  document.getElementById('matRegDialog')?.remove();
-  toast(`✅「${name}」を原材料マスターに登録しました`);
-}
-function updateMatRow(id){
-  const m=calcMats.find(x=>x.id===id);if(!m)return;
-  const loss=fv('c_loss')/100;
-  const raw=(m.price/1000)*m.usage;
-  const afterLoss=loss<1?raw/(1-loss):raw;
-  const final=m.organic?afterLoss*1.2:afterLoss;
-  const row=document.querySelector(`tr[data-mid="${id}"]`);
-  if(row){
-    row.querySelector('.td-raw').textContent=raw>0?raw.toFixed(2):'—';
-    row.querySelector('.td-loss').textContent=raw>0?afterLoss.toFixed(2):'—';
-    row.querySelector('.td-final').textContent=raw>0?final.toFixed(2):'—';
-  }
-}
-function renderMatRows(){
-  const loss=fv('c_loss')/100;
-  const tbody=document.getElementById('matRows');
-  if(!calcMats.length){
-    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">材料を追加してください</td></tr>';
-    document.getElementById('matTotalDisp').textContent='0.00';
-    document.getElementById('organicMatNote').style.display='none';
-    calc();return;
-  }
-  tbody.innerHTML=calcMats.map(m=>{
-    const raw=(m.price/1000)*m.usage;
-    const afterLoss=loss<1?raw/(1-loss):raw;
-    const final=m.organic?afterLoss*1.2:afterLoss;
-    const rowClass=m.organic?'mat-row-org':m.limited?'mat-row-lim':'';
-    const inMaster=m.masterId||matMaster.find(x=>x.name===m.name);
-    const masterBadge=inMaster
-      ?'<span style="font-size:9px;color:var(--accent);margin-left:3px" title="マスター登録済み">✅</span>'
-      :(m.name?'<span style="font-size:9px;color:var(--warning);margin-left:3px" title="マスター未登録">⚠️</span>':'');
-    return `<tr data-mid="${m.id}" class="${rowClass}">
-      <td>
-        <div style="display:flex;align-items:center;gap:2px">
-          <input type="text" value="${m.name}" placeholder="材料名"
-            oninput="updateMat(${m.id},'name',this.value)"
-            onblur="onMatNameBlur(${m.id},this.value)"
-            style="flex:1">
-          ${masterBadge}
-        </div>
-      </td>
-      <td style="text-align:center">
-        <input type="checkbox" ${m.organic?'checked':''} onchange="updateMat(${m.id},'organic',this.checked)" title="有機材料（×1.2）" style="width:16px;height:16px;accent-color:var(--organic)">
-      </td>
-      <td style="text-align:center">
-        <input type="checkbox" ${m.limited?'checked':''} onchange="updateMat(${m.id},'limited',this.checked)" title="特定商品限定" style="width:16px;height:16px;accent-color:var(--purple)">
-      </td>
-      <td><input type="number" value="${m.price||''}" placeholder="0" step="0.01"
-        oninput="updateMat(${m.id},'price',this.value)"
-        onblur="onMatPriceBlur(${m.id},this.value)"></td>
-      <td><input type="number" value="${m.usage||''}" placeholder="0" step="0.1" oninput="updateMat(${m.id},'usage',this.value)"></td>
-      <td class="mono ca td-raw">${raw>0?raw.toFixed(2):'—'}</td>
-      <td class="mono td-loss" style="color:var(--info)">${raw>0?afterLoss.toFixed(2):'—'}</td>
-      <td class="mono td-final" style="color:${m.organic?'var(--organic)':'var(--accent2)'};font-weight:600">${raw>0?final.toFixed(2):'—'}${m.organic?'<span style="font-size:9px;opacity:.8"> ×1.2</span>':''}</td>
-      <td><button class="btn btn-d btn-sm" onclick="removeMat(${m.id})">✕</button></td>
-    </tr>`;
-  }).join('');
-  calc();
-}
-function renderMatModal(){
-  const q=(document.getElementById('matSearch')?.value||'').toLowerCase();
-  const cat=document.getElementById('matCatFilter')?.value||'';
-  const orgOnly=document.getElementById('matOrgFilter')?.checked||false;
-  const list=matMaster.filter(m=>{
-    if(q&&!m.name.toLowerCase().includes(q))return false;
-    if(cat&&m.cat!==cat)return false;
-    if(orgOnly&&!m.organic)return false;
-    return true;
-  });
-  document.getElementById('matModalBody').innerHTML=list.length
-    ?list.map(m=>`<tr>
-      <td><strong>${m.name}</strong></td>
-      <td class="mono ca">¥${m.price.toLocaleString()}</td>
-      <td>${m.cat}</td>
-      <td>${m.organic?'<span class="badge b-org">🌿有機</span>':''}${m.limited?'<span class="badge b-lim">🔒限定</span>':''}</td>
-      <td><button class="btn btn-p btn-sm" onclick="addMatFromMaster(${m.id})">追加</button></td>
-    </tr>`).join('')
-    :'<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--text3)">見つかりません</td></tr>';
-}
-function filterMatModal(){renderMatModal();}
-
-// ========================
-// PACKAGING COST CALC
-// ========================
-function calcPkg(){
-  const bag=fv('c_pkg_bag');
-  // 袋の円/個表示を更新
-  const bagUnit=document.getElementById('r_pkg_bag_unit');
-  if(bagUnit)bagUnit.textContent=bag>0?(bag.toFixed(2)+' 円'):'— 円';
-  const boxPrice=fv('c_pkg_box_price');
-  const boxQty=fv('c_pkg_box_qty')||1;
-  const boxPer=boxPrice>0?boxPrice/boxQty:0;
-  const label=fv('c_pkg_label');
-  const other=fv('c_pkg_other');
-  const total=bag+boxPer+label+other;
-
-  const rBox=document.getElementById('r_pkg_box');
-  if(rBox)rBox.textContent=boxPrice>0?boxPer.toFixed(2)+' 円':'— 円';
-  const rTotal=document.getElementById('r_pkg_total');
-  if(rTotal)rTotal.textContent=total>0?total.toFixed(2)+' 円':'— 円';
-  const disp=document.getElementById('pkgTotalDisp');
-  if(disp)disp.textContent=total.toFixed(2);
-  calc();
-}
-function getPkgTotal(){
-  const bag=fv('c_pkg_bag');
-  const boxPrice=fv('c_pkg_box_price');
-  const boxQty=fv('c_pkg_box_qty')||1;
-  const boxPer=boxPrice>0?boxPrice/boxQty:0;
-  return bag+boxPer+fv('c_pkg_label')+fv('c_pkg_other');
-}
-
-// ========================
-// MAIN CALC
-// ========================
-function fv(id){return parseFloat(document.getElementById(id)?.value)||0;}
-
-function calc(){
-  const lot=fv('c_lot')||1;
-  const loss=fv('c_loss')/100;
-  const organic=isOrganic();
-
-  // 材料費計算（有機×1.2、歩留まり適用後）
-  let matTotal=0, organicMatExtra=0;
-  calcMats.forEach(m=>{
-    const raw=(m.price/1000)*m.usage;
-    const afterLoss=loss<1?raw/(1-loss):raw;
-    const final=m.organic?afterLoss*1.2:afterLoss;
-    matTotal+=final;
-    if(m.organic)organicMatExtra+=(afterLoss*0.2);
-  });
-  const matTotalEl=document.getElementById('matTotalDisp');
-  if(matTotalEl)matTotalEl.textContent=matTotal.toFixed(2);
-
-  // 有機材料メモ
-  const orgMatNote=document.getElementById('organicMatNote');
-  const orgMatAmt=document.getElementById('organicMatAmt');
-  if(organicMatExtra>0){if(orgMatNote)orgMatNote.style.display='';if(orgMatAmt)orgMatAmt.textContent=organicMatExtra.toFixed(2);}
-  else{if(orgMatNote)orgMatNote.style.display='none';}
-
-  // 有機管理料（商品名に「有機」が含まれる場合）
-  const organicFee=organic?ORGANIC_FEE:0;
-
-  // 人件費・光熱費（マスターの月次費用×割合÷生産数で計算）
-  const lm=CM.lm||0;
-  const um=CM.um||0;
-  const mp=CM.mp||0;
-  const lrEl2=document.getElementById('c_lr');
-  const lr=lrEl2?(parseFloat(lrEl2.value)||0):0;
-
-  // 商品別マスターから選択済みの場合はその値を優先使用
-  let laborPer, utilPer;
-  if(window._procSelected && document.getElementById('c_proc_select')?.value){
-    laborPer = window._procSelected.laborPer || 0;
-    utilPer  = window._procSelected.utilPer  || 0;
-  } else {
-    laborPer = (lm>0&&mp>0&&lr>0)?(lm*(lr/100))/mp:0;
-    utilPer  = (um>0&&mp>0&&lr>0)?(um*(lr/100))/mp:0;
-  }
-
-  // 送料
-  const shipTotal=getShipTotal();
-  const isSep=document.getElementById('c_sep_ship')?.checked||false;
-
-  // 製造コスト
-  const type=document.getElementById('c_type').value;
-  const typeExtra=CM[{retort:'re',cold:'co2',frozen:'fr'}[type]]||0;
-  const pkgTotal=getPkgTotal();
-  const mfgCost=laborPer+utilPer+fv('c_machine')+pkgTotal+fv('c_insp')+fv('c_other')+typeExtra+shipTotal;
-
-  // 総原価（有機管理料込み）
-  const totalCost=matTotal+mfgCost+organicFee;
-
-  // 売価計算
-  const costForPrice=isSep?totalCost-shipTotal:totalCost;
-  const margin=fv('c_margin')/100;
-  const channel=fv('c_ch')/100;
-  const tax=fv('c_tax')/100;
-  const round=parseInt(document.getElementById('c_round')?.value)||10;
-  const shipPrice=margin<1?costForPrice/(1-margin):costForPrice;
-  const retailEx=channel<1?shipPrice/(1-channel):shipPrice;
-  const retailInc=retailEx*(1+tax);
-  const finalSell=Math.ceil(retailInc/round)*round;
-  const finalShip=Math.ceil(shipPrice/round)*round;
-  const profit=finalShip-totalCost;
-
-  // 結果表示
-  document.getElementById('resultArea').style.display='';
-  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('r_mat',matTotal.toFixed(1));set('r_mfg',mfgCost.toFixed(1));set('r_cost',totalCost.toFixed(1));
-  set('r_sell',finalSell.toLocaleString());set('r_shiprice',finalShip.toLocaleString());
-  set('r_profit',profit.toFixed(1));set('r_lot',Math.round(profit*lot).toLocaleString());
-
-  // 有機カード
-  const orgCard=document.getElementById('organicResultCard');
-  if(organic){
-    if(orgCard)orgCard.style.display='';
-    set('r_org_fee',ORGANIC_FEE);set('r_org_mat',organicMatExtra.toFixed(2));
-    set('r_org_total',(organicFee+organicMatExtra).toFixed(2));
-  } else {
-    if(orgCard)orgCard.style.display='none';
-  }
-
-  // 送料別カード
-  const sn=document.getElementById('r_sep_note'),sc=document.getElementById('sepShipResult');
-  if(isSep&&shipTotal>0){
-    if(sn)sn.style.display='inline';
-    if(sc){sc.style.display='';set('r_prod_only',finalSell.toLocaleString());set('r_ship_amt',shipTotal.toFixed(0));set('r_invoice',(finalSell+shipTotal).toFixed(0));}
-  }else{if(sn)sn.style.display='none';if(sc)sc.style.display='none';}
-
-  // コスト内訳バー
-  const bars=[
-    {l:'材料費',v:matTotal,c:'#4fc08d'},
-    {l:'有機管理料',v:organicFee,c:'#c0ac3e'},
-    {l:'人件費',v:laborPer,c:'#5b9cf6'},
-    {l:'光熱費',v:utilPer,c:'#a78bfa'},
-    {l:'包材費',v:pkgTotal,c:'#f5a623'},
-    {l:'機械償却',v:fv('c_machine'),c:'#fb923c'},
-    {l:'送料',v:shipTotal,c:'#f472b6'},
-    {l:'加工費',v:laborPer+utilPer,c:'#5b9cf6'},{l:'検査・他',v:fv('c_insp')+fv('c_other'),c:'#94a3b8'},
-  ];
-  const bb=document.getElementById('bbars');
-  if(bb)bb.innerHTML=bars.map(b=>{
-    const pct=totalCost>0?Math.min(100,(b.v/totalCost)*100):0;
-    if(b.v<=0)return'';
-    return `<div class="bb-row"><span class="bbl">${b.l}</span><div class="bbt"><div class="bbf" style="background:${b.c};width:${pct}%"></div></div><span class="bbv">${b.v.toFixed(1)}円 / ${pct.toFixed(1)}%</span></div>`;
-  }).join('');
-
-  window._lc={matTotal,organicMatExtra,organicFee,laborPer,utilPer,pkgTotal,mfgCost,totalCost,
-    shipTotal,isSep,shipPrice:finalShip,sellPrice:finalSell,profit,lotProfit:profit*lot,lot,
-    type,organic};
-}
-
-// ========================
-// SAVE RECORD
-// ========================
-function saveRecord(){
-  const co   = document.getElementById('c_company').value;
-  const prod = document.getElementById('c_product').value.trim();
-  const date = document.getElementById('c_date').value;
-  if(!co||!prod||!date){ toast('会社名・商品名・日付は必須です','error'); return; }
-  if(!window._lc){
-    toast('先に「試算する」ボタンを押してから保存してください','error');
-    return;
-  }
-  const lc = window._lc;
-  const newRec = {
-    id: window._editingRecordId || Date.now(), // 編集時は既存ID
-    date, company:co, product:prod,
-    type: document.getElementById('c_type').value,
-    memo: document.getElementById('c_memo').value,
-    lot:  fv('c_lot'),
-    organic: lc.organic, organicFee: lc.organicFee, organicMatExtra: lc.organicMatExtra,
-    matCost: lc.matTotal, laborPer: lc.laborPer, utilPer: lc.utilPer,
-    mfgCost: lc.mfgCost, totalCost: lc.totalCost,
-    shipTotal: lc.shipTotal, isSep: lc.isSep,
-    ships: shipMaster.filter(s=>selShips.has(s.id)),
-    shipPrice: lc.shipPrice, sellPrice: lc.sellPrice,
-    profit: lc.profit, lotProfit: lc.lotProfit,
-    costs:{
-      machine: fv('c_machine'),
-      pkg_bag: fv('c_pkg_bag'), pkg_box_price: fv('c_pkg_box_price'),
-      pkg_box_qty: fv('c_pkg_box_qty'), pkg_label: fv('c_pkg_label'),
-      pkg_other: fv('c_pkg_other'), pkgTotal: getPkgTotal(),
-      proc: (lc.laborPer||0)+(lc.utilPer||0), insp: fv('c_insp'),
-      loss: fv('c_loss'), other: fv('c_other'),
-      lm: CM.lm||0, mp: CM.mp||0, lr: fv('c_lr'), um: CM.um||0,
-      margin: fv('c_margin'), ch: fv('c_ch'), tax: fv('c_tax')
-    },
-    materials: calcMats.map(m=>({name:m.name,price:m.price,usage:m.usage,organic:m.organic,limited:m.limited}))
-  };
-
-  if(window._editingRecordId){
-    // 上書き保存：既存レコードを置き換え
-    const idx = records.findIndex(r => r.id === window._editingRecordId);
-    if(idx >= 0) records[idx] = newRec;
-    else records.unshift(newRec);
-    toast(`✅「${prod}」を上書き保存しました`);
-    // 編集モード解除
-    window._editingRecordId = null;
-    window._procSelected = null;
-    const b = document.getElementById('editingBanner');
-    if(b) b.style.display = 'none';
-    const saveBtn = document.getElementById('saveRecordBtn');
-    if(saveBtn){ saveBtn.textContent='💾 記録に保存'; saveBtn.style.background=''; saveBtn.style.borderColor=''; }
-  } else {
-    // 新規保存
-    records.unshift(newRec);
-    toast(`💾「${prod}」を記録しました${lc.organic?' 🌿有機':''}`);
-  }
-  syncSet('fcs4_rec', records);
-}
-// ========================
-// RECORDS
-// ========================
-const TL={retort:'🟢レトルト',cold:'🔵冷蔵',frozen:'🟣冷凍'};
-function renderRecords(){
-  const co=document.getElementById('f_co')?.value||'';
-  const tp=document.getElementById('f_type')?.value||'';
-  const pr=(document.getElementById('f_prod')?.value||'').toLowerCase();
-  const df=document.getElementById('f_df')?.value||'';
-  const dt=document.getElementById('f_dt')?.value||'';
-  const og=document.getElementById('f_org')?.value||'';
-  const fil=records.filter(r=>{
-    if(co&&r.company!==co)return false;
-    if(tp&&r.type!==tp)return false;
-    if(pr&&!r.product.toLowerCase().includes(pr))return false;
-    if(df&&r.date<df)return false;
-    if(dt&&r.date>dt)return false;
-    if(og==='1'&&!r.organic)return false;
-    if(og==='0'&&r.organic)return false;
-    return true;
-  });
-  const tb=document.getElementById('recBody');
-  if(!fil.length){tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:28px;color:var(--text3)">📂 記録がありません</td></tr>';return;}
-  tb.innerHTML=fil.map(r=>`<tr style="${r.organic?'background:var(--orgdim)':''}">
-    <td class="mono" style="font-size:11px">${r.date}</td>
-    <td><strong>${r.company}</strong></td>
-    <td>${r.product}${r.organic?'<span class="badge b-org" style="margin-left:4px">🌿</span>':''}${r.memo?`<br><span style="font-size:10px;color:var(--text3)">${r.memo}</span>`:''}</td>
-    <td><span class="badge ${r.type==='retort'?'b-r':r.type==='cold'?'b-c':'b-f'}">${TL[r.type]||r.type}</span></td>
-    <td class="mono tr">${r.matCost.toFixed(1)}</td>
-    <td class="mono tr corg">${r.organic?(r.organicFee+r.organicMatExtra).toFixed(1):'—'}</td>
-    <td class="mono tr ca">${r.totalCost.toFixed(1)}</td>
-    <td class="mono tr ca2">${r.shipTotal>0?(r.isSep?'別:':'')+r.shipTotal.toFixed(0):'—'}</td>
-    <td class="mono tr ci2">${r.shipPrice.toLocaleString()}</td>
-    <td class="mono tr ca2">${r.sellPrice.toLocaleString()}</td>
-    <td class="mono tr" style="color:${r.profit>=0?'var(--accent)':'var(--danger)'}">${r.profit.toFixed(1)}</td>
-    <td style="white-space:nowrap;display:flex;gap:4px">
-      <button class="btn btn-s btn-sm" onclick="showDetail(${r.id})">詳細</button>
-      <button class="btn btn-s btn-sm" style="background:var(--adim);color:var(--accent)" onclick="editRecord(${r.id})">✏️ 編集</button>
-      <button class="btn btn-s btn-sm" style="background:rgba(167,139,250,.15);color:var(--purple)" onclick="copyRecord(${r.id})">📋 複写</button>
-      <button class="btn btn-d btn-sm" onclick="delRec(${r.id})">削除</button>
-    </td>
-  </tr>`).join('');
-}
-function delRec(id){if(!confirm('この記録を削除しますか？'))return;records=records.filter(r=>r.id!==id);syncSet('fcs4_rec',records);renderRecords();toast('削除しました');}
-function clearAllRecords(){if(!confirm('全ての試算記録を削除しますか？'))return;records=[];syncSet('fcs4_rec',records);renderRecords();toast('全記録を削除しました');}
-
-// ========================
-// 試算記録 → 編集（試算画面に値を復元）
-// ========================
-function editRecord(id){
-  const r = records.find(x => x.id === id);
-  if(!r){ toast('記録が見つかりません','error'); return; }
-  loadRecordToCalc(r, false);
-  toast(`✏️「${r.product}」を編集中（試算後に上書き保存してください）`,'info');
-}
-
-// 試算記録 → 複写（新しいレコードとして試算画面にコピー）
-function copyRecord(id){
-  const r = records.find(x => x.id === id);
-  if(!r){ toast('記録が見つかりません','error'); return; }
-  loadRecordToCalc(r, true);
-  toast(`📋「${r.product}」を複写しました（内容を変更して保存してください）`,'info');
-}
-
-// 記録データを試算画面に復元する共通関数
-function loadRecordToCalc(r, isCopy){
-  // ① 試算ページに移動
-  showPage('calc', document.querySelectorAll('.nav-item')[0]);
-
-  // ② 基本情報を復元
-  const setVal = (id, v) => { const e = document.getElementById(id); if(e) e.value = v || ''; };
-  setVal('c_company',  r.company);
-  setVal('c_product',  isCopy ? r.product + '（複写）' : r.product);
-  setVal('c_date',     isCopy ? new Date().toISOString().split('T')[0] : r.date);
-  setVal('c_type',     r.type || 'retort');
-  setVal('c_memo',     r.memo || '');
-  setVal('c_lot',      r.lot || 1);
-
-  // ③ 有機フラグ
-  const orgEl = document.getElementById('c_organic');
-  if(orgEl) orgEl.checked = !!r.organic;
-
-  // ④ コスト関連を復元
-  if(r.costs){
-    setVal('c_machine',      r.costs.machine  || 0);
-    setVal('c_insp',         r.costs.insp     || 0);
-    setVal('c_other',        r.costs.other    || 0);
-    setVal('c_loss',         r.costs.loss     || 10);
-    setVal('c_pkg_bag',      r.costs.pkg_bag  || 0);
-    setVal('c_pkg_box_price',r.costs.pkg_box_price || 0);
-    setVal('c_pkg_box_qty',  r.costs.pkg_box_qty   || 0);
-    setVal('c_pkg_label',    r.costs.pkg_label     || 0);
-    setVal('c_pkg_other',    r.costs.pkg_other     || 0);
-    setVal('c_margin',       r.costs.margin   || 30);
-    setVal('c_ch',           r.costs.ch       || 0);
-    setVal('c_tax',          r.costs.tax      || 10);
-    // 加工費の割合を復元
-    if(r.costs.lr){ setVal('c_lr', r.costs.lr); }
-    // procSelectedも復元（保存値を直接使用）
-    if(r.laborPer || r.utilPer){
-      window._procSelected = {
-        laborPer: r.laborPer || 0,
-        utilPer:  r.utilPer  || 0,
-        total:    (r.laborPer||0) + (r.utilPer||0),
-        id:       null
-      };
-      // 加工費の表示を直接更新
-      const el_l = document.getElementById('r_labor_per');
-      const el_u = document.getElementById('r_util_per');
-      const el_p = document.getElementById('r_proc_total');
-      if(el_l) el_l.textContent = (r.laborPer||0).toFixed(2) + ' 円';
-      if(el_u) el_u.textContent = (r.utilPer||0).toFixed(2)  + ' 円';
-      if(el_p) el_p.textContent = ((r.laborPer||0)+(r.utilPer||0)).toFixed(2) + ' 円';
-    }
-  }
-
-  // ⑤ 材料を復元
-  if(r.materials && r.materials.length){
-    calcMats = r.materials.map((m, i) => ({
-      id: Date.now() + i,
-      name:    m.name    || '',
-      price:   m.price   || 0,
-      usage:   m.usage   || 0,
-      organic: m.organic || false,
-      limited: m.limited || false,
-    }));
-    renderMatRows();
-  }
-
-  // ⑥ 送料を復元
-  const shipManual = document.getElementById('c_ship_per_unit_manual');
-  if(shipManual && r.shipTotal > 0) shipManual.value = r.shipTotal.toFixed(2);
-  const sepEl = document.getElementById('c_sep_ship');
-  if(sepEl) sepEl.checked = !!r.isSep;
-
-  // ⑦ 有機・タイプ変更を反映してから再計算
-  setTimeout(() => {
-    autoSetShipType();
-    calcPkg();
-    calcLU();
-    calc();
-    // 編集時は既存IDをセット（saveRecord時に上書き保存できるように）
-    if(!isCopy){
-      window._editingRecordId = r.id;
-      // 上書き保存ボタンを表示
-      const saveBtn = document.getElementById('saveRecordBtn');
-      if(saveBtn){
-        saveBtn.textContent = '💾 上書き保存';
-        saveBtn.style.background = 'var(--adim)';
-        saveBtn.style.borderColor = 'var(--accent)';
-      }
-      showEditingBanner(r.product);
-    } else {
-      window._editingRecordId = null;
-      const saveBtn = document.getElementById('saveRecordBtn');
-      if(saveBtn){
-        saveBtn.textContent = '💾 記録に保存';
-        saveBtn.style.background = '';
-        saveBtn.style.borderColor = '';
-      }
-    }
-  }, 100);
-}
-
-// 編集中バナー表示
-function showEditingBanner(name){
-  let b = document.getElementById('editingBanner');
-  if(!b){
-    b = document.createElement('div');
-    b.id = 'editingBanner';
-    b.style.cssText = 'position:fixed;top:60px;left:0;right:0;z-index:1000;background:var(--adim);border-bottom:2px solid var(--accent);padding:8px 20px;font-size:13px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:10px;';
-    b.innerHTML = '<span>✏️ 編集中：</span><span id="editingBannerName"></span><button onclick="cancelEdit()" style="margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px">編集をキャンセル</button>';
-    document.body.appendChild(b);
-  }
-  document.getElementById('editingBannerName').textContent = name;
-  b.style.display = 'flex';
-}
-
-// 編集キャンセル
-function cancelEdit(){
-  window._editingRecordId = null;
-  window._procSelected = null;
-  const b = document.getElementById('editingBanner');
-  if(b) b.style.display = 'none';
-  const saveBtn = document.getElementById('saveRecordBtn');
-  if(saveBtn){
-    saveBtn.textContent = '💾 記録に保存';
-    saveBtn.style.background = '';
-    saveBtn.style.borderColor = '';
-  }
-  toast('編集をキャンセルしました');
-}
-
-function showDetail(id){
-  const r=records.find(x=>x.id===id);if(!r)return;
-  const row=(l,v,c)=>`<tr><td style="padding:5px 10px;color:var(--text2);font-size:12px;width:55%">${l}</td><td style="padding:5px 10px;font-family:var(--mono);font-size:12px;text-align:right${c?';color:'+c+';font-weight:600':''}">${v}</td></tr>`;
-  let html=`<table style="width:100%;border-collapse:collapse;margin-bottom:12px">
-    ${row('日付',r.date)}${row('会社名',r.company)}${row('商品名',r.product)}
-    ${row('タイプ',TL[r.type]||r.type)}${row('ロット数',r.lot+'個')}
-    ${r.organic?row('有機商品','🌿 有機管理料 +'+r.organicFee+'円/袋','var(--organic)'):''}
-  </table>
-  <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent)">コスト詳細（1個あたり）</div>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
-    ${row('材料費（歩留まり込み）',r.matCost.toFixed(2)+'円','var(--accent)')}
-    ${r.organic?row('　└ 有機材料追加費（×1.2分）',(r.organicMatExtra||0).toFixed(2)+'円','var(--organic)'):''}
-    ${r.organic?row('有機管理料',r.organicFee+'円','var(--organic)'):''}
-    ${row('人件費',(r.laborPer||0).toFixed(2)+'円')}
-    ${row('　└ 月額',r.costs?.lm?'¥'+Number(r.costs.lm).toLocaleString():'-')}
-    ${row('光熱費',(r.utilPer||0).toFixed(2)+'円')}
-    ${row('機械償却費',(r.costs?.machine||0).toFixed(2)+'円')}
-    ${row('包材費合計',(r.costs?.pkgTotal||0).toFixed(2)+'円')}
-    ${row('　└ 袋代',(r.costs?.pkg_bag||0).toFixed(2)+'円')}
-    ${row('　└ 外箱代（按分後）',r.costs?.pkg_box_price&&r.costs?.pkg_box_qty?(r.costs.pkg_box_price/r.costs.pkg_box_qty).toFixed(2)+'円':'—')}
-    ${row('　└ ラベル代',(r.costs?.pkg_label||0).toFixed(2)+'円')}
-    ${row('　└ その他包材',(r.costs?.pkg_other||0).toFixed(2)+'円')}
-    ${row('加工費',(r.costs?.proc||0).toFixed(2)+'円')}
-    ${row('検査費',(r.costs?.insp||0).toFixed(2)+'円')}
-    ${row('廃棄歩留まり',(r.costs?.loss||10)+'%')}
-    ${row('送料',r.shipTotal>0?(r.isSep?'別途請求 ':'')+'¥'+r.shipTotal.toFixed(0):'なし')}
-  </table>`;
-  if(r.ships?.length)html+=`<div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent2)">選択した発送先</div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
-      ${r.ships.map(s=>`<tr><td style="padding:5px 10px;font-size:12px">${s.name}</td><td style="padding:5px 10px;font-family:var(--mono);font-size:12px;text-align:right;color:var(--accent2)">¥${s.price}/個</td></tr>`).join('')}
-    </table>`;
-  html+=`<div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent)">試算結果</div>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
-    ${row('総原価',r.totalCost.toFixed(2)+'円/個','var(--accent)')}
-    ${row('出荷価格（税抜）','¥'+r.shipPrice.toLocaleString(),'var(--accent)')}
-    ${row('推奨売価（税込）','¥'+r.sellPrice.toLocaleString())}
-    ${r.isSep&&r.shipTotal>0?row('送料別合計請求','¥'+(r.sellPrice+r.shipTotal).toFixed(0)):''}
-    ${row('粗利（1個）',r.profit.toFixed(2)+'円')}
-    ${row('1ロット粗利合計','¥'+Math.round(r.lotProfit).toLocaleString())}
-  </table>`;
-  if(r.materials?.length)html+=`<div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;padding-left:8px;border-left:3px solid var(--accent)">使用材料</div>
-    <table style="width:100%;border-collapse:collapse">
-      <tr style="font-size:10px;color:var(--text3)"><th style="padding:4px 10px;text-align:left;background:var(--bg3)">材料名</th><th style="padding:4px 10px;background:var(--bg3)">有機</th><th style="padding:4px 10px;text-align:right;background:var(--bg3)">単価(円/kg)</th><th style="padding:4px 10px;text-align:right;background:var(--bg3)">使用量(g/個)</th></tr>
-      ${r.materials.map(m=>`<tr><td style="padding:5px 10px;font-size:12px">${m.name}</td><td style="padding:5px 10px;font-size:11px">${m.organic?'🌿':''}</td><td style="padding:5px 10px;font-family:var(--mono);font-size:12px;text-align:right">${m.price}</td><td style="padding:5px 10px;font-family:var(--mono);font-size:12px;text-align:right">${m.usage}</td></tr>`).join('')}
-    </table>`;
-  document.getElementById('detailContent').innerHTML=html;
-  document.getElementById('modalDetail').classList.add('open');
-}
-
-// ========================
-// CSV EXPORT / IMPORT
-// ========================
-function esc(v){if(v===null||v===undefined)return'';const s=String(v);return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:s;}
-function downloadCSV(filename,rows){
-  const bom='\uFEFF';
-  const csv=bom+rows.map(r=>r.map(esc).join(',')).join('\r\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=filename;a.click();
-}
-
-// 試算記録CSV
-function exportRecordsCSV(){
-  const co=document.getElementById('csv_f_co')?.value||'';
-  const tp=document.getElementById('csv_f_type')?.value||'';
-  const df=document.getElementById('csv_f_df')?.value||'';
-  const dt=document.getElementById('csv_f_dt')?.value||'';
-  const fil=records.filter(r=>{
-    if(co&&r.company!==co)return false;
-    if(tp&&r.type!==tp)return false;
-    if(df&&r.date<df)return false;
-    if(dt&&r.date>dt)return false;
-    return true;
-  });
-  if(!fil.length){toast('出力対象がありません','error');return;}
-  const header=['日付','会社名','商品名','タイプ','有機','材料費(円)','有機管理料(円)','有機材料加算(円)','製造コスト(円)','送料(円)','送料別','総原価(円)','出荷価格(円)','売価(円)','粗利(円)','ロット数','粗利合計(円)','廃棄歩留まり(%)','備考'];
-  const rows=[header,...fil.map(r=>[
-    r.date,r.company,r.product,TL[r.type]||r.type,r.organic?'有機':'通常',
-    r.matCost.toFixed(2),(r.organicFee||0),(r.organicMatExtra||0).toFixed(2),
-    r.mfgCost.toFixed(2),r.shipTotal,r.isSep?'別途':'込み',
-    r.totalCost.toFixed(2),r.shipPrice,r.sellPrice,
-    r.profit.toFixed(2),r.lot,Math.round(r.lotProfit),
-    r.costs?.loss||10,r.memo||''
-  ])];
-  downloadCSV(`試算記録_${new Date().toISOString().split('T')[0]}.csv`,rows);
-  toast(`${fil.length}件をCSV出力しました`);
-  addLog(`試算記録 ${fil.length}件を出力`);
-}
-
-// 原材料CSV出力
-function exportMatCSV(){
-  if(!matMaster.length){toast('原材料が未登録です','error');return;}
-  const header=['材料名','単価(円/kg)','カテゴリ','有機(1/0)','限定(1/0)','対象商品','備考'];
-  const rows=[header,...matMaster.map(m=>[m.name,m.price,m.cat,m.organic?1:0,m.limited?1:0,m.limitedProduct||'',m.memo||''])];
-  downloadCSV(`原材料マスター_${new Date().toISOString().split('T')[0]}.csv`,rows);
-  toast('原材料CSVを出力しました');addLog('原材料マスター出力');
-}
-
-// 原材料CSVインポート
-function importMatCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const text=ev.target.result.replace(/^\uFEFF/,'');
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      if(lines.length<2){toast('データがありません','error');return;}
-      const header=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
-      // ヘッダー確認
-      if(!header[0].includes('材料名')){toast('フォーマットが違います（ヘッダー行を確認）','error');return;}
-      let added=0,skipped=0;
-      for(let i=1;i<lines.length;i++){
-        const cols=parseCSVLine(lines[i]);
-        const name=(cols[0]||'').trim();
-        const price=parseFloat(cols[1]);
-        if(!name||isNaN(price)){skipped++;continue;}
-        if(matMaster.find(m=>m.name===name)){skipped++;continue;}// 重複スキップ
-        matMaster.push({id:Date.now()+i,name,price,cat:cols[2]||'その他',
-          organic:cols[3]==='1',limited:cols[4]==='1',
-          limitedProduct:cols[5]||'',memo:cols[6]||''});
-        added++;
-      }
-      syncSet('fcs4_mat',matMaster);renderMatList();
-      toast(`${added}件インポート（${skipped}件スキップ）`,'info');
-      addLog(`原材料 ${added}件インポート、${skipped}件スキップ`);
-    }catch(err){toast('インポートエラー: '+err.message,'error');addLog('エラー: '+err.message);}
-    e.target.value='';
-  };
-  reader.readAsText(file,'UTF-8');
-}
-
-// 包材費CSV出力
-function exportPkgCSV(){
-  const header=['包材名','単価(円/枚)','種別','サイズ','入数','備考'];
-  // マスター登録値から生成
-  const rows=[header];
-  const bag=CM.pkg_bag||0, boxPrice=CM.pkg_box_price||0, boxQty=CM.pkg_box_qty||1, label=CM.pkg_label||0;
-  if(bag>0)    rows.push(['袋',bag,'袋','—','1','マスター登録値']);
-  if(boxPrice>0)rows.push(['外箱',boxPrice,'外箱','—',boxQty,'マスター登録値']);
-  if(label>0)  rows.push(['ラベル・シール',label,'ラベル','—','1','マスター登録値']);
-  if(rows.length<=1){toast('包材費マスターに登録データがありません','error');return;}
-  downloadCSV(`包材費マスター_${new Date().toISOString().split('T')[0]}.csv`,rows);
-  toast('包材費CSVを出力しました');addLog('包材費マスター出力');
-}
-
-// 包材費CSVインポート
-function importPkgCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const text=ev.target.result.replace(/^\uFEFF/,'');
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      if(lines.length<2){toast('データがありません','error');return;}
-      const header=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
-      if(!header[0].includes('包材名')&&!header[0].includes('袋')&&!header[0].includes('包材')){
-        toast('フォーマットが違います（ヘッダー行：包材名,単価(円/枚),種別,サイズ,入数,備考）','error');return;
-      }
-      let applied=0,skipped=0;
-      for(let i=1;i<lines.length;i++){
-        const cols=parseCSVLine(lines[i]);
-        const name=(cols[0]||'').trim();
-        const price=parseFloat(cols[1]);
-        const type=(cols[2]||'').trim();
-        const qty=parseInt(cols[4])||1;
-        if(!name||isNaN(price)){skipped++;continue;}
-        // 種別で振り分け
-        if(type.includes('外箱')||name.includes('外箱')||name.includes('箱')){
-          CM.pkg_box_price=price;CM.pkg_box_qty=qty;applied++;
-        } else if(type.includes('ラベル')||name.includes('ラベル')||name.includes('シール')){
-          CM.pkg_label=price;applied++;
-        } else {
-          // 袋・パウチ等はすべて袋代として登録（最後の行が有効）
-          CM.pkg_bag=price;applied++;
-        }
-      }
-      syncSet('fcs4_cm',CM);
-      // フォームに反映
-      if(CM.pkg_bag)document.getElementById('m_pkg_bag').value=CM.pkg_bag;
-      if(CM.pkg_box_price)document.getElementById('m_pkg_box_price').value=CM.pkg_box_price;
-      if(CM.pkg_box_qty)document.getElementById('m_pkg_box_qty').value=CM.pkg_box_qty;
-      if(CM.pkg_label)document.getElementById('m_pkg_label').value=CM.pkg_label;
-      calcPkg();
-      toast(`${applied}件の包材費を反映しました（${skipped}件スキップ）`,'info');
-      addLog(`包材費 ${applied}件インポート、${skipped}件スキップ`);
-    }catch(err){toast('インポートエラー: '+err.message,'error');addLog('エラー: '+err.message);}
-    e.target.value='';
-  };
-  reader.readAsText(file,'UTF-8');
-}
-
-// ========================
-// ドラッグ&ドロップ
-// ========================
-function onDragOver(e){
-  e.preventDefault();
-  const z=document.getElementById('dropZone');
-  if(z){z.style.background='var(--adim)';z.style.borderColor='var(--accent)';}
-}
-function onDragLeave(e){
-  const z=document.getElementById('dropZone');
-  if(z){z.style.background='var(--bg3)';z.style.borderColor='var(--accent)';}
-}
-function onDrop(e){
-  e.preventDefault();
-  onDragLeave(e);
-  const files=Array.from(e.dataTransfer.files).filter(f=>f.name.endsWith('.csv'));
-  if(!files.length){toast('CSVファイルを選択してください','error');return;}
-  processBulkFiles(files);
-}
-function bulkImportCSV(e){
-  const files=Array.from(e.target.files).filter(f=>f.name.endsWith('.csv'));
-  if(!files.length)return;
-  processBulkFiles(files);
-  e.target.value='';
-}
-
-// ========================
-// 一括ファイル処理（自動判別）
-// ========================
-function processBulkFiles(files){
-  const area=document.getElementById('importResultArea');
-  const list=document.getElementById('importResultList');
-  if(area)area.style.display='';
-  if(list)list.innerHTML='<div style="font-size:12px;color:var(--text3)">処理中...</div>';
-
-  let results=[];
-  let done=0;
-
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const text=ev.target.result.replace(/^\uFEFF/,'');
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      if(lines.length<2){results.push({file:file.name,type:'不明',msg:'データなし',ok:false});check();}
-
-      const headerRaw=lines[0];
-      const header=headerRaw.split(',').map(h=>h.trim().replace(/"/g,''));
-      const headerStr=header.join(',');
-
-      // 自動判別
-      let type='unknown';
-      if(header.some(h=>h.includes('材料名'))||header.some(h=>h.includes('円/kg'))) type='mat';
-      else if(header.some(h=>h.includes('発送先'))||header.some(h=>h.includes('送料'))) type='ship';
-      else if(header.some(h=>h.includes('包材名'))||header.some(h=>h.includes('円/枚'))) type='pkg';
-
-      let result={file:file.name,type,ok:false,msg:''};
-
-      if(type==='mat'){
-        const r=importMatFromLines(lines);
-        result={...result,...r,type:'🥩 原材料'};
-      } else if(type==='ship'){
-        const r=importShipFromLines(lines);
-        result={...result,...r,type:'🚚 配送費'};
-      } else if(type==='pkg'){
-        const r=importPkgFromLines(lines);
-        result={...result,...r,type:'📦 包材費'};
-      } else {
-        result.msg='CSVの種類を判別できませんでした。ヘッダー行を確認してください。';
-      }
-
-      results.push(result);
-      done++;
-      if(done===files.length){
-        // 全ファイル処理完了 → 結果表示
-        if(list){
-          list.innerHTML=results.map(r=>`
-            <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:7px;margin-bottom:6px;font-size:12px">
-              <span style="font-size:16px">${r.ok?'✅':'❌'}</span>
-              <div style="flex:1">
-                <div style="font-weight:700;color:${r.ok?'var(--accent)':'var(--danger)'}">${r.file}</div>
-                <div style="color:var(--text3)">${r.type} ／ ${r.msg}</div>
-              </div>
-            </div>`).join('');
-        }
-        // Firebase同期
-        if(typeof syncToFirebase==='function') syncToFirebase();
-      }
-    };
-    reader.readAsText(file,'UTF-8');
-  });
-}
-
-// ========================
-// 各種インポート（行データから処理・上書き更新対応）
-// ========================
-function importMatFromLines(lines){
-  const cols=parseCSVLine(lines[0]);
-  if(!cols[0].includes('材料名'))return{ok:false,msg:'ヘッダーが不正です'};
-  let added=0,updated=0,skipped=0;
-  for(let i=1;i<lines.length;i++){
-    const c=parseCSVLine(lines[i]);
-    const name=(c[0]||'').trim();
-    const price=parseFloat(c[1]);
-    if(!name||isNaN(price)){skipped++;continue;}
-    const existing=matMaster.findIndex(m=>m.name===name);
-    if(existing>=0){
-      // 既存 → 単価を上書き更新
-      matMaster[existing].price=price;
-      if(c[2])matMaster[existing].cat=c[2];
-      if(c[3]!==undefined)matMaster[existing].organic=c[3]==='1';
-      if(c[4]!==undefined)matMaster[existing].limited=c[4]==='1';
-      if(c[5])matMaster[existing].limitedProduct=c[5];
-      if(c[6])matMaster[existing].memo=c[6];
-      updated++;
-    } else {
-      matMaster.push({id:Date.now()+i,name,price,cat:c[2]||'その他',
-        organic:c[3]==='1',limited:c[4]==='1',
-        limitedProduct:c[5]||'',memo:c[6]||''});
-      added++;
-    }
-  }
-  syncSet('fcs4_mat',matMaster);
-  window._matMaster=matMaster;
-  renderMatList();
-  return{ok:true,msg:`新規追加${added}件・単価更新${updated}件・スキップ${skipped}件`};
-}
-
-function importShipFromLines(lines){
-  const cols=parseCSVLine(lines[0]);
-  if(!cols[0].includes('発送先')&&!cols[0].includes('送料'))return{ok:false,msg:'ヘッダーが不正です'};
-  let added=0,updated=0,skipped=0;
-  for(let i=1;i<lines.length;i++){
-    const c=parseCSVLine(lines[i]);
-    const name=(c[0]||'').trim();
-    const price=parseFloat(c[1]);
-    if(!name||isNaN(price)){skipped++;continue;}
-    const existing=shipMaster.findIndex(s=>s.name===name);
-    if(existing>=0){
-      shipMaster[existing].price=price;
-      if(c[2])shipMaster[existing].type=c[2];
-      if(c[3])shipMaster[existing].memo=c[3];
-      updated++;
-    } else {
-      shipMaster.push({id:Date.now()+i,name,price,type:c[2]||'normal',memo:c[3]||''});
-      added++;
-    }
-  }
-  syncSet('fcs4_ship',shipMaster);
-  window._shipMaster=shipMaster;
-  renderShipList();renderShipOpts();
-  return{ok:true,msg:`新規追加${added}件・送料更新${updated}件・スキップ${skipped}件`};
-}
-
-function importPkgFromLines(lines){
-  const cols=parseCSVLine(lines[0]);
-  if(!cols[0].includes('包材名')&&!cols[1]?.includes('円/枚'))return{ok:false,msg:'ヘッダーが不正です'};
-  let applied=0,updated=0,skipped=0;
-  for(let i=1;i<lines.length;i++){
-    const c=parseCSVLine(lines[i]);
-    const name=(c[0]||'').trim();
-    const price=parseFloat(c[1]);
-    const type=(c[2]||'').trim();
-    const qty=parseInt(c[4])||1;
-    if(!name||isNaN(price)){skipped++;continue;}
-    // 種別で袋・外箱・ラベルに振り分け
-    if(type.includes('外箱')||name.includes('外箱')||name.includes('ケース')){
-      CM.pkg_box_price=price;CM.pkg_box_qty=qty;
-      const el=document.getElementById('m_pkg_box_price');if(el)el.value=price;
-      const el2=document.getElementById('m_pkg_box_qty');if(el2)el2.value=qty;
-    } else if(type.includes('ラベル')||name.includes('ラベル')||name.includes('シール')){
-      CM.pkg_label=price;
-      const el=document.getElementById('m_pkg_label');if(el)el.value=price;
-    } else {
-      CM.pkg_bag=price;
-      const el=document.getElementById('m_pkg_bag');if(el)el.value=price;
-    }
-    applied++;
-  }
-  S.set('fcs4_cm',CM);window._CM=CM;
-  calcPkg();
-  return{ok:true,msg:`${applied}件の包材費を反映（スキップ${skipped}件）`};
-}
-
-// ========================
-// ひな型CSVダウンロード
-// ========================
-function downloadTemplate(type){
-  const templates={
-    mat:{
-      filename:'原材料マスター_ひな型.csv',
-      rows:[
-        ['材料名','単価(円/kg)','カテゴリ','有機(1/0)','限定(1/0)','対象商品','備考'],
-        ['鶏もも肉','800','肉類','0','0','','国産'],
-        ['豚肩ロース','950','肉類','0','0','',''],
-        ['有機トマト','500','野菜','1','0','','有機認定品'],
-        ['人参ダイス','330','野菜','0','0','','一善'],
-        ['醤油18L','7950','調味料','0','0','',''],
-        ['はとむぎ粉25kg','800','穀類','0','0','','日本精麦'],
-        ['原料用牛乳10L','228','乳製品','0','0','','永利牛乳'],
-        ['乾椎茸カット5mm','2650','その他','0','0','','天然素材'],
-      ]
-    },
-    ship:{
-      filename:'配送費マスター_ひな型.csv',
-      rows:[
-        ['発送先名','送料(円/個)','配送種別','備考'],
-        ['九州エリア（常温）','638','normal','佐川陸便60サイズ'],
-        ['関東エリア（常温）','914','normal','佐川陸便60サイズ'],
-        ['北海道（常温）','1870','normal','佐川陸便60サイズ'],
-        ['九州エリア（冷蔵）','892','cold','佐川クール冷蔵60サイズ'],
-        ['関東エリア（冷蔵）','1144','cold','佐川クール冷蔵60サイズ'],
-        ['九州エリア（冷凍）','892','frozen','佐川クール冷凍60サイズ'],
-        ['関東エリア（冷凍）','1144','frozen','佐川クール冷凍60サイズ'],
-      ]
-    },
-    pkg:{
-      filename:'包材費マスター_ひな型.csv',
-      rows:[
-        ['包材名','単価(円/枚)','種別','サイズ','入数','備考'],
-        ['ストロングパックBR-1420H','17.9','レトルト袋','140x200mm','3000','日本食研'],
-        ['ストロングパックHR-1222H','24.6','レトルト袋','120x220mm','3000','日本食研'],
-        ['レトルトパウチ Nタイプ13-18','19.4','レトルトパウチ','130x180mm','1600','日本食研'],
-        ['鶏飯大用ケース','110','外箱','','300','太陽紙工'],
-        ['バット中仕切（鶏飯大用）','20.9','仕切り','','300','太陽紙工'],
-        ['ラベルシール','5','ラベル','80x50mm','1000',''],
-        ['ナイロンポリH No.16 220x330','19.3','ナイロン袋','220x330mm','1500','日本食研'],
-      ]
-    }
-  };
-
-  const t=templates[type];
-  if(!t)return;
-  const bom='\uFEFF';
-  const csv=bom+t.rows.map(r=>r.map(c=>String(c).includes(',')?`"${c}"`:c).join(',')).join('\r\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download=t.filename;a.click();
-  toast(`📋 ${t.filename} をダウンロードしました`);
-}
-
-// ========================
-// 既存インポート関数を上書き更新対応版に差し替え
-// ========================
-function importShipCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const text=ev.target.result.replace(/^\uFEFF/,'');
-    const lines=text.split(/\r?\n/).filter(l=>l.trim());
-    if(lines.length<2){toast('データがありません','error');return;}
-    const r=importShipFromLines(lines);
-    toast(r.ok?`🚚 ${r.msg}`:r.msg, r.ok?'success':'error');
-    addLog(`配送費インポート: ${r.msg}`);
-    e.target.value='';
-  };
-  reader.readAsText(file,'UTF-8');
-}
-
-// ========================
-// 送料計算テーブル（税込）
-// ========================
-// 佐川急便 陸便（税込）
-const SAGAWA_RATES = {
-  normal: {
-    hokkaido: {2:1870,5:2145,10:2486,20:2948,30:3168,50:5335},
-    tohoku_n: {2:1067,5:1342,10:1562,20:1892,30:2728,50:4510},
-    tohoku_s: {2:1067,5:1342,10:1562,20:1892,30:2728,50:4015},
-    kanto:    {2:913,5:1122,10:1342,20:1672,30:2508,50:3630},
-    shinetsu: {2:913,5:1122,10:1342,20:1672,30:2508,50:3520},
-    hokuriku: {2:858,5:957,10:1232,20:1562,30:2288,50:3190},
-    tokai:    {2:858,5:957,10:1232,20:1562,30:2288,50:3135},
-    kansai:   {2:693,5:847,10:1122,20:1452,30:2178,50:2915},
-    chugoku:  {2:638,5:792,10:1012,20:1342,30:2068,50:2640},
-    shikoku:  {2:693,5:847,10:1122,20:1452,30:2178,50:2805},
-    kyushu_n: {2:638,5:792,10:1012,20:1342,30:2068,50:2420},
-    kyushu_s: {2:638,5:792,10:1012,20:1342,30:2068,50:2530},
-    okinawa:  {2:0,5:0,10:0,20:0,30:0,50:0},// 別途
-  },
-  cold: {
-    // クール冷蔵：陸便+クール加算（2kg+250,5kg+300,10kg+400,20kg+800）×税込
-    hokkaido: {2:2145,5:2475,10:2751,20:3548,30:3168},
-    tohoku_n: {2:1342,5:1672,10:1827,20:2692,30:2728},
-    tohoku_s: {2:1342,5:1672,10:1716,20:2508,30:2508},
-    kanto:    {2:1144,5:1452,10:1452,20:2332,30:2508},
-    shinetsu: {2:1144,5:1375,10:1452,20:2332,30:2508},
-    hokuriku: {2:1034,5:1210,10:1232,20:2002,30:2288},
-    tokai:    {2:1034,5:1210,10:1232,20:2002,30:2288},
-    kansai:   {2:979,5:1100,10:1122,20:1782,30:2178},
-    chugoku:  {2:979,5:1100,10:1122,20:1782,30:2068},
-    shikoku:  {2:1034,5:1144,10:1254,20:1925,30:2178},
-    kyushu_n: {2:869,5:990,10:1122,20:1870,30:2068},
-    kyushu_s: {2:869,5:990,10:1122,20:1870,30:2068},
-    okinawa:  {2:0,5:0,10:0,20:0,30:0},
-  },
-  frozen: {
-    // クール冷凍：陸便+クール加算（冷蔵と同額）
-    hokkaido: {2:2145,5:2475,10:2751,20:3548,30:3168},
-    tohoku_n: {2:1342,5:1672,10:1827,20:2692,30:2728},
-    tohoku_s: {2:1342,5:1672,10:1716,20:2508,30:2508},
-    kanto:    {2:1144,5:1452,10:1452,20:2332,30:2508},
-    shinetsu: {2:1144,5:1375,10:1452,20:2332,30:2508},
-    hokuriku: {2:1034,5:1210,10:1232,20:2002,30:2288},
-    tokai:    {2:1034,5:1210,10:1232,20:2002,30:2288},
-    kansai:   {2:979,5:1100,10:1122,20:1782,30:2178},
-    chugoku:  {2:979,5:1100,10:1122,20:1782,30:2068},
-    shikoku:  {2:1034,5:1144,10:1254,20:1925,30:2178},
-    kyushu_n: {2:869,5:990,10:1122,20:1870,30:2068},
-    kyushu_s: {2:869,5:990,10:1122,20:1870,30:2068},
-    okinawa:  {2:0,5:0,10:0,20:0,30:0},
-  }
-};
-
-// ヤマト運輸（税込）
-const YAMATO_RATES = {
-  normal: {
-    hokkaido: {2:2120,5:2380,10:2660,15:2950,20:3550,25:5050,30:5650},
-    tohoku_n: {2:1150,5:1240,10:1340,15:1440,20:1820,25:3030,30:4530},
-    tohoku_s: {2:1150,5:1240,10:1340,15:1440,20:1820,25:3030,30:4530},
-    kanto:    {2:920,5:1010,10:1100,15:1200,20:1580,25:2750,30:3750},
-    shinetsu: {2:920,5:1010,10:1100,15:1200,20:1580,25:2750,30:3750},
-    hokuriku: {2:920,5:1010,10:1100,15:1200,20:1580,25:2750,30:3750},
-    tokai:    {2:730,5:820,10:920,15:1020,20:1350,25:2510,30:3510},
-    kansai:   {2:640,5:750,10:840,15:940,20:1220,25:2390,30:3390},
-    chugoku:  {2:570,5:680,10:780,15:880,20:1160,25:2280,30:3390},
-    shikoku:  {2:620,5:730,10:820,15:920,20:1200,25:2390,30:3390},
-    kyushu_n: {2:550,5:660,10:760,15:860,20:1140,25:2280,30:2780},
-    kyushu_s: {2:550,5:660,10:760,15:860,20:1140,25:2280,30:2780},
-    okinawa:  {2:1200,5:1760,10:2340,15:2930,20:3540,25:4130,30:5330},
-  },
-  cold: {
-    hokkaido: {2:2320,5:2580,10:2960,15:3250,20:3750},
-    tohoku_n: {2:1350,5:1440,10:1640,15:1740,20:2020},
-    tohoku_s: {2:1350,5:1440,10:1640,15:1740,20:2020},
-    kanto:    {2:1120,5:1210,10:1400,15:1460,20:1780},
-    shinetsu: {2:1120,5:1210,10:1400,15:1460,20:1780},
-    hokuriku: {2:1120,5:1210,10:1400,15:1460,20:1780},
-    tokai:    {2:930,5:1020,10:1220,15:1320,20:1650},
-    kansai:   {2:840,5:950,10:1140,15:1240,20:1520},
-    chugoku:  {2:770,5:880,10:1080,15:1180,20:1460},
-    shikoku:  {2:820,5:930,10:1120,15:1220,20:1500},
-    kyushu_n: {2:750,5:860,10:1060,15:1460,20:1340},
-    kyushu_s: {2:750,5:860,10:1060,15:1460,20:1340},
-    okinawa:  {2:1400,5:1960,10:2540,15:3130,20:3740},
-  },
-  frozen: {
-    // ヤマト冷凍=クール宅急便（冷蔵と同じ料金体系）
-    hokkaido: {2:2320,5:2580,10:2960,15:3250,20:3750},
-    tohoku_n: {2:1350,5:1440,10:1640,15:1740,20:2020},
-    tohoku_s: {2:1350,5:1440,10:1640,15:1740,20:2020},
-    kanto:    {2:1120,5:1210,10:1400,15:1460,20:1780},
-    shinetsu: {2:1120,5:1210,10:1400,15:1460,20:1780},
-    hokuriku: {2:1120,5:1210,10:1400,15:1460,20:1780},
-    tokai:    {2:930,5:1020,10:1220,15:1320,20:1650},
-    kansai:   {2:840,5:950,10:1140,15:1240,20:1520},
-    chugoku:  {2:770,5:880,10:1080,15:1180,20:1460},
-    shikoku:  {2:820,5:930,10:1120,15:1220,20:1500},
-    kyushu_n: {2:750,5:860,10:1060,15:1460,20:1340},
-    kyushu_s: {2:750,5:860,10:1060,15:1460,20:1340},
-    okinawa:  {2:1400,5:1960,10:2540,15:3130,20:3740},
-  }
-};
-
-const AREA_LABEL = {
-  hokkaido:'北海道',tohoku_n:'北東北',tohoku_s:'南東北',
-  kanto:'関東',shinetsu:'信越',hokuriku:'北陸',tokai:'東海',
-  kansai:'関西',chugoku:'中国',shikoku:'四国',
-  kyushu_n:'北九州',kyushu_s:'南九州',okinawa:'沖縄・離島'
-};
-
-// ========================
-// 商品タイプ→配送種別自動判定
-// ========================
-function autoSetShipType(){
-  const type=document.getElementById('c_type').value;
-  const map={retort:'normal',cold:'cold',frozen:'frozen'};
-  const shipType=map[type]||'normal';
-  const radio=document.querySelector(`input[name="c_ship_type"][value="${shipType}"]`);
-  if(radio){radio.checked=true;}
-  updateShipTypeStyle(shipType);
-  const note=document.getElementById('shipTypeAutoNote');
-  const noteMap={retort:'（レトルト→常温便を自動選択）',cold:'（冷蔵→冷蔵便を自動選択）',frozen:'（冷凍→冷凍便を自動選択）'};
-  if(note)note.textContent=noteMap[type]||'';
-  calcShipping();
-}
-function onShipTypeChange(){
-  const val=document.querySelector('input[name="c_ship_type"]:checked')?.value||'normal';
-  updateShipTypeStyle(val);
-  const note=document.getElementById('shipTypeAutoNote');
-  if(note)note.textContent='（手動選択中）';
-  calcShipping();
-}
-function updateShipTypeStyle(type){
-  const styles={
-    normal:{border:'var(--accent)',bg:'var(--adim)',color:'var(--accent)'},
-    cold:  {border:'var(--info)',  bg:'var(--idim)',  color:'var(--info)'},
-    frozen:{border:'var(--purple)',bg:'rgba(167,139,250,.15)',color:'var(--purple)'},
-  };
-  ['normal','cold','frozen'].forEach(t=>{
-    const lbl=document.getElementById(`shipTypeLbl_${t}`);
-    if(!lbl)return;
-    if(t===type){
-      lbl.style.borderColor=styles[t].border;
-      lbl.style.background=styles[t].bg;
-      lbl.style.color=styles[t].color;
-    } else {
-      lbl.style.borderColor='var(--border)';
-      lbl.style.background='';
-      lbl.style.color='var(--text2)';
-    }
-  });
-}
-
-// ========================
-// 送料自動計算
-// ========================
-function calcShipping(){
-  const area=document.getElementById('c_ship_area')?.value||'';
-  const weight=parseInt(document.getElementById('c_ship_weight')?.value||'10');
-  const carrier=document.getElementById('c_ship_carrier')?.value||'sagawa';
-  const shipType=document.querySelector('input[name="c_ship_type"]:checked')?.value||'normal';
-  const qtyPerBox=parseInt(document.getElementById('c_ship_qty_per_box')?.value||'1')||1;
-
-  const boxEl=document.getElementById('r_ship_per_box');
-  const unitEl=document.getElementById('r_ship_per_unit');
-  const manualEl=document.getElementById('c_ship_per_unit_manual');
-  const basisEl=document.getElementById('r_ship_basis');
-
-  if(!area){
-    if(boxEl)boxEl.textContent='エリアを選択してください';
-    if(unitEl)unitEl.textContent='— 円';
-    return;
-  }
-
-  // 料金取得
-  const table = carrier==='sagawa' ? SAGAWA_RATES : YAMATO_RATES;
-  const typeTable = table[shipType]||table['normal'];
-  const areaTable = typeTable[area];
-
-  if(!areaTable){
-    if(boxEl)boxEl.textContent='この組み合わせは要問合せ';
-    if(unitEl)unitEl.textContent='— 円';
-    return;
-  }
-
-  // 重量キーを探す（以下の重量で最小のものを使用）
-  const keys=Object.keys(areaTable).map(Number).sort((a,b)=>a-b);
-  const key=keys.find(k=>k>=weight)||keys[keys.length-1];
-  const boxRate=areaTable[key];
-
-  if(!boxRate||boxRate===0){
-    if(boxEl)boxEl.textContent='要別途見積（離島等）';
-    if(unitEl)unitEl.textContent='— 円';
-    if(basisEl)basisEl.textContent='';
-    return;
-  }
-
-  const perUnit=(boxRate/qtyPerBox);
-  const carrierLabel=carrier==='sagawa'?'佐川急便':'ヤマト運輸';
-  const typeLabel={normal:'常温便',cold:'冷蔵便',frozen:'冷凍便'}[shipType]||'';
-  const areaLabel=AREA_LABEL[area]||area;
-
-  if(boxEl)boxEl.textContent=`¥${boxRate.toLocaleString()} 円/箱`;
-  if(unitEl)unitEl.textContent=`${perUnit.toFixed(1)} 円/個`;
-  if(basisEl)basisEl.textContent=`${carrierLabel}／${typeLabel}／${areaLabel}／${key}kg以内`;
-
-  // 原価計算フィールドに自動入力
-  if(manualEl)manualEl.value=perUnit.toFixed(2);
-
-  calc();
-}
-
-// getShipTotal をmanual入力に変更
-// 旧関数の互換（goShipMaster削除対応）
-// 配送費CSV出力
-function exportShipCSV(){
-  if(!shipMaster.length){toast('発送先が未登録です','error');return;}
-  const header=['発送先名','送料(円/個)','配送種別','備考'];
-  const rows=[header,...shipMaster.map(s=>[s.name,s.price,s.type,s.memo||''])];
-  downloadCSV(`配送費マスター_${new Date().toISOString().split('T')[0]}.csv`,rows);
-  toast('配送費CSVを出力しました');addLog('配送費マスター出力');
-}
-
-// 配送費CSVインポート
-// CSV行パーサー（ダブルクオート対応）
-function parseCSVLine(line){
-  const result=[];let cur='',inQ=false;
-  for(let i=0;i<line.length;i++){
-    const ch=line[i];
-    if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
-    else if(ch===','&&!inQ){result.push(cur);cur='';}
-    else cur+=ch;
-  }
-  result.push(cur);
-  return result.map(v=>v.trim());
-}
-
-function triggerImport(id){document.getElementById(id).click();}
-
-// ========================
-// MODAL
-// ========================
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
-
-// ========================
-// INIT
-// ========================
-function init(){
-  document.getElementById('c_date').value=new Date().toISOString().split('T')[0];
-  loadCM();setHints();
-  renderCoList();renderMatList();renderShipList();
-  renderProcMasterList();refreshProcSelect();renderPkgMasterList();refreshPkgSelects();
-  refreshSelects();refreshCsvSelects();renderRecords();
-  addMatManual();addMatManual();
-  calcPkg();
-  autoSetShipType();
-  applyMaster();
-
-  // Firebase moduleから呼べるようにwindowに公開
-  window.renderCoList          = renderCoList;
-  window.renderMatList         = renderMatList;
-  window.renderShipList        = renderShipList;
-  window.refreshSelects        = refreshSelects;
-  window.refreshCsvSelects     = refreshCsvSelects;
-  window.renderRecords         = renderRecords;
-  window.renderProcMasterList  = renderProcMasterList;
-  window.refreshProcSelect     = refreshProcSelect;
-  window.renderPkgMasterList   = renderPkgMasterList;
-  window.loadCM                = loadCM;
-  window.setHints              = setHints;
-  window.calcPkg               = calcPkg;
-  window.calcLU                = calcLU;
-  window.applyMaster           = applyMaster;
-}
-init();
-
-// ===== 規格書から原材料を受け取る =====
-window.loadSpecIngs = function(ings) {
-  if (!ings || !ings.length) return;
-  // calcMatsをリセットして規格書の原材料で再構築
-  window.calcMats = ings.map(function(ing) {
-    // materialMasterから単価を検索
-    var mat = (window._materials || []).find(function(m) {
-      return m.name && ing.name && m.name.includes(ing.name.replace(/^有機/,''));
+    console.log('[Master] 読込完了');
+  } catch(e) { console.warn('[Master] 読込失敗:', e.message); }
+}
+
+async function saveMasterToFirestore() {
+  if (!db) { toast('Firestoreに接続されていません', true); return; }
+  try {
+    await db.collection('masters').doc('all').set(masterData);
+    toast('マスターを保存しました ✓');
+  } catch(e) { toast('マスター保存失敗: ' + e.message, true); }
+}
+
+// ===== マスターから規格書に価格を自動反映 =====
+function applyMasterToSpec() {
+  if (!currentSpec || !currentSpec.ings) return;
+  var applied = 0;
+  currentSpec.ings.forEach(function(ing) {
+    var mat = masterData.materialPrices.find(function(m) {
+      var n1 = ing.name.replace(/^有機/, '');
+      var n2 = m.name.replace(/^有機/, '');
+      return n1 === n2 || ing.name === m.name;
     });
-    return {
-      id: ing.name,
-      name: ing.name,
-      price: mat ? mat.price : 0,
-      usage: ing.amount || 0,
-      organic: ing.feature && ing.feature.includes('有機')
-    };
-  }).filter(function(m){ return m.usage > 0; });
-  renderMatRows();
-  calc();
-  toast('規格書から ' + window.calcMats.length + '品目の原材料を反映しました', 'ok');
-};
+    if (mat && mat.unitPrice > 0) {
+      ing.unitPrice = mat.unitPrice;
+      applied++;
+    }
+  });
+  // 商品別加工費・包材費を反映
+  var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
+  var proc = masterData.processingCosts.find(function(p){ return p.productName === pname; });
+  if (proc) {
+    if (!currentSpec.cost) currentSpec.cost = {};
+    currentSpec.cost.laborCost   = proc.laborCost   || 0;
+    currentSpec.cost.utilityCost = proc.utilityCost || 0;
+  }
+  var pkg = masterData.packagingCosts.find(function(p){ return p.productName === pname; });
+  if (pkg) {
+    if (!currentSpec.cost) currentSpec.cost = {};
+    currentSpec.cost.packagingCost = pkg.cost || 0;
+  }
+  // 追加コスト合計
+  var addCosts = masterData.additionalCosts.filter(function(a){ return a.productName === pname; });
+  if (addCosts.length > 0) {
+    if (!currentSpec.cost) currentSpec.cost = {};
+    currentSpec.cost.otherCost = addCosts.reduce(function(s,a){ return s + (a.cost||0); }, 0);
+  }
+  if (applied > 0) toast('マスターから ' + applied + '品目の単価を反映しました ✓');
+  return applied;
+}
 
-function sendIngsToCalc() {
-  if (!window.currentSpec || !window.currentSpec.ings) { toast('規格書が開かれていません','err'); return; }
-  window.loadSpecIngs(window.currentSpec.ings);
+// ===== ⑦ マスター登録タブのHTML生成 =====
+function renderMasterPanel() {
+  var html = '<div id="panel-master" class="panel">';
+
+  // 共通ボタン
+  html += '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">';
+  html += '<strong style="font-size:15px;color:#1a3a5c">⑦ マスター登録</strong>';
+  html += '<button class="btn btn-primary btn-sm" onclick="saveMasterToFirestore()">💾 マスター全保存</button>';
+  html += '</div>';
+
+  // ---- A. 原材料価格マスター ----
+  html += '<div class="card">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<h3 style="margin:0">A. 原材料価格マスター</h3>';
+  html += '<div style="display:flex;gap:6px">';
+  html += '<button class="btn btn-sm" onclick="exportMaterialCSV()">📥 CSV出力</button>';
+  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importMaterialCSV(this)"></label>';
+  html += '<button class="btn btn-sm" onclick="addMaterialRow()">＋ 追加</button>';
+  html += '</div></div>';
+  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：原材料名,単価(円/kg),有機(1=有機),限定商品名</p>';
+  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
+  html += '<colgroup><col style="width:160px"><col style="width:100px"><col style="width:70px"><col style="width:150px"><col style="width:30px"></colgroup>';
+  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
+  html += '<th style="padding:5px 6px;text-align:left">原材料名</th>';
+  html += '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>';
+  html += '<th style="padding:5px 6px;text-align:center">有機</th>';
+  html += '<th style="padding:5px 6px;text-align:left">限定商品名（空欄=全商品）</th>';
+  html += '<th></th></tr></thead>';
+  html += '<tbody id="master-mat-tbody"></tbody></table></div></div>';
+
+  // ---- B. 商品別加工費マスター ----
+  html += '<div class="card">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<h3 style="margin:0">B. 商品別加工費マスター</h3>';
+  html += '<div style="display:flex;gap:6px">';
+  html += '<button class="btn btn-sm" onclick="exportProcCSV()">📥 CSV出力</button>';
+  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importProcCSV(this)"></label>';
+  html += '<button class="btn btn-sm" onclick="addProcRow()">＋ 追加</button>';
+  html += '</div></div>';
+  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：商品名,労務費(円),光熱費(円)</p>';
+  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
+  html += '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:110px"><col style="width:30px"></colgroup>';
+  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
+  html += '<th style="padding:5px 6px;text-align:left">商品名</th>';
+  html += '<th style="padding:5px 6px;text-align:center">労務費(円)</th>';
+  html += '<th style="padding:5px 6px;text-align:center">光熱費(円)</th>';
+  html += '<th></th></tr></thead>';
+  html += '<tbody id="master-proc-tbody"></tbody></table></div></div>';
+
+  // ---- C. 包材費マスター ----
+  html += '<div class="card">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<h3 style="margin:0">C. 包材費マスター</h3>';
+  html += '<div style="display:flex;gap:6px">';
+  html += '<button class="btn btn-sm" onclick="exportPkgCSV()">📥 CSV出力</button>';
+  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importPkgCSV(this)"></label>';
+  html += '<button class="btn btn-sm" onclick="addPkgRow()">＋ 追加</button>';
+  html += '</div></div>';
+  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：商品名,包材費(円),メモ</p>';
+  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
+  html += '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:200px"><col style="width:30px"></colgroup>';
+  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
+  html += '<th style="padding:5px 6px;text-align:left">商品名</th>';
+  html += '<th style="padding:5px 6px;text-align:center">包材費(円)</th>';
+  html += '<th style="padding:5px 6px;text-align:left">メモ</th>';
+  html += '<th></th></tr></thead>';
+  html += '<tbody id="master-pkg-tbody"></tbody></table></div></div>';
+
+  // ---- D. 商品別追加コスト ----
+  html += '<div class="card">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<h3 style="margin:0">D. 商品別追加コスト</h3>';
+  html += '<div style="display:flex;gap:6px">';
+  html += '<button class="btn btn-sm" onclick="exportAddCSV()">📥 CSV出力</button>';
+  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importAddCSV(this)"></label>';
+  html += '<button class="btn btn-sm" onclick="addAddRow()">＋ 追加</button>';
+  html += '</div></div>';
+  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：商品名,コスト項目名,金額(円)</p>';
+  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
+  html += '<colgroup><col style="width:160px"><col style="width:160px"><col style="width:100px"><col style="width:30px"></colgroup>';
+  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
+  html += '<th style="padding:5px 6px;text-align:left">商品名</th>';
+  html += '<th style="padding:5px 6px;text-align:left">コスト項目名</th>';
+  html += '<th style="padding:5px 6px;text-align:center">金額(円)</th>';
+  html += '<th></th></tr></thead>';
+  html += '<tbody id="master-add-tbody"></tbody></table></div></div>';
+
+  // ---- E. 送料マスター ----
+  html += '<div class="card">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<h3 style="margin:0">E. 送料マスター</h3>';
+  html += '<div style="display:flex;gap:6px">';
+  html += '<button class="btn btn-sm" onclick="exportShipCSV()">📥 CSV出力</button>';
+  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importShipCSV(this)"></label>';
+  html += '<button class="btn btn-sm" onclick="addShipRow()">＋ 追加</button>';
+  html += '</div></div>';
+  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：地域,重量上限(kg),送料(円),配送業者</p>';
+  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
+  html += '<colgroup><col style="width:120px"><col style="width:100px"><col style="width:100px"><col style="width:150px"><col style="width:30px"></colgroup>';
+  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
+  html += '<th style="padding:5px 6px;text-align:left">地域</th>';
+  html += '<th style="padding:5px 6px;text-align:center">重量上限(kg)</th>';
+  html += '<th style="padding:5px 6px;text-align:center">送料(円)</th>';
+  html += '<th style="padding:5px 6px;text-align:left">配送業者</th>';
+  html += '<th></th></tr></thead>';
+  html += '<tbody id="master-ship-tbody"></tbody></table></div></div>';
+
+  html += '</div>'; // panel-master
+  return html;
+}
+
+// ===== マスターテーブル描画 =====
+function renderMasterTables() {
+  renderMatTable();
+  renderProcTable();
+  renderPkgTable();
+  renderAddTable();
+  renderShipTable();
+}
+
+function mkTd(val, field, idx, arr, type) {
+  type = type || 'text';
+  return '<td><input type="' + type + '" value="' + h(val||'') + '" style="width:100%;font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px" '
+    + 'onchange="' + arr + '[' + idx + '][\'' + field + '\']=' + (type==='number'?'+':'') + 'this.value"></td>';
+}
+function mkCheckTd(val, field, idx, arr) {
+  return '<td style="text-align:center"><input type="checkbox" ' + (val?'checked':'') + ' onchange="' + arr + '[' + idx + '][\'' + field + '\']=this.checked"></td>';
+}
+function mkDelBtn(arr, idx, fn) {
+  return '<td style="text-align:center"><button class="btn btn-sm btn-danger" style="padding:2px 5px" onclick="' + arr + '.splice(' + idx + ',1);' + fn + '()">✕</button></td>';
+}
+
+function renderMatTable() {
+  var tbody = document.getElementById('master-mat-tbody'); if(!tbody) return;
+  var html = '';
+  masterData.materialPrices.forEach(function(m, i) {
+    var rowBg = i%2===0?'#fff':'#fafcff';
+    html += '<tr style="background:' + rowBg + '">';
+    html += mkTd(m.name,      'name',      i, 'masterData.materialPrices');
+    html += mkTd(m.unitPrice, 'unitPrice', i, 'masterData.materialPrices', 'number');
+    html += mkCheckTd(m.isOrganic, 'isOrganic', i, 'masterData.materialPrices');
+    html += mkTd(m.limitedTo, 'limitedTo', i, 'masterData.materialPrices');
+    html += mkDelBtn('masterData.materialPrices', i, 'renderMatTable');
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+function addMaterialRow() {
+  masterData.materialPrices.push({name:'', unitPrice:0, isOrganic:false, limitedTo:''});
+  renderMatTable();
+}
+
+function renderProcTable() {
+  var tbody = document.getElementById('master-proc-tbody'); if(!tbody) return;
+  var html = '';
+  masterData.processingCosts.forEach(function(m, i) {
+    var rowBg = i%2===0?'#fff':'#fafcff';
+    html += '<tr style="background:' + rowBg + '">';
+    html += mkTd(m.productName, 'productName', i, 'masterData.processingCosts');
+    html += mkTd(m.laborCost,   'laborCost',   i, 'masterData.processingCosts', 'number');
+    html += mkTd(m.utilityCost, 'utilityCost', i, 'masterData.processingCosts', 'number');
+    html += mkDelBtn('masterData.processingCosts', i, 'renderProcTable');
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+function addProcRow() {
+  masterData.processingCosts.push({productName:'', laborCost:0, utilityCost:0});
+  renderProcTable();
+}
+
+function renderPkgTable() {
+  var tbody = document.getElementById('master-pkg-tbody'); if(!tbody) return;
+  var html = '';
+  masterData.packagingCosts.forEach(function(m, i) {
+    var rowBg = i%2===0?'#fff':'#fafcff';
+    html += '<tr style="background:' + rowBg + '">';
+    html += mkTd(m.productName, 'productName', i, 'masterData.packagingCosts');
+    html += mkTd(m.cost,        'cost',        i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.memo,        'memo',        i, 'masterData.packagingCosts');
+    html += mkDelBtn('masterData.packagingCosts', i, 'renderPkgTable');
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+function addPkgRow() {
+  masterData.packagingCosts.push({productName:'', cost:0, memo:''});
+  renderPkgTable();
+}
+
+function renderAddTable() {
+  var tbody = document.getElementById('master-add-tbody'); if(!tbody) return;
+  var html = '';
+  masterData.additionalCosts.forEach(function(m, i) {
+    var rowBg = i%2===0?'#fff':'#fafcff';
+    html += '<tr style="background:' + rowBg + '">';
+    html += mkTd(m.productName, 'productName', i, 'masterData.additionalCosts');
+    html += mkTd(m.itemName,    'itemName',    i, 'masterData.additionalCosts');
+    html += mkTd(m.cost,        'cost',        i, 'masterData.additionalCosts', 'number');
+    html += mkDelBtn('masterData.additionalCosts', i, 'renderAddTable');
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+function addAddRow() {
+  masterData.additionalCosts.push({productName:'', itemName:'', cost:0});
+  renderAddTable();
+}
+
+function renderShipTable() {
+  var tbody = document.getElementById('master-ship-tbody'); if(!tbody) return;
+  var html = '';
+  masterData.shippingCosts.forEach(function(m, i) {
+    var rowBg = i%2===0?'#fff':'#fafcff';
+    html += '<tr style="background:' + rowBg + '">';
+    html += mkTd(m.region,      'region',      i, 'masterData.shippingCosts');
+    html += mkTd(m.weightLimit, 'weightLimit', i, 'masterData.shippingCosts', 'number');
+    html += mkTd(m.cost,        'cost',        i, 'masterData.shippingCosts', 'number');
+    html += mkTd(m.carrier,     'carrier',     i, 'masterData.shippingCosts');
+    html += mkDelBtn('masterData.shippingCosts', i, 'renderShipTable');
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+function addShipRow() {
+  masterData.shippingCosts.push({region:'', weightLimit:0, cost:0, carrier:''});
+  renderShipTable();
+}
+
+// ===== CSV エクスポート =====
+function downloadCSV(filename, rows) {
+  var bom = '\uFEFF';
+  var csv = bom + rows.map(function(r){
+    return r.map(function(v){
+      var s = String(v==null?'':v);
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g,'""') + '"' : s;
+    }).join(',');
+  }).join('\r\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+function parseCSV(text) {
+  var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  return lines.filter(function(l){return l.trim();}).map(function(line){
+    var result = [], cur = '', inQ = false;
+    for (var i=0; i<line.length; i++) {
+      var c = line[i];
+      if (c==='"') { if(inQ && line[i+1]==='"'){cur+='"';i++;} else inQ=!inQ; }
+      else if (c===',' && !inQ) { result.push(cur); cur=''; }
+      else cur += c;
+    }
+    result.push(cur);
+    return result;
+  });
+}
+
+function exportMaterialCSV() {
+  var rows = [['原材料名','単価(円/kg)','有機(1=有機)','限定商品名']];
+  masterData.materialPrices.forEach(function(m){
+    rows.push([m.name, m.unitPrice, m.isOrganic?1:0, m.limitedTo||'']);
+  });
+  downloadCSV('原材料価格マスター.csv', rows);
+}
+function importMaterialCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    var imported = 0;
+    rows.forEach(function(r, i) {
+      if (i===0 || r.length < 2) return; // ヘッダースキップ
+      var name = r[0].trim();
+      if (!name) return;
+      var existing = masterData.materialPrices.find(function(m){return m.name===name;});
+      if (existing) {
+        existing.unitPrice = +r[1] || 0;
+        if (r[2] !== undefined) existing.isOrganic = r[2]==='1'||r[2]==='true';
+        if (r[3] !== undefined) existing.limitedTo = r[3].trim();
+      } else {
+        masterData.materialPrices.push({name:name, unitPrice:+r[1]||0, isOrganic:r[2]==='1', limitedTo:(r[3]||'').trim()});
+      }
+      imported++;
+    });
+    renderMatTable();
+    toast(imported + '件の原材料価格を取込みました ✓');
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function exportProcCSV() {
+  var rows = [['商品名','労務費(円)','光熱費(円)']];
+  masterData.processingCosts.forEach(function(m){ rows.push([m.productName, m.laborCost, m.utilityCost]); });
+  downloadCSV('加工費マスター.csv', rows);
+}
+function importProcCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    rows.forEach(function(r, i) {
+      if (i===0 || r.length < 2) return;
+      var name = r[0].trim(); if(!name) return;
+      var ex = masterData.processingCosts.find(function(m){return m.productName===name;});
+      if (ex) { ex.laborCost=+r[1]||0; ex.utilityCost=+r[2]||0; }
+      else masterData.processingCosts.push({productName:name, laborCost:+r[1]||0, utilityCost:+r[2]||0});
+    });
+    renderProcTable(); toast('加工費マスターを取込みました ✓'); input.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function exportPkgCSV() {
+  var rows = [['商品名','包材費(円)','メモ']];
+  masterData.packagingCosts.forEach(function(m){ rows.push([m.productName, m.cost, m.memo||'']); });
+  downloadCSV('包材費マスター.csv', rows);
+}
+function importPkgCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    rows.forEach(function(r, i) {
+      if (i===0 || r.length < 2) return;
+      var name = r[0].trim(); if(!name) return;
+      var ex = masterData.packagingCosts.find(function(m){return m.productName===name;});
+      if (ex) { ex.cost=+r[1]||0; ex.memo=r[2]||''; }
+      else masterData.packagingCosts.push({productName:name, cost:+r[1]||0, memo:r[2]||''});
+    });
+    renderPkgTable(); toast('包材費マスターを取込みました ✓'); input.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function exportAddCSV() {
+  var rows = [['商品名','コスト項目名','金額(円)']];
+  masterData.additionalCosts.forEach(function(m){ rows.push([m.productName, m.itemName, m.cost]); });
+  downloadCSV('追加コストマスター.csv', rows);
+}
+function importAddCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    var imported = 0;
+    rows.forEach(function(r, i) {
+      if (i===0 || r.length < 3) return;
+      masterData.additionalCosts.push({productName:r[0].trim(), itemName:r[1].trim(), cost:+r[2]||0});
+      imported++;
+    });
+    renderAddTable(); toast(imported + '件の追加コストを取込みました ✓'); input.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function exportShipCSV() {
+  var rows = [['地域','重量上限(kg)','送料(円)','配送業者']];
+  masterData.shippingCosts.forEach(function(m){ rows.push([m.region, m.weightLimit, m.cost, m.carrier||'']); });
+  downloadCSV('送料マスター.csv', rows);
+}
+function importShipCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    var imported = 0;
+    rows.forEach(function(r, i) {
+      if (i===0 || r.length < 3) return;
+      masterData.shippingCosts.push({region:r[0].trim(), weightLimit:+r[1]||0, cost:+r[2]||0, carrier:r[3]||''});
+      imported++;
+    });
+    renderShipTable(); toast(imported + '件の送料を取込みました ✓'); input.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 </script>
