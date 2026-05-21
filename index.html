@@ -1613,7 +1613,7 @@ function renderEditor() {
   html += '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">合計重量</div><div id="banner-weight" style="font-size:18px;font-weight:700">0.0 g</div></div>';
   html += '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">1袋あたり原価</div><div id="banner-total" style="font-size:22px;font-weight:700;color:#7dd4a8">0.0 円</div></div>';
   html += '</div>';
-  html += '<button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="swTab('cost')">⑥ 詳細原価計算 →</button>';
+  html += '<button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="swTab(\'cost\')">⑥ 詳細原価計算 →</button>';
   html += '</div>';
 
   // 原材料追加エリア
@@ -1641,7 +1641,7 @@ function renderEditor() {
   html += '<div class="field"><label class="fl">脂質(g)</label><input type="number" id="cf-f" placeholder="0" step="0.1"></div>';
   html += '<div class="field"><label class="fl">炭水化物(g)</label><input type="number" id="cf-c" placeholder="0" step="0.1"></div></div>';
   html += '<div style="display:flex;gap:6px"><button class="btn btn-primary btn-sm" onclick="addCustIng()">追加</button>';
-  html += '<button class="btn btn-sm" onclick="document.getElementById('cust-form').style.display='none'">キャンセル</button></div>';
+  html += '<button class="btn btn-sm" onclick="document.getElementById(\'cust-form\').style.display=\'none\'">キャンセル</button></div>';
   html += '</div>';
 
   // 原材料テーブル（2段構成）
