@@ -1469,6 +1469,15 @@ async function openSpec(id) {
   }
 }
 
+// ===== 削除（削除ボタンから） =====
+function doDelete() {
+  if (!currentSpecId || !currentSpec) return;
+  var name = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : 'この規格書';
+  deleteTargetId = currentSpecId;
+  document.getElementById('del-msg').textContent = '「' + name + '」を削除しますか？この操作は取り消せません。';
+  document.getElementById('del-modal').classList.add('open');
+}
+
 // ===== 見本フラグ切替 =====
 function toggleSample() {
   if (!currentSpec) return;
@@ -1560,234 +1569,253 @@ function swTab(name) {
 
 // ===== エディタ描画 =====
 function renderEditor() {
-  var b = currentSpec.basic;
-  var n = currentSpec.nutrition;
+  var b  = currentSpec.basic;
+  var n  = currentSpec.nutrition;
   var pk = currentSpec.pkg;
   var al = currentSpec.allergens || [];
+  var co = currentSpec.cost || {};
 
-  var deleteBtn = currentSpecId
-    ? '<button class="btn btn-danger btn-sm" onclick="askDelete(\''+currentSpecId+'\',\''+h(b.pname||'この規格書')+'\')">🗑 削除</button>'
-    : '';
+  // ---- toolbar ----
+  var isSample = currentSpec.isSample ? true : false;
+  var toolbarHtml = '<div id="toolbar">'
+    + '<strong style="font-size:15px;flex:1">' + h(b.pname || '（新規規格書）')
+    + (isSample ? '<span style="font-size:11px;background:#e8f0f8;color:#1a3a5c;padding:2px 8px;border-radius:4px;margin-left:8px">見本</span>' : '')
+    + '</strong>'
+    + '<button class="btn btn-primary" onclick="saveSpec()">&#x1F4BE; 保存</button>'
+    + '<button class="btn btn-sm" onclick="toggleSample()" style="font-size:12px">'
+    +   (isSample ? '&#x1F4CC; 見本解除' : '&#x1F4CC; 見本にする') + '</button>'
+    + '<button class="btn" onclick="swTab(\'preview\')">&#x1F4C4; プレビュー</button>'
+    + (currentSpecId ? '<button class="btn btn-danger btn-sm" onclick="doDelete()">&#x1F5D1; 削除</button>' : '')
+    + '</div>';
 
-  var gmoOpts = ['無','有','一部有'].map(function(o){
-    return '<option'+(b.gmo===o?' selected':'')+'>'+o+'</option>';
-  }).join('');
-  var presOpts = ['無','有'].map(function(o){
-    return '<option'+(b.preservative===o?' selected':'')+'>'+o+'</option>';
-  }).join('');
+  // ---- タブ ----
+  var tabsHtml = '<div class="tabs">'
+    + '<button class="tab active" id="tab-basic"       onclick="swTab(\'basic\')">① 基本情報</button>'
+    + '<button class="tab"        id="tab-ingredients" onclick="swTab(\'ingredients\')">② 原材料</button>'
+    + '<button class="tab"        id="tab-nutrition"   onclick="swTab(\'nutrition\')">③ 栄養成分</button>'
+    + '<button class="tab"        id="tab-package"     onclick="swTab(\'package\')">④ 荷姿・製造</button>'
+    + '<button class="tab"        id="tab-remarks"     onclick="swTab(\'remarks\')">⑤ 注意・調理</button>'
+    + '<button class="tab"        id="tab-cost"        onclick="swTab(\'cost\')">⑥ 原価計算</button>'
+    + '<button class="tab"        id="tab-preview"     onclick="swTab(\'preview\')">&#x1F4C4; 規格書</button>'
+    + '</div>';
 
-  var html = '';
-  var sampleBadge = (currentSpec && currentSpec.isSample) ? '<span style="font-size:11px;background:#e8f0f8;color:#1a3a5c;padding:2px 8px;border-radius:4px;margin-left:8px">見本</span>' : '';
-  html += '<div id="toolbar">';
-  html += '<strong style="font-size:15px;flex:1">'+h(b.pname||'（新規規格書）')+sampleBadge+'</strong>';
-  html += '<button class="btn btn-primary" onclick="saveSpec()">💾 保存</button>';
-  html += '<button class="btn btn-sm" onclick="toggleSample()" style="font-size:12px">'+(currentSpec&&currentSpec.isSample?'📌 見本解除':'📌 見本にする')+'</button>';
-  html += '<button class="btn" onclick="swTab(\'preview\')">📄 プレビュー</button>';
-  html += deleteBtn;
-  html += '</div>';
+  // ---- ① 基本情報 ----
+  function selOpts(opts, val) {
+    return opts.map(function(o){ return '<option' + (val===o?' selected':'') + '>' + o + '</option>'; }).join('');
+  }
+  var basicHtml = '<div id="panel-basic" class="panel active">'
+    + '<div class="card"><h3>製品基本情報</h3>'
+    + '<div class="g2">'
+    +   fld('商品名',     'text',   'f-pname',    h(b.pname),    'oninput="currentSpec.basic.pname=this.value;updateToolbarTitle()"')
+    +   fld('名称',       'text',   'f-ptype',    h(b.ptype),    'oninput="currentSpec.basic.ptype=this.value"')
+    + '</div>'
+    + '<div class="g3">'
+    +   fld('内容量',            'text', 'f-amount',  h(b.amount),  'oninput="currentSpec.basic.amount=this.value"')
+    +   fld('賞味期限（開封前）','text', 'f-expiry',  h(b.expiry),  'oninput="currentSpec.basic.expiry=this.value"')
+    +   fld('製造国',            'text', 'f-country', h(b.country), 'oninput="currentSpec.basic.country=this.value"')
+    + '</div>'
+    + '<div class="g2">'
+    +   fld('保存方法（開封前）','text', 'f-storage',  h(b.storage),  'oninput="currentSpec.basic.storage=this.value"')
+    +   fld('保存方法（開封後）','text', 'f-storage2', h(b.storage2), 'oninput="currentSpec.basic.storage2=this.value"')
+    + '</div>'
+    + '<div class="g2">'
+    +   '<div class="field"><label class="fl">遺伝子組み換え</label><select id="f-gmo" onchange="currentSpec.basic.gmo=this.value">' + selOpts(['無','有','一部有'], b.gmo) + '</select></div>'
+    +   '<div class="field"><label class="fl">品質保持剤の有無</label><select id="f-preservative" onchange="currentSpec.basic.preservative=this.value">' + selOpts(['無','有'], b.preservative) + '</select></div>'
+    + '</div>'
+    +   fld('品質劣化内容',   'text', 'f-degradation', h(b.degradation), 'oninput="currentSpec.basic.degradation=this.value"')
+    +   fld('コンタミ注意表示','text','f-contami',      h(b.contami),     'oninput="currentSpec.basic.contami=this.value"')
+    + '</div>'
+    + '<div class="card"><h3>製造者情報</h3>'
+    + '<div class="g2">'
+    +   fld('製造者名','text','f-mfr',   h(b.mfr),   'oninput="currentSpec.basic.mfr=this.value"')
+    +   fld('所在地',  'text','f-maddr', h(b.maddr), 'oninput="currentSpec.basic.maddr=this.value"')
+    + '</div>'
+    +   fld('作成日','text','f-created', h(b.created), 'oninput="currentSpec.basic.created=this.value"')
+    + '</div>'
+    + '</div>';
 
-  html += '<div class="tabs">';
-  html += '<button class="tab active" id="tab-basic" onclick="swTab(\'basic\')">① 基本情報</button>';
-  html += '<button class="tab" id="tab-ingredients" onclick="swTab(\'ingredients\')">② 原材料</button>';
-  html += '<button class="tab" id="tab-nutrition" onclick="swTab(\'nutrition\')">③ 栄養成分</button>';
-  html += '<button class="tab" id="tab-package" onclick="swTab(\'package\')">④ 荷姿・製造</button>';
-  html += '<button class="tab" id="tab-remarks" onclick="swTab(\'remarks\')">⑤ 注意・調理</button>';
-  html += '<button class="tab" id="tab-preview" onclick="swTab(\'preview\')">📄 規格書</button>';
-  html += '</div>';
+  // ---- ② 原材料 ----
+  var ingHtml = '<div id="panel-ingredients" class="panel">'
+    // バナー
+    + '<div style="background:linear-gradient(135deg,#1a3a5c,#2a5a8c);color:#fff;border-radius:8px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    +   '<div style="display:flex;gap:24px;flex-wrap:wrap">'
+    +     '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">原材料費合計</div><div id="banner-mat" style="font-size:18px;font-weight:700">0.0 円</div></div>'
+    +     '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">合計重量</div><div id="banner-weight" style="font-size:18px;font-weight:700">0.0 g</div></div>'
+    +     '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">1袋あたり原価</div><div id="banner-total" style="font-size:22px;font-weight:700;color:#7dd4a8">0.0 円</div></div>'
+    +   '</div>'
+    +   '<button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="swTab(\'cost\')">⑥ 詳細原価計算 →</button>'
+    + '</div>'
+    // 検索・追加
+    + '<div class="card"><h3>原材料・添加物 入力</h3>'
+    + '<div style="display:flex;gap:8px;margin-bottom:10px">'
+    +   '<div class="search-box" style="flex:1">'
+    +     '<input type="text" id="isearch" placeholder="食材名で検索して追加（例：にんじん、有機醤油...）" oninput="searchFood()" onfocus="showFoodResults()" onblur="hideFoodResults()">'
+    +     '<div class="search-results" id="food-results"></div>'
+    +   '</div>'
+    +   '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button>'
+    + '</div>'
+    // 手動追加フォーム
+    + '<div id="cust-form" style="display:none;background:#f5f5f0;padding:12px;border-radius:6px;margin-bottom:10px;border:1px solid #ddd">'
+    +   '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">新規原材料を手動追加</p>'
+    +   '<div class="g3" style="margin-bottom:8px">'
+    +     '<div class="field"><label class="fl">原材料名 *</label><input type="text" id="cf-name" placeholder="例：有機にんじん"></div>'
+    +     '<div class="field"><label class="fl">国名</label><input type="text" id="cf-country" placeholder="国産 / 国内製造"></div>'
+    +     '<div class="field"><label class="fl">アレルゲン</label><input type="text" id="cf-al" placeholder="大豆・小麦 等"></div>'
+    +   '</div>'
+    +   '<div class="g4" style="margin-bottom:8px">'
+    +     '<div class="field"><label class="fl">使用量(g)</label><input type="number" id="cf-g" placeholder="0" step="0.1" min="0"></div>'
+    +     '<div class="field"><label class="fl">単価(円/kg)</label><input type="number" id="cf-price" placeholder="0" step="1" min="0"></div>'
+    +     '<div class="field"><label class="fl">特色原材料</label><input type="text" id="cf-feat" placeholder="有機 等"></div>'
+    +     '<div class="field"><label class="fl">添加物用途</label><input type="text" id="cf-use" placeholder="甘味料 等"></div>'
+    +   '</div>'
+    +   '<div class="g4" style="margin-bottom:8px">'
+    +     '<div class="field"><label class="fl">エネルギー(kcal/100g)</label><input type="number" id="cf-e" placeholder="0"></div>'
+    +     '<div class="field"><label class="fl">たんぱく質(g)</label><input type="number" id="cf-p" placeholder="0" step="0.1"></div>'
+    +     '<div class="field"><label class="fl">脂質(g)</label><input type="number" id="cf-f" placeholder="0" step="0.1"></div>'
+    +     '<div class="field"><label class="fl">炭水化物(g)</label><input type="number" id="cf-c" placeholder="0" step="0.1"></div>'
+    +   '</div>'
+    +   '<div style="display:flex;gap:6px">'
+    +     '<button class="btn btn-primary btn-sm" onclick="addCustIng()">追加</button>'
+    +     '<button class="btn btn-sm" id="cust-cancel-btn">キャンセル</button>'
+    +   '</div>'
+    + '</div>'
+    // テーブル
+    + '<div style="overflow-x:auto;margin-top:8px">'
+    + '<table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup>'
+    +   '<col style="width:30px">'
+    +   '<col style="width:140px">'
+    +   '<col style="width:80px">'
+    +   '<col style="width:80px">'
+    +   '<col style="width:72px">'
+    +   '<col style="width:85px">'
+    +   '<col style="width:75px">'
+    +   '<col style="width:58px">'
+    +   '<col style="width:65px">'
+    +   '<col style="width:65px">'
+    +   '<col style="width:75px">'
+    +   '<col style="width:30px">'
+    + '</colgroup>'
+    + '<thead>'
+    + '<tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    +   '<th style="padding:6px 3px;text-align:center">No</th>'
+    +   '<th style="padding:6px 4px;text-align:left">原材料名</th>'
+    +   '<th style="padding:6px 4px;text-align:center">国名</th>'
+    +   '<th style="padding:6px 4px;text-align:center">アレルゲン</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">重量(g)</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">単価(円/kg)</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">原材料費</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">配合比</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">特色原材料</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">添加物用途</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">遺伝子組換え</th>'
+    +   '<th style="padding:6px 4px;background:#333"></th>'
+    + '</tr>'
+    + '</thead>'
+    + '<tbody id="ing-tbody"></tbody>'
+    + '<tfoot>'
+    + '<tr style="background:#f0f4f8;font-weight:700;font-size:12px">'
+    +   '<td colspan="4" style="padding:5px 8px;text-align:right;border-top:2px solid #2c4a6e;color:#555">合　計</td>'
+    +   '<td id="foot-weight" style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#0f5132">0.0g</td>'
+    +   '<td style="border-top:2px solid #2c4a6e;background:#c8ebd8"></td>'
+    +   '<td id="foot-cost"   style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#0f5132">—</td>'
+    +   '<td style="padding:5px 6px;text-align:center;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#1a3a5c">100%</td>'
+    +   '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>'
+    + '</tr>'
+    + '</tfoot>'
+    + '</table></div>'
+    + '<div style="margin-top:10px"><label class="fl">一括表示用 原材料名（重量順・自動生成）</label>'
+    +   '<textarea id="label-text" rows="2"></textarea></div>'
+    + '</div>'
+    + '<div class="card"><h3>アレルゲン確認（28品目）</h3><div id="allergen-grid"></div></div>'
+    + '</div>';
 
-  // ① 基本情報
-  html += '<div id="panel-basic" class="panel active">';
-  html += '<div class="card"><h3>製品基本情報</h3>';
-  html += '<div class="g2"><div class="field"><label class="fl">商品名</label><input type="text" id="f-pname" value="'+h(b.pname)+'" oninput="updateToolbarTitle()"></div>';
-  html += '<div class="field"><label class="fl">名称</label><input type="text" id="f-ptype" value="'+h(b.ptype)+'"></div></div>';
-  html += '<div class="g3"><div class="field"><label class="fl">内容量</label><input type="text" id="f-amount" value="'+h(b.amount)+'"></div>';
-  html += '<div class="field"><label class="fl">賞味期限（開封前）</label><input type="text" id="f-expiry" value="'+h(b.expiry)+'"></div>';
-  html += '<div class="field"><label class="fl">製造国</label><input type="text" id="f-country" value="'+h(b.country)+'"></div></div>';
-  html += '<div class="g2"><div class="field"><label class="fl">保存方法（開封前）</label><input type="text" id="f-storage" value="'+h(b.storage)+'"></div>';
-  html += '<div class="field"><label class="fl">保存方法（開封後）</label><input type="text" id="f-storage2" value="'+h(b.storage2)+'"></div></div>';
-  html += '<div class="g2"><div class="field"><label class="fl">遺伝子組み換え</label><select id="f-gmo">'+gmoOpts+'</select></div>';
-  html += '<div class="field"><label class="fl">品質保持剤の有無</label><select id="f-preservative">'+presOpts+'</select></div></div>';
-  html += '<div class="field"><label class="fl">品質劣化内容</label><input type="text" id="f-degradation" value="'+h(b.degradation)+'"></div>';
-  html += '<div class="field"><label class="fl">コンタミ注意表示</label><input type="text" id="f-contami" value="'+h(b.contami)+'"></div>';
-  html += '</div>';
-  html += '<div class="card"><h3>製造者情報</h3>';
-  html += '<div class="g2"><div class="field"><label class="fl">製造者名</label><input type="text" id="f-mfr" value="'+h(b.mfr)+'"></div>';
-  html += '<div class="field"><label class="fl">所在地</label><input type="text" id="f-maddr" value="'+h(b.maddr)+'"></div></div>';
-  html += '<div class="field"><label class="fl">作成日</label><input type="text" id="f-created" value="'+h(b.created)+'"></div>';
-  html += '</div></div>';
+  // ---- ③ 栄養成分 ----
+  var nutHtml = '<div id="panel-nutrition" class="panel"><div class="card"><h3>栄養成分情報</h3>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:10px">1袋あたりの推定値。「🧮 再計算」で使用量から自動計算も可能です。</p>'
+    + '<div class="g3">'
+    +   fld('エネルギー (kcal)','number','n-e', n.e, 'step="1"')
+    +   fld('たんぱく質 (g)',   'number','n-p', n.p, 'step="0.1"')
+    +   fld('脂質 (g)',        'number','n-f', n.f, 'step="0.1"')
+    + '</div>'
+    + '<div class="g3">'
+    +   fld('炭水化物 (g)',    'number','n-c', n.c,  'step="0.1"')
+    +   fld('食塩相当量 (g)', 'number','n-s', n.s,  'step="0.01"')
+    +   fld('水分 (g)',       'number','n-w', n.w,  'step="0.1"')
+    + '</div>'
+    + '<div class="g2">'
+    +   fld('飽和脂肪酸 (g)（任意）','number','n-sf', n.sf, 'step="0.1"')
+    +   fld('糖質 (g)（任意）',      'number','n-su', n.su, 'step="0.1"')
+    + '</div>'
+    + '<div class="g2">'
+    +   fld('表示単位','text','n-unit', h(n.unit), '')
+    +   fld('備考',    'text','n-note', h(n.note), '')
+    + '</div>'
+    + '<button class="btn btn-sm" onclick="calcNutrition()" style="margin-top:4px">🧮 原材料から再計算</button>'
+    + '</div></div>';
 
-  // ② 原材料
-  html += '<div id="panel-ingredients" class="panel">';
+  // ---- ④ 荷姿・製造 ----
+  var pkgHtml = '<div id="panel-package" class="panel"><div class="card"><h3>荷姿情報</h3>'
+    + '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px">個装</p>'
+    + '<div class="g4">'
+    +   fld('縦(mm)','text','pk-puD', h(pk.puD),'') + fld('横(mm)','text','pk-puW', h(pk.puW),'')
+    +   fld('高さ(mm)','text','pk-puH', h(pk.puH),'') + fld('入数','text','pk-puN', h(pk.puN),'')
+    + '</div><div class="g2">'
+    +   fld('重量(g)','text','pk-puWt', h(pk.puWt),'') + fld('包材材質','text','pk-puMat', h(pk.puMat),'')
+    + '</div>'
+    + '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin:8px 0 6px">ケース</p>'
+    + '<div class="g4">'
+    +   fld('縦(mm)','text','pk-pcD', h(pk.pcD),'') + fld('横(mm)','text','pk-pcW', h(pk.pcW),'')
+    +   fld('高さ(mm)','text','pk-pcH', h(pk.pcH),'') + fld('入数','text','pk-pcN', h(pk.pcN),'')
+    + '</div><div class="g2">'
+    +   fld('重量(g)','text','pk-pcWt', h(pk.pcWt),'') + fld('包材材質','text','pk-pcMat', h(pk.pcMat),'')
+    + '</div></div>'
+    + '<div class="card"><h3>製造工程</h3><div id="proc-list"></div>'
+    +   '<button class="btn btn-sm" onclick="addProc()" style="margin-top:6px">＋ 工程追加</button>'
+    + '</div></div>';
 
-  // 上部：1袋あたり原価サマリー（リアルタイム表示）
-  html += '<div id="ing-cost-banner" style="background:linear-gradient(135deg,#1a3a5c,#2a5a8c);color:#fff;border-radius:8px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
-  html += '<div style="display:flex;gap:24px;flex-wrap:wrap">';
-  html += '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">原材料費合計</div><div id="banner-mat" style="font-size:18px;font-weight:700">0.0 円</div></div>';
-  html += '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">合計重量</div><div id="banner-weight" style="font-size:18px;font-weight:700">0.0 g</div></div>';
-  html += '<div><div style="font-size:11px;opacity:.75;margin-bottom:2px">1袋あたり原価</div><div id="banner-total" style="font-size:22px;font-weight:700;color:#7dd4a8">0.0 円</div></div>';
-  html += '</div>';
-  html += '<button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="swTab(\'cost\')">⑥ 詳細原価計算 →</button>';
-  html += '</div>';
+  // ---- ⑤ 注意・調理 ----
+  var remHtml = '<div id="panel-remarks" class="panel">'
+    + '<div class="card"><h3>注意表示</h3><textarea id="r-notes" rows="4"></textarea></div>'
+    + '<div class="card"><h3>調理方法</h3><textarea id="r-cooking" rows="4"></textarea></div>'
+    + '<div class="card"><h3>特記事項</h3><textarea id="r-special" rows="3"></textarea></div>'
+    + '</div>';
 
-  // 原材料追加エリア
-  html += '<div class="card"><h3>原材料・添加物 入力</h3>';
-  html += '<div style="display:flex;gap:8px;margin-bottom:10px">';
-  html += '<div class="search-box" style="flex:1"><input type="text" id="isearch" placeholder="食材名で検索して追加（例：にんじん、有機醤油...）" oninput="searchFood()" onfocus="showFoodResults()" onblur="hideFoodResults()">';
-  html += '<div class="search-results" id="food-results"></div></div>';
-  html += '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button></div>';
+  // ---- ⑥ 原価計算 ----
+  var costHtml = '<div id="panel-cost" class="panel"><div class="card"><h3>原価計算（1袋あたり）</h3>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:12px">原材料タブで重量・単価を入力すると原材料費が自動計算されます。</p>'
+    + '<div id="cost-ing-detail" style="margin-bottom:12px"></div>'
+    + '<div class="g2" style="margin-bottom:10px">'
+    +   fld('加工費・労務費（円）','number','co-laborCost',    co.laborCost||0,    'step="1" oninput="recalcCost()"')
+    +   fld('光熱費（円）',        'number','co-utilityCost',  co.utilityCost||0,  'step="1" oninput="recalcCost()"')
+    +   fld('包材費（円）',        'number','co-packagingCost',co.packagingCost||0,'step="1" oninput="recalcCost()"')
+    +   fld('その他経費（円）',    'number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
+    + '</div>'
+    + '<div id="cost-result" style="background:#eef2f7;border-radius:8px;padding:14px"></div>'
+    + '</div></div>';
 
-  // 手動追加フォーム
-  html += '<div id="cust-form" style="display:none;background:#f5f5f0;padding:10px;border-radius:6px;margin-bottom:10px;border:1px solid #ddd">';
-  html += '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">新規原材料を手動追加</p>';
-  html += '<div class="g3" style="margin-bottom:6px">';
-  html += '<div class="field"><label class="fl">原材料名 *</label><input type="text" id="cf-name" placeholder="例：有機にんじん"></div>';
-  html += '<div class="field"><label class="fl">国名</label><input type="text" id="cf-country" placeholder="国産 / 国内製造"></div>';
-  html += '<div class="field"><label class="fl">アレルゲン</label><input type="text" id="cf-al" placeholder="大豆・小麦 等"></div></div>';
-  html += '<div class="g4" style="margin-bottom:6px">';
-  html += '<div class="field"><label class="fl">使用量(g)</label><input type="number" id="cf-g" placeholder="0" step="0.1"></div>';
-  html += '<div class="field"><label class="fl">単価(円/kg)</label><input type="number" id="cf-price" placeholder="0" step="1"></div>';
-  html += '<div class="field"><label class="fl">特色原材料</label><input type="text" id="cf-feat" placeholder="有機 等"></div>';
-  html += '<div class="field"><label class="fl">添加物用途</label><input type="text" id="cf-use" placeholder="甘味料 等"></div></div>';
-  html += '<div class="g4" style="margin-bottom:6px">';
-  html += '<div class="field"><label class="fl">エネルギー(kcal/100g)</label><input type="number" id="cf-e" placeholder="0"></div>';
-  html += '<div class="field"><label class="fl">たんぱく質(g)</label><input type="number" id="cf-p" placeholder="0" step="0.1"></div>';
-  html += '<div class="field"><label class="fl">脂質(g)</label><input type="number" id="cf-f" placeholder="0" step="0.1"></div>';
-  html += '<div class="field"><label class="fl">炭水化物(g)</label><input type="number" id="cf-c" placeholder="0" step="0.1"></div></div>';
-  html += '<div style="display:flex;gap:6px"><button class="btn btn-primary btn-sm" onclick="addCustIng()">追加</button>';
-  html += '<button class="btn btn-sm" onclick="document.getElementById(\'cust-form\').style.display=\'none\'">キャンセル</button></div>';
-  html += '</div>';
+  // ---- 規格書プレビュー ----
+  var prevHtml = '<div id="panel-preview" class="panel">'
+    + '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">'
+    +   '<strong>商品規格書 A4プレビュー</strong>'
+    +   '<button class="btn btn-sm" onclick="genPreview()">↻ 更新</button>'
+    +   '<button class="btn btn-primary btn-sm" onclick="doPrint()">🖨️ 印刷・PDF保存</button>'
+    + '</div>'
+    + '<div class="preview-wrap"><div class="a4" id="a4-body"><p style="color:#999;font-size:12px">↻ 更新ボタンを押すとプレビューが表示されます</p></div></div>'
+    + '</div>';
 
-  // 原材料テーブル
-  html += '<div style="overflow-x:auto;margin-top:8px">';
-  html += '<table class="ing-table">';
-  html += '<colgroup>';
-  html += '<col style="width:30px">';   // No
-  html += '<col style="width:150px">';  // 原材料名
-  html += '<col style="width:90px">';   // 国名
-  html += '<col style="width:90px">';   // アレルゲン
-  html += '<col style="width:75px">';   // 重量
-  html += '<col style="width:90px">';   // 単価
-  html += '<col style="width:80px">';   // 原材料費
-  html += '<col style="width:60px">';   // 配合比
-  html += '<col style="width:70px">';   // 特色
-  html += '<col style="width:70px">';   // 用途
-  html += '<col style="width:80px">';   // GMO
-  html += '<col style="width:32px">';   // 削除
-  html += '</colgroup>';
-  html += '<thead>';
-  html += '<tr style="background:#2c4a6e;color:#fff;font-size:11px">';
-  html += '<th style="padding:5px 4px">No</th>';
-  html += '<th style="padding:5px 4px;text-align:left">原材料名</th>';
-  html += '<th style="padding:5px 4px">国名</th>';
-  html += '<th style="padding:5px 4px">アレルゲン</th>';
-  html += '<th style="padding:5px 4px;background:#1a6b3c">重量(g)</th>';
-  html += '<th style="padding:5px 4px;background:#1a6b3c">単価(円/kg)</th>';
-  html += '<th style="padding:5px 4px;background:#1a6b3c">原材料費</th>';
-  html += '<th style="padding:5px 4px;background:#1a6b3c">配合比</th>';
-  html += '<th style="padding:5px 4px;background:#4a4020">特色原材料</th>';
-  html += '<th style="padding:5px 4px;background:#4a4020">添加物用途</th>';
-  html += '<th style="padding:5px 4px;background:#4a4020">遺伝子組換え</th>';
-  html += '<th style="padding:5px 4px;background:#3a3a3a"></th>';
-  html += '</tr>';
-  html += '</thead>';
-  html += '<tbody id="ing-tbody"></tbody>';
-  // 合計行
-  html += '<tfoot>';
-  html += '<tr style="background:#f0f4f8;font-weight:700;font-size:12px">';
-  html += '<td colspan="4" style="padding:5px 8px;text-align:right;border-top:2px solid #2c4a6e;color:#555">合　計</td>';
-  html += '<td id="foot-weight" style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#d8f0e4;color:#0f5132">0.0g</td>';
-  html += '<td style="border-top:2px solid #2c4a6e;background:#d8f0e4"></td>';
-  html += '<td id="foot-cost" style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#d8f0e4;color:#0f5132">—</td>';
-  html += '<td style="padding:5px 6px;text-align:center;border-top:2px solid #2c4a6e;background:#d8f0e4;color:#1a3a5c">100%</td>';
-  html += '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>';
-  html += '</tr>';
-  html += '</tfoot>';
-  html += '</table></div>';
+  // ---- DOMに挿入 ----
+  document.getElementById('main-area').innerHTML =
+    toolbarHtml + tabsHtml + basicHtml + ingHtml + nutHtml + pkgHtml + remHtml + costHtml + prevHtml;
 
-  // 一括表示テキスト
-  html += '<div style="margin-top:10px"><label class="fl">一括表示用 原材料名（重量順・自動生成）</label>';
-  html += '<textarea id="label-text" rows="2"></textarea></div></div>';
+  // キャンセルボタンのイベント（DOM挿入後に設定）
+  var cancelBtn = document.getElementById('cust-cancel-btn');
+  if (cancelBtn) cancelBtn.onclick = function() {
+    document.getElementById('cust-form').style.display = 'none';
+  };
 
-  // アレルゲン確認
-  html += '<div class="card"><h3>アレルゲン確認（28品目）</h3><div id="allergen-grid"></div></div>';
-  html += '</div>';
-
-  // ③ 栄養成分
-  html += '<div id="panel-nutrition" class="panel"><div class="card"><h3>栄養成分情報</h3>';
-  html += '<p style="font-size:12px;color:#888;margin-bottom:10px">1袋あたりの推定値。「🧮 再計算」ボタンで使用量から自動計算も可能です。</p>';
-  html += '<div class="g3">';
-  html += '<div class="field"><label class="fl">エネルギー (kcal)</label><input type="number" id="n-e" value="'+h(n.e)+'"></div>';
-  html += '<div class="field"><label class="fl">たんぱく質 (g)</label><input type="number" id="n-p" value="'+h(n.p)+'" step="0.1"></div>';
-  html += '<div class="field"><label class="fl">脂質 (g)</label><input type="number" id="n-f" value="'+h(n.f)+'" step="0.1"></div></div>';
-  html += '<div class="g3">';
-  html += '<div class="field"><label class="fl">炭水化物 (g)</label><input type="number" id="n-c" value="'+h(n.c)+'" step="0.1"></div>';
-  html += '<div class="field"><label class="fl">食塩相当量 (g)</label><input type="number" id="n-s" value="'+h(n.s)+'" step="0.01"></div>';
-  html += '<div class="field"><label class="fl">水分 (g)</label><input type="number" id="n-w" value="'+h(n.w)+'" step="0.1"></div></div>';
-  html += '<div class="g2">';
-  html += '<div class="field"><label class="fl">飽和脂肪酸 (g)（任意）</label><input type="number" id="n-sf" value="'+h(n.sf)+'" step="0.1"></div>';
-  html += '<div class="field"><label class="fl">糖質 (g)（任意）</label><input type="number" id="n-su" value="'+h(n.su)+'" step="0.1"></div></div>';
-  html += '<div class="g2">';
-  html += '<div class="field"><label class="fl">表示単位</label><input type="text" id="n-unit" value="'+h(n.unit)+'"></div>';
-  html += '<div class="field"><label class="fl">備考</label><input type="text" id="n-note" value="'+h(n.note)+'"></div></div>';
-  html += '<button class="btn btn-sm" onclick="calcNutrition()" style="margin-top:4px">🧮 原材料から再計算</button>';
-  html += '</div></div>';
-
-  // ④ 荷姿・製造
-  html += '<div id="panel-package" class="panel"><div class="card"><h3>荷姿情報</h3>';
-  html += '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px">個装</p>';
-  html += '<div class="g4">';
-  html += '<div class="field"><label class="fl">縦(mm)</label><input type="text" id="pk-puD" value="'+h(pk.puD)+'"></div>';
-  html += '<div class="field"><label class="fl">横(mm)</label><input type="text" id="pk-puW" value="'+h(pk.puW)+'"></div>';
-  html += '<div class="field"><label class="fl">高さ(mm)</label><input type="text" id="pk-puH" value="'+h(pk.puH)+'"></div>';
-  html += '<div class="field"><label class="fl">入数</label><input type="text" id="pk-puN" value="'+h(pk.puN)+'"></div></div>';
-  html += '<div class="g2">';
-  html += '<div class="field"><label class="fl">重量(g)</label><input type="text" id="pk-puWt" value="'+h(pk.puWt)+'"></div>';
-  html += '<div class="field"><label class="fl">包材材質</label><input type="text" id="pk-puMat" value="'+h(pk.puMat)+'"></div></div>';
-  html += '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin:8px 0 6px">ケース</p>';
-  html += '<div class="g4">';
-  html += '<div class="field"><label class="fl">縦(mm)</label><input type="text" id="pk-pcD" value="'+h(pk.pcD)+'"></div>';
-  html += '<div class="field"><label class="fl">横(mm)</label><input type="text" id="pk-pcW" value="'+h(pk.pcW)+'"></div>';
-  html += '<div class="field"><label class="fl">高さ(mm)</label><input type="text" id="pk-pcH" value="'+h(pk.pcH)+'"></div>';
-  html += '<div class="field"><label class="fl">入数</label><input type="text" id="pk-pcN" value="'+h(pk.pcN)+'"></div></div>';
-  html += '<div class="g2">';
-  html += '<div class="field"><label class="fl">重量(g)</label><input type="text" id="pk-pcWt" value="'+h(pk.pcWt)+'"></div>';
-  html += '<div class="field"><label class="fl">包材材質</label><input type="text" id="pk-pcMat" value="'+h(pk.pcMat)+'"></div></div></div>';
-  html += '<div class="card"><h3>製造工程</h3><div id="proc-list"></div>';
-  html += '<button class="btn btn-sm" onclick="addProc()" style="margin-top:6px">＋ 工程追加</button></div></div>';
-
-  // ⑤ 注意・調理
-  html += '<div id="panel-remarks" class="panel">';
-  html += '<div class="card"><h3>注意表示</h3><textarea id="r-notes" rows="4"></textarea></div>';
-  html += '<div class="card"><h3>調理方法</h3><textarea id="r-cooking" rows="4"></textarea></div>';
-  html += '<div class="card"><h3>特記事項</h3><textarea id="r-special" rows="3"></textarea></div></div>';
-
-  // ⑥ 原価計算
-  var co = currentSpec.cost || {laborCost:0,utilityCost:0,packagingCost:0,otherCost:0};
-  html += '<div id="panel-cost" class="panel">';
-  html += '<div class="card"><h3>原価計算（1袋あたり）</h3>';
-  html += '<p style="font-size:12px;color:#888;margin-bottom:12px">原材料タブで重量・単価を入力すると原材料費が自動計算されます。加工費などを追加入力してください。</p>';
-  html += '<div id="cost-ing-detail" style="margin-bottom:12px"></div>';
-  html += '<div class="g2" style="margin-bottom:10px">';
-  html += '<div class="field"><label class="fl">加工費・労務費（円）</label><input type="number" id="co-laborCost" value="'+(co.laborCost||0)+'" step="1" oninput="recalcCost()"></div>';
-  html += '<div class="field"><label class="fl">光熱費（円）</label><input type="number" id="co-utilityCost" value="'+(co.utilityCost||0)+'" step="1" oninput="recalcCost()"></div>';
-  html += '<div class="field"><label class="fl">包材費（円）</label><input type="number" id="co-packagingCost" value="'+(co.packagingCost||0)+'" step="1" oninput="recalcCost()"></div>';
-  html += '<div class="field"><label class="fl">その他経費（円）</label><input type="number" id="co-otherCost" value="'+(co.otherCost||0)+'" step="1" oninput="recalcCost()"></div>';
-  html += '</div>';
-  html += '<div id="cost-result" style="background:#eef2f7;border-radius:8px;padding:14px"></div>';
-  html += '</div></div>';
-
-  // 規格書プレビュー
-  html += '<div id="panel-preview" class="panel">';
-  html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">';
-  html += '<strong>商品規格書 A4プレビュー</strong>';
-  html += '<button class="btn btn-sm" onclick="genPreview()">↻ 更新</button>';
-  html += '<button class="btn btn-primary btn-sm" onclick="doPrint()">🖨️ 印刷・PDF保存</button></div>';
-  html += '<div class="preview-wrap"><div class="a4" id="a4-body"><p style="color:#999;font-size:12px">↻ 更新ボタンを押すとプレビューが表示されます</p></div></div></div>';
-
-  document.getElementById('main-area').innerHTML = html;
-
-  // テキストエリアはJSでセット（改行を保持するため）
-  sv('r-notes', currentSpec.notes);
+  // textareaをJSでセット（改行保持）
+  sv('r-notes',   currentSpec.notes);
   sv('r-cooking', currentSpec.cooking);
   sv('r-special', currentSpec.special);
   sv('label-text', currentSpec.labelText || '');
@@ -1795,6 +1823,13 @@ function renderEditor() {
   renderIngTbody();
   renderProcList();
   renderAllergenGrid();
+}
+
+// ---- フィールド生成ヘルパー ----
+function fld(label, type, id, val, extra) {
+  return '<div class="field"><label class="fl">' + label + '</label>'
+    + '<input type="' + type + '" id="' + id + '" value="' + (val||'') + '" ' + (extra||'') + '>'
+    + '</div>';
 }
 
 // ===== タイトル更新 =====
