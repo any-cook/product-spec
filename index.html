@@ -35,17 +35,17 @@ body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:14px;b
 .tab{padding:6px 12px;font-size:13px;cursor:pointer;border:none;background:none;color:#666;border-bottom:2px solid transparent;transition:.15s}
 .tab.active{color:#1a3a5c;border-bottom-color:#1a3a5c;font-weight:700}
 .panel{display:none}.panel.active{display:block}
-.card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-bottom:10px}
-.card h3{font-size:13px;font-weight:700;color:#1a3a5c;margin-bottom:8px;border-bottom:1px solid #e0e8f0;padding-bottom:5px}
+.card{background:#fff;border:1.5px solid #b0bec5;border-radius:8px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card h3{font-size:13px;font-weight:700;color:#1a3a5c;margin-bottom:10px;border-bottom:2px solid #cdd8e8;padding-bottom:6px;letter-spacing:.3px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
 .field{margin-bottom:7px}
 .fl{font-size:12px;color:#555;display:block;margin-bottom:2px;font-weight:500}
-input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;padding:5px 8px;border:1px solid #ccc;border-radius:5px;background:#fff;color:#222;transition:.15s}
+input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;padding:6px 9px;border:1.5px solid #b0bec5;border-radius:5px;background:#fff;color:#222;transition:.15s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.1)}
 textarea{resize:vertical;min-height:50px;line-height:1.5}
-.ing-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.ing-table{width:100%;border-collapse:collapse;font-size:12px}
 .ing-table th{background:#eef2f7;padding:5px 6px;border:1px solid #ccc;font-size:11px;font-weight:700;text-align:center}
 .ing-table td{border:1px solid #ddd;padding:2px 3px;vertical-align:middle}
 .ing-table td input,.ing-table td select{font-size:12px;padding:3px 5px;border:none;background:transparent;width:100%}
@@ -1657,49 +1657,51 @@ function renderEditor() {
   html += '<button class="btn btn-sm" onclick="document.getElementById(\'cust-form\').style.display=\'none\'">キャンセル</button></div>';
   html += '</div>';
 
-  // 原材料テーブル（2段構成）
-  html += '<div style="overflow-x:auto">';
+  // 原材料テーブル
+  html += '<div style="overflow-x:auto;margin-top:8px">';
   html += '<table class="ing-table">';
   html += '<colgroup>';
-  html += '<col style="width:32px">'; // No
-  html += '<col style="min-width:130px">'; // 原材料名
-  html += '<col style="min-width:80px">'; // 国名
-  html += '<col style="min-width:85px">'; // アレルゲン
-  html += '<col style="width:80px">'; // 重量
-  html += '<col style="width:95px">'; // 単価
-  html += '<col style="width:80px">'; // 原材料費
-  html += '<col style="width:65px">'; // 配合比
-  html += '<col style="min-width:60px">'; // 特色
-  html += '<col style="min-width:60px">'; // 用途
-  html += '<col style="min-width:80px">'; // GMO
-  html += '<col style="width:36px">'; // 削除
+  html += '<col style="width:30px">';   // No
+  html += '<col style="width:150px">';  // 原材料名
+  html += '<col style="width:90px">';   // 国名
+  html += '<col style="width:90px">';   // アレルゲン
+  html += '<col style="width:75px">';   // 重量
+  html += '<col style="width:90px">';   // 単価
+  html += '<col style="width:80px">';   // 原材料費
+  html += '<col style="width:60px">';   // 配合比
+  html += '<col style="width:70px">';   // 特色
+  html += '<col style="width:70px">';   // 用途
+  html += '<col style="width:80px">';   // GMO
+  html += '<col style="width:32px">';   // 削除
   html += '</colgroup>';
   html += '<thead>';
-  // 1行目：グループヘッダー
-  html += '<tr style="background:#1a3a5c;color:#fff">';
-  html += '<th colspan="4" style="text-align:center;padding:5px;font-size:11px;border:1px solid #2a5a8c">📋 基本情報</th>';
-  html += '<th colspan="4" style="text-align:center;padding:5px;font-size:11px;background:#0f5132;border:1px solid #1a7a4a">💰 重量・原価</th>';
-  html += '<th colspan="3" style="text-align:center;padding:5px;font-size:11px;background:#3d3a2a;border:1px solid #5a5530">📑 規格情報</th>';
-  html += '<th style="background:#555;border:1px solid #666"></th>';
-  html += '</tr>';
-  // 2行目：列名
-  html += '<tr>';
-  html += '<th>No</th><th>原材料名</th><th>国名</th><th>アレルゲン</th>';
-  html += '<th style="background:#e8f5ee">重量(g)</th><th style="background:#e8f5ee">単価(円/kg)</th>';
-  html += '<th style="background:#e8f5ee">原材料費</th><th style="background:#e8f5ee">配合比</th>';
-  html += '<th>特色原材料</th><th>添加物用途</th><th>遺伝子組換え</th><th></th>';
+  html += '<tr style="background:#2c4a6e;color:#fff;font-size:11px">';
+  html += '<th style="padding:5px 4px">No</th>';
+  html += '<th style="padding:5px 4px;text-align:left">原材料名</th>';
+  html += '<th style="padding:5px 4px">国名</th>';
+  html += '<th style="padding:5px 4px">アレルゲン</th>';
+  html += '<th style="padding:5px 4px;background:#1a6b3c">重量(g)</th>';
+  html += '<th style="padding:5px 4px;background:#1a6b3c">単価(円/kg)</th>';
+  html += '<th style="padding:5px 4px;background:#1a6b3c">原材料費</th>';
+  html += '<th style="padding:5px 4px;background:#1a6b3c">配合比</th>';
+  html += '<th style="padding:5px 4px;background:#4a4020">特色原材料</th>';
+  html += '<th style="padding:5px 4px;background:#4a4020">添加物用途</th>';
+  html += '<th style="padding:5px 4px;background:#4a4020">遺伝子組換え</th>';
+  html += '<th style="padding:5px 4px;background:#3a3a3a"></th>';
   html += '</tr>';
   html += '</thead>';
   html += '<tbody id="ing-tbody"></tbody>';
   // 合計行
-  html += '<tfoot><tr style="background:#eef2f7;font-weight:700">';
-  html += '<td colspan="4" style="padding:5px 8px;font-size:12px;text-align:right;border:1px solid #ccc">合計</td>';
-  html += '<td id="foot-weight" style="text-align:right;padding:5px 6px;background:#d4edda;border:1px solid #aad4b8;font-size:12px">0.0g</td>';
-  html += '<td style="background:#d4edda;border:1px solid #aad4b8"></td>';
-  html += '<td id="foot-cost" style="text-align:right;padding:5px 6px;background:#d4edda;border:1px solid #aad4b8;font-size:12px;color:#1a3a5c">0.0円</td>';
-  html += '<td style="text-align:center;background:#d4edda;border:1px solid #aad4b8;font-size:12px">100%</td>';
-  html += '<td colspan="4" style="border:1px solid #ccc"></td>';
-  html += '</tr></tfoot>';
+  html += '<tfoot>';
+  html += '<tr style="background:#f0f4f8;font-weight:700;font-size:12px">';
+  html += '<td colspan="4" style="padding:5px 8px;text-align:right;border-top:2px solid #2c4a6e;color:#555">合　計</td>';
+  html += '<td id="foot-weight" style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#d8f0e4;color:#0f5132">0.0g</td>';
+  html += '<td style="border-top:2px solid #2c4a6e;background:#d8f0e4"></td>';
+  html += '<td id="foot-cost" style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#d8f0e4;color:#0f5132">—</td>';
+  html += '<td style="padding:5px 6px;text-align:center;border-top:2px solid #2c4a6e;background:#d8f0e4;color:#1a3a5c">100%</td>';
+  html += '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>';
+  html += '</tr>';
+  html += '</tfoot>';
   html += '</table></div>';
 
   // 一括表示テキスト
@@ -1931,6 +1933,8 @@ function showFoodResults() { if(document.getElementById('isearch').value) search
 function hideFoodResults() { setTimeout(function(){ var r=document.getElementById('food-results'); if(r) r.style.display='none'; }, 200); }
 
 function addFoodIng(name) {
+  if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
+  if (!currentSpec.ings) currentSpec.ings = [];
   var d = FOOD_DB[name];
   currentSpec.ings.push({
     name:name, country:d.co||'', allergens:(d.al||[]).join('・'),
@@ -1941,6 +1945,7 @@ function addFoodIng(name) {
   var r=document.getElementById('food-results'); if(r) r.style.display='none';
   renderIngTbody();
   syncAllergens();
+  toast('「'+name+'」を追加しました ✓');
 }
 
 function toggleCustForm() {
@@ -1949,17 +1954,22 @@ function toggleCustForm() {
 }
 
 function addCustIng() {
+  if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
   var name = gv('cf-name');
   if (!name) { alert('原材料名を入力してください'); return; }
+  if (!currentSpec.ings) currentSpec.ings = [];
   currentSpec.ings.push({
     name:name, country:gv('cf-country'), allergens:gv('cf-al'),
-    ratio:'', feature:gv('cf-feat'), addUse:gv('cf-use'), gmo:'', amount:+gv('cf-g')||0, unitPrice:0,
+    ratio:'', feature:gv('cf-feat'), addUse:gv('cf-use'), gmo:'',
+    amount:+gv('cf-g')||0, unitPrice:+gv('cf-price')||0,
     e:+gv('cf-e')||0, p:+gv('cf-p')||0, f:+gv('cf-f')||0, c:+gv('cf-c')||0, s:+gv('cf-s')||0
   });
-  document.getElementById('cust-form').style.display='none';
-  ['cf-name','cf-country','cf-al','cf-e','cf-p','cf-f','cf-c','cf-s','cf-g','cf-feat','cf-use'].forEach(function(id){ sv(id,''); });
+  var cfEl = document.getElementById('cust-form');
+  if (cfEl) cfEl.style.display='none';
+  ['cf-name','cf-country','cf-al','cf-e','cf-p','cf-f','cf-c','cf-s','cf-g','cf-price','cf-feat','cf-use'].forEach(function(id){ sv(id,''); });
   renderIngTbody();
   syncAllergens();
+  toast('原材料を追加しました ✓');
 }
 
 // ===== 一括表示テキスト自動生成 =====
