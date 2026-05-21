@@ -86,7 +86,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 /* ===== 原価計算システム (スコープ) ===== */
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
-:root {
+#fc-root {
   --bg:#1a1c20;--bg2:#22252b;--bg3:#2a2e36;--surface:#2e3340;--surface2:#363c4a;
   --border:#3d4456;--border2:#4a5268;
   --accent:#4fc08d;--adim:rgba(79,192,141,0.15);
@@ -96,8 +96,8 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   --text:#e8eaf0;--text2:#9aa0b4;--text3:#5c6278;
   --mono:'JetBrains Mono',monospace;--sans:'Noto Sans JP',sans-serif;--rad:10px;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+#fc-root * {box-sizing:border-box;margin:0;padding:0;}
+#fc-root {font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
 .shell{display:flex;min-height:100vh;}
 /* SIDEBAR */
 .sb{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto;display:flex;flex-direction:column;}
