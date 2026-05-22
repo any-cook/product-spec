@@ -980,8 +980,7 @@ function addAllMasterIngs() {
   if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
   if (!currentSpec.ings) currentSpec.ings = [];
   if (!masterData.materialPrices.length) {
-    alert('マスターに原材料が登録されていません。
-⑦マスター登録タブで先に登録してください。');
+    alert('マスターに原材料が登録されていません。\n⑦マスター登録タブで先に登録してください。');
     return;
   }
   var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
