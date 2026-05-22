@@ -250,7 +250,7 @@ function toast(msg, isErr) {
 function initFirebase() {
   try {
     if (!firebase.apps.length) firebase.initializeApp(FB_CFG);
-    db = firebase.app("fc").firestore();
+    db = firebase.firestore();
     document.getElementById('status-dot').className = 'status-dot online';
     document.getElementById('status-text').textContent = 'Firestore 接続済み';
     loadList();
