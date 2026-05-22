@@ -1457,7 +1457,7 @@ async function loadMasterFromFirestore() {
       var total = masterData.materialPrices.length + masterData.processingCosts.length
                 + masterData.packagingCosts.length + masterData.shippingCosts.length
                 + masterData.additionalCosts.length;
-      if (total > 0) toast('マスター読込完了（' + masterData.materialPrices.length + '品目）✓');
+      if (total > 0) toast('マスター読込完了（原材料' + masterData.materialPrices.length + '品目）✓');
     }
     console.log('[Master] 読込完了');
   } catch(e) { console.warn('[Master] 読込失敗:', e.message); }
@@ -1468,6 +1468,7 @@ async function saveMasterToFirestore() {
   try {
     await db.collection('masters').doc('all').set(masterData);
     toast('マスターを保存しました ✓');
+    renderMasterTables(); // 件数を更新
   } catch(e) { toast('マスター保存失敗: ' + e.message, true); }
 }
 
@@ -1662,12 +1663,30 @@ function renderMasterPanel() {
 }
 
 // ===== マスターテーブル描画 =====
+function updateAccordionTitles() {
+  var titles = {
+    'acc-mat':  'A. 原材料価格マスター（' + masterData.materialPrices.length + '件）',
+    'acc-proc': 'B. 商品別加工費マスター（' + masterData.processingCosts.length + '件）',
+    'acc-pkg':  'C. 包材費マスター（' + masterData.packagingCosts.length + '件）',
+    'acc-add':  'D. 商品別追加コスト（' + masterData.additionalCosts.length + '件）',
+    'acc-ship': 'E. 送料マスター（' + masterData.shippingCosts.length + '件）',
+  };
+  Object.keys(titles).forEach(function(id) {
+    // アコーディオンカードのh3要素を更新
+    var panel = document.getElementById(id);
+    if (!panel) return;
+    var h3 = panel.parentElement && panel.parentElement.querySelector('h3');
+    if (h3) h3.textContent = titles[id];
+  });
+}
+
 function renderMasterTables() {
   renderMatTable();
   renderProcTable();
   renderPkgTable();
   renderAddTable();
   renderShipTable();
+  updateAccordionTitles();
 }
 
 function mkTd(val, field, idx, arr, type) {
@@ -1679,7 +1698,7 @@ function mkCheckTd(val, field, idx, arr) {
   return '<td style="text-align:center"><input type="checkbox" ' + (val?'checked':'') + ' onchange="' + arr + '[' + idx + '][\'' + field + '\']=this.checked"></td>';
 }
 function mkDelBtn(arr, idx, fn) {
-  return '<td style="text-align:center"><button class="btn btn-sm btn-danger" style="padding:2px 5px" onclick="' + arr + '.splice(' + idx + ',1);' + fn + '()">✕</button></td>';
+  return '<td style="text-align:center"><button class="btn btn-sm btn-danger" style="padding:2px 5px" onclick="' + arr + '.splice(' + idx + ',1);' + fn + '();updateAccordionTitles()">✕</button></td>';
 }
 
 function renderMatTable() {
@@ -1705,6 +1724,7 @@ function renderMatTable() {
 function addMaterialRow() {
   masterData.materialPrices.push({name:'', unitPrice:0, isOrganic:false, limitedTo:'', e:0, p:0, f:0, c:0, s:0});
   renderMatTable();
+  updateAccordionTitles();
 }
 
 function renderProcTable() {
@@ -1724,6 +1744,7 @@ function renderProcTable() {
 function addProcRow() {
   masterData.processingCosts.push({productName:'', laborCost:0, utilityCost:0});
   renderProcTable();
+  updateAccordionTitles();
 }
 
 function renderPkgTable() {
@@ -1743,6 +1764,7 @@ function renderPkgTable() {
 function addPkgRow() {
   masterData.packagingCosts.push({productName:'', cost:0, memo:''});
   renderPkgTable();
+  updateAccordionTitles();
 }
 
 function renderAddTable() {
@@ -1762,6 +1784,7 @@ function renderAddTable() {
 function addAddRow() {
   masterData.additionalCosts.push({productName:'', itemName:'', cost:0});
   renderAddTable();
+  updateAccordionTitles();
 }
 
 function renderShipTable() {
@@ -1782,6 +1805,7 @@ function renderShipTable() {
 function addShipRow() {
   masterData.shippingCosts.push({region:'', weightLimit:0, cost:0, carrier:''});
   renderShipTable();
+  updateAccordionTitles();
 }
 
 // ===== CSV エクスポート =====
@@ -1848,6 +1872,7 @@ function importMaterialCSV(input) {
       imported++;
     });
     renderMatTable();
+    updateAccordionTitles();
     toast(imported + '件の原材料価格を取込みました ✓');
     input.value = '';
   };
@@ -1871,7 +1896,7 @@ function importProcCSV(input) {
       if (ex) { ex.laborCost=+r[1]||0; ex.utilityCost=+r[2]||0; }
       else masterData.processingCosts.push({productName:name, laborCost:+r[1]||0, utilityCost:+r[2]||0});
     });
-    renderProcTable(); toast('加工費マスターを取込みました ✓'); input.value='';
+    renderProcTable(); updateAccordionTitles(); toast('加工費マスターを取込みました ✓'); input.value='';
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -1893,7 +1918,7 @@ function importPkgCSV(input) {
       if (ex) { ex.cost=+r[1]||0; ex.memo=r[2]||''; }
       else masterData.packagingCosts.push({productName:name, cost:+r[1]||0, memo:r[2]||''});
     });
-    renderPkgTable(); toast('包材費マスターを取込みました ✓'); input.value='';
+    renderPkgTable(); updateAccordionTitles(); toast('包材費マスターを取込みました ✓'); input.value='';
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -1914,7 +1939,7 @@ function importAddCSV(input) {
       masterData.additionalCosts.push({productName:r[0].trim(), itemName:r[1].trim(), cost:+r[2]||0});
       imported++;
     });
-    renderAddTable(); toast(imported + '件の追加コストを取込みました ✓'); input.value='';
+    renderAddTable(); updateAccordionTitles(); toast(imported + '件の追加コストを取込みました ✓'); input.value='';
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -1935,7 +1960,7 @@ function importShipCSV(input) {
       masterData.shippingCosts.push({region:r[0].trim(), weightLimit:+r[1]||0, cost:+r[2]||0, carrier:r[3]||''});
       imported++;
     });
-    renderShipTable(); toast(imported + '件の送料を取込みました ✓'); input.value='';
+    renderShipTable(); updateAccordionTitles(); toast(imported + '件の送料を取込みました ✓'); input.value='';
   };
   reader.readAsText(file, 'UTF-8');
 }
