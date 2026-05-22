@@ -760,10 +760,45 @@ function ingCost(ing) {
 
 function updateIngField(i, field, val) {
   currentSpec.ings[i][field] = (field === 'amount' || field === 'unitPrice') ? +val : val;
-  if (field === 'amount') calcNutritionSilent();
-  if (field === 'name') autoLabelText();
-  if (field === 'allergens') syncAllergens();
-  updateIngSummary();
+  if (field === 'amount' || field === 'unitPrice') {
+    // 重量・単価変更 → 栄養計算＋原価計算を同時更新
+    calcNutritionSilent();
+    updateIngSummary(); // recalcCostを内包
+  } else if (field === 'name') {
+    // 名前変更 → マスターを即照合して単価・栄養素を自動セット
+    var ing = currentSpec.ings[i];
+    var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
+    var mat = masterData.materialPrices.find(function(m) {
+      if (!matchMaster(ing.name, m.name)) return false;
+      return !m.limitedTo || m.limitedTo.trim() === '' || m.limitedTo === pname;
+    });
+    if (!mat) mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    if (!mat) {
+      // FOOD_DBからも検索
+      var fd = FOOD_DB[ing.name];
+      if (fd) { ing.e=fd.e; ing.p=fd.p; ing.f=fd.f; ing.c=fd.c; ing.s=fd.s; }
+    }
+    if (mat) {
+      if (mat.unitPrice > 0) {
+        ing.unitPrice = mat.unitPrice;
+        // 単価セルをリアルタイム更新
+        var prcEl = document.getElementById('prc-'+i);
+        if (prcEl) prcEl.value = mat.unitPrice;
+      }
+      if (mat.e > 0) ing.e = mat.e;
+      if (mat.p != null) ing.p = mat.p;
+      if (mat.f != null) ing.f = mat.f;
+      if (mat.c != null) ing.c = mat.c;
+      if (mat.s != null) ing.s = mat.s;
+    }
+    autoLabelText();
+    updateIngSummary();
+  } else if (field === 'allergens') {
+    syncAllergens();
+    updateIngSummary();
+  } else {
+    updateIngSummary();
+  }
 }
 
 function updateIngSummary() {
@@ -1023,8 +1058,16 @@ function calcNutritionSilent() {
     c += (ing.c||0)*r; s += (ing.s||0)*r;
   });
   if (hasData) {
+    // 画面の栄養成分タブのフィールドを更新
     sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
     sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2));
+    // currentSpec.nutritionオブジェクトも更新（保存時に自動反映）
+    if (!currentSpec.nutrition) currentSpec.nutrition = {};
+    currentSpec.nutrition.e = Math.round(e);
+    currentSpec.nutrition.p = +p.toFixed(1);
+    currentSpec.nutrition.f = +f.toFixed(1);
+    currentSpec.nutrition.c = +c.toFixed(1);
+    currentSpec.nutrition.s = +s.toFixed(2);
   }
 }
 
@@ -1224,17 +1267,40 @@ async function saveMasterToFirestore() {
 }
 
 // ===== マスターから規格書に価格を自動反映 =====
+function matchMaster(ingName, masterName) {
+  if (!ingName || !masterName) return false;
+  if (ingName === masterName) return true;
+  var n1 = ingName.replace(/^有機/,'').replace(/\s/g,'');
+  var n2 = masterName.replace(/^有機/,'').replace(/\s/g,'');
+  return n1 === n2;
+}
+
 function applyMasterToSpec() {
   if (!currentSpec || !currentSpec.ings) return;
   var applied = 0;
+  var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
   currentSpec.ings.forEach(function(ing) {
+    // 限定商品チェック：limitedToが空か商品名と一致するマスターを優先
     var mat = masterData.materialPrices.find(function(m) {
-      var n1 = ing.name.replace(/^有機/, '');
-      var n2 = m.name.replace(/^有機/, '');
-      return n1 === n2 || ing.name === m.name;
+      if (!matchMaster(ing.name, m.name)) return false;
+      return !m.limitedTo || m.limitedTo.trim() === '' || m.limitedTo === pname;
     });
-    if (mat && mat.unitPrice > 0) {
-      ing.unitPrice = mat.unitPrice;
+    if (!mat) {
+      // 限定なしで再検索
+      mat = masterData.materialPrices.find(function(m) {
+        return matchMaster(ing.name, m.name);
+      });
+    }
+    if (mat) {
+      if (mat.unitPrice > 0) ing.unitPrice = mat.unitPrice;
+      // 栄養素もマスターから反映（FOOD_DBにない独自食材用）
+      if (mat.e != null && mat.e > 0) ing.e = mat.e;
+      if (mat.p != null) ing.p = mat.p;
+      if (mat.f != null) ing.f = mat.f;
+      if (mat.c != null) ing.c = mat.c;
+      if (mat.s != null) ing.s = mat.s;
+      // 有機フラグ
+      if (mat.isOrganic && !ing.feature) ing.feature = '有機';
       applied++;
     }
   });
@@ -1282,12 +1348,17 @@ function renderMasterPanel() {
   html += '</div></div>';
   html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：原材料名,単価(円/kg),有機(1=有機),限定商品名</p>';
   html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
-  html += '<colgroup><col style="width:160px"><col style="width:100px"><col style="width:70px"><col style="width:150px"><col style="width:30px"></colgroup>';
+  html += '<colgroup><col style="width:140px"><col style="width:90px"><col style="width:45px"><col style="width:110px"><col style="width:55px"><col style="width:75px"><col style="width:55px"><col style="width:70px"><col style="width:55px"><col style="width:30px"></colgroup>';
   html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
   html += '<th style="padding:5px 6px;text-align:left">原材料名</th>';
   html += '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>';
   html += '<th style="padding:5px 6px;text-align:center">有機</th>';
-  html += '<th style="padding:5px 6px;text-align:left">限定商品名（空欄=全商品）</th>';
+  html += '<th style="padding:5px 6px;text-align:left">限定商品名</th>';
+  html += '<th style="padding:5px 6px;text-align:center">kcal</th>';
+  html += '<th style="padding:5px 6px;text-align:center">たんぱく質g</th>';
+  html += '<th style="padding:5px 6px;text-align:center">脂質g</th>';
+  html += '<th style="padding:5px 6px;text-align:center">炭水化物g</th>';
+  html += '<th style="padding:5px 6px;text-align:center">食塩g</th>';
   html += '<th></th></tr></thead>';
   html += '<tbody id="master-mat-tbody"></tbody></table></div></div>';
 
@@ -1403,13 +1474,18 @@ function renderMatTable() {
     html += mkTd(m.unitPrice, 'unitPrice', i, 'masterData.materialPrices', 'number');
     html += mkCheckTd(m.isOrganic, 'isOrganic', i, 'masterData.materialPrices');
     html += mkTd(m.limitedTo, 'limitedTo', i, 'masterData.materialPrices');
+    html += mkTd(m.e||'', 'e', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.p||'', 'p', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.f||'', 'f', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.c||'', 'c', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.s||'', 's', i, 'masterData.materialPrices', 'number');
     html += mkDelBtn('masterData.materialPrices', i, 'renderMatTable');
     html += '</tr>';
   });
   tbody.innerHTML = html;
 }
 function addMaterialRow() {
-  masterData.materialPrices.push({name:'', unitPrice:0, isOrganic:false, limitedTo:''});
+  masterData.materialPrices.push({name:'', unitPrice:0, isOrganic:false, limitedTo:'', e:0, p:0, f:0, c:0, s:0});
   renderMatTable();
 }
 
@@ -1521,9 +1597,9 @@ function parseCSV(text) {
 }
 
 function exportMaterialCSV() {
-  var rows = [['原材料名','単価(円/kg)','有機(1=有機)','限定商品名']];
+  var rows = [['原材料名','単価(円/kg)','有機(1=有機)','限定商品名','エネルギー(kcal/100g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)']];
   masterData.materialPrices.forEach(function(m){
-    rows.push([m.name, m.unitPrice, m.isOrganic?1:0, m.limitedTo||'']);
+    rows.push([m.name, m.unitPrice, m.isOrganic?1:0, m.limitedTo||'', m.e||0, m.p||0, m.f||0, m.c||0, m.s||0]);
   });
   downloadCSV('原材料価格マスター.csv', rows);
 }
@@ -1542,8 +1618,14 @@ function importMaterialCSV(input) {
         existing.unitPrice = +r[1] || 0;
         if (r[2] !== undefined) existing.isOrganic = r[2]==='1'||r[2]==='true';
         if (r[3] !== undefined) existing.limitedTo = r[3].trim();
+        if (r[4] !== undefined) existing.e = +r[4]||0;
+        if (r[5] !== undefined) existing.p = +r[5]||0;
+        if (r[6] !== undefined) existing.f = +r[6]||0;
+        if (r[7] !== undefined) existing.c = +r[7]||0;
+        if (r[8] !== undefined) existing.s = +r[8]||0;
       } else {
-        masterData.materialPrices.push({name:name, unitPrice:+r[1]||0, isOrganic:r[2]==='1', limitedTo:(r[3]||'').trim()});
+        masterData.materialPrices.push({name:name, unitPrice:+r[1]||0, isOrganic:r[2]==='1', limitedTo:(r[3]||'').trim(),
+          e:+r[4]||0, p:+r[5]||0, f:+r[6]||0, c:+r[7]||0, s:+r[8]||0});
       }
       imported++;
     });
