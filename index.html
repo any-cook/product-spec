@@ -507,7 +507,15 @@ function renderEditor() {
     +   fld('名称',       'text',   'f-ptype',    h(b.ptype),    'oninput="currentSpec.basic.ptype=this.value"')
     + '</div>'
     + '<div class="g3">'
-    +   fld('内容量',            'text', 'f-amount',  h(b.amount),  'oninput="currentSpec.basic.amount=this.value"')
+    +   '<div class="field"><label class="fl">内容量</label>'
+    +     '<div style="display:flex;gap:6px;align-items:center">'
+    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'" style="flex:1" oninput="currentSpec.basic.amount=this.value">'
+    +       '<label class="btn btn-sm" style="cursor:pointer;white-space:nowrap;margin:0;font-size:11px" title="商品名,内容量(g)のCSVをインポート">'
+    +         '📤 CSV'
+    +         '<input type="file" accept=".csv" style="display:none" onchange="importAmountCSV(this)">'
+    +       '</label>'
+    +     '</div>'
+    +   '</div>'
     +   fld('賞味期限（開封前）','text', 'f-expiry',  h(b.expiry),  'oninput="currentSpec.basic.expiry=this.value"')
     +   fld('製造国',            'text', 'f-country', h(b.country), 'oninput="currentSpec.basic.country=this.value"')
     + '</div>'
@@ -892,11 +900,34 @@ function searchFood() {
   var q = document.getElementById('isearch').value;
   var r = document.getElementById('food-results');
   if (!q || q.length < 1) { r.style.display='none'; return; }
-  var matches = Object.keys(FOOD_DB).filter(function(k){ return k.indexOf(q) >= 0; });
-  if (!matches.length) { r.style.display='none'; return; }
+
+  var results = [];
+  var seen = {};
+
+  // マスターDBを優先検索
+  masterData.materialPrices.forEach(function(m) {
+    if (m.name && m.name.indexOf(q) >= 0 && !seen[m.name]) {
+      results.push({name: m.name, src: 'master'});
+      seen[m.name] = true;
+    }
+  });
+
+  // 内蔵FOOD_DBを検索
+  Object.keys(FOOD_DB).forEach(function(k) {
+    if (k.indexOf(q) >= 0 && !seen[k]) {
+      results.push({name: k, src: 'db'});
+      seen[k] = true;
+    }
+  });
+
+  if (!results.length) { r.style.display='none'; return; }
+
   var html = '';
-  matches.slice(0,8).forEach(function(name){
-    html += '<div class="sr-item" onmousedown="addFoodIng(\''+name+'\')">'+name+'</div>';
+  results.slice(0, 12).forEach(function(item) {
+    var badge = item.src === 'master'
+      ? '<span style="font-size:10px;background:#d4edda;color:#155a32;padding:1px 5px;border-radius:3px;margin-left:6px">マスター</span>'
+      : '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;padding:1px 5px;border-radius:3px;margin-left:6px">内蔵DB</span>';
+    html += '<div class="sr-item" onmousedown="addFoodIng(\''+item.name+'\')">'+h(item.name)+badge+'</div>';
   });
   r.innerHTML = html;
   r.style.display = 'block';
@@ -908,17 +939,130 @@ function hideFoodResults() { setTimeout(function(){ var r=document.getElementByI
 function addFoodIng(name) {
   if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
   if (!currentSpec.ings) currentSpec.ings = [];
-  var d = FOOD_DB[name];
-  currentSpec.ings.push({
-    name:name, country:d.co||'', allergens:(d.al||[]).join('・'),
-    ratio:'', feature:'', addUse:'', gmo:'', amount:0, unitPrice:0,
-    e:d.e, p:d.p, f:d.f, c:d.c, s:d.s
+
+  // マスターDBから取得（優先）
+  var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
+  var mat = masterData.materialPrices.find(function(m) {
+    if (!matchMaster(name, m.name)) return false;
+    return !m.limitedTo || m.limitedTo.trim() === '' || m.limitedTo === pname;
   });
+  if (!mat) mat = masterData.materialPrices.find(function(m){ return matchMaster(name, m.name); });
+
+  // 内蔵FOOD_DBから取得（マスターにない場合）
+  var fd = FOOD_DB[name];
+
+  var ing = {
+    name: name,
+    country: mat ? '' : (fd ? fd.co||'' : ''),
+    allergens: fd ? (fd.al||[]).join('・') : '',
+    ratio: '', feature: '', addUse: '', gmo: '', amount: 0,
+    unitPrice: mat && mat.unitPrice > 0 ? mat.unitPrice : 0,
+    e: mat && mat.e > 0 ? mat.e : (fd ? fd.e : 0),
+    p: mat && mat.p != null ? mat.p : (fd ? fd.p : 0),
+    f: mat && mat.f != null ? mat.f : (fd ? fd.f : 0),
+    c: mat && mat.c != null ? mat.c : (fd ? fd.c : 0),
+    s: mat && mat.s != null ? mat.s : (fd ? fd.s : 0),
+  };
+  if (mat && mat.isOrganic) ing.feature = '有機';
+  if (mat && mat.gmo) ing.gmo = mat.gmo;
+
+  currentSpec.ings.push(ing);
   sv('isearch','');
   var r=document.getElementById('food-results'); if(r) r.style.display='none';
   renderIngTbody();
   syncAllergens();
-  toast('「'+name+'」を追加しました ✓');
+  var src = mat ? 'マスターDB' : (fd ? '内蔵DB' : '');
+  toast('「'+name+'」を追加しました'+(src?' ('+src+')':'')+' ✓');
+}
+
+// ===== マスター原材料を一括追加 =====
+function addAllMasterIngs() {
+  if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
+  if (!currentSpec.ings) currentSpec.ings = [];
+  if (!masterData.materialPrices.length) {
+    alert('マスターに原材料が登録されていません。
+⑦マスター登録タブで先に登録してください。');
+    return;
+  }
+  var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
+  // 現在のings名一覧（重複追加防止）
+  var existingNames = currentSpec.ings.map(function(i){ return i.name; });
+
+  var added = 0;
+  masterData.materialPrices.forEach(function(mat) {
+    if (!mat.name) return;
+    // 限定商品チェック
+    if (mat.limitedTo && mat.limitedTo.trim() !== '' && mat.limitedTo !== pname) return;
+    // 重複チェック
+    if (existingNames.indexOf(mat.name) >= 0) return;
+
+    var fd = FOOD_DB[mat.name] || {};
+    currentSpec.ings.push({
+      name: mat.name,
+      country: fd.co || '',
+      allergens: fd.al ? fd.al.join('・') : '',
+      ratio: '', feature: mat.isOrganic ? '有機' : '', addUse: '', gmo: '', amount: 0,
+      unitPrice: mat.unitPrice || 0,
+      e: mat.e > 0 ? mat.e : (fd.e || 0),
+      p: mat.p != null ? mat.p : (fd.p || 0),
+      f: mat.f != null ? mat.f : (fd.f || 0),
+      c: mat.c != null ? mat.c : (fd.c || 0),
+      s: mat.s != null ? mat.s : (fd.s || 0),
+    });
+    existingNames.push(mat.name);
+    added++;
+  });
+
+  renderIngTbody();
+  syncAllergens();
+  toast('マスターから ' + added + '品目を追加しました ✓');
+}
+
+// ===== 内容量CSVインポート =====
+// CSV形式: 商品名,内容量(g)  または 単純に数値1列（現在の商品に適用）
+function importAmountCSV(input) {
+  var file = input.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var rows = parseCSV(text);
+    if (!rows.length) { toast('CSVが空です', true); input.value=''; return; }
+
+    // 1列だけ（数値）の場合は現在の規格書の内容量に直接適用
+    if (rows[0].length === 1 || (rows[0].length === 2 && !isNaN(rows[0][0]))) {
+      var val = rows[0][0].trim();
+      if (!isNaN(val) && +val > 0) {
+        if (!currentSpec || !currentSpec.basic) { toast('規格書を開いてください', true); return; }
+        currentSpec.basic.amount = +val + 'g';
+        var el = document.getElementById('f-amount');
+        if (el) el.value = currentSpec.basic.amount;
+        toast('内容量を ' + currentSpec.basic.amount + ' に設定しました ✓');
+        input.value = ''; return;
+      }
+    }
+
+    // 2列形式: 商品名,内容量(g) → 商品名が一致するものを適用
+    var pname = currentSpec && currentSpec.basic ? currentSpec.basic.pname : '';
+    var applied = false;
+    rows.forEach(function(r, i) {
+      if (i === 0 && isNaN(r[1])) return; // ヘッダースキップ
+      if (r.length < 2) return;
+      var rName = r[0].trim();
+      var rVal  = r[1].trim();
+      if (rName === pname || !pname) {
+        if (!isNaN(rVal) && +rVal > 0) {
+          currentSpec.basic.amount = rVal + 'g';
+          var el = document.getElementById('f-amount');
+          if (el) el.value = currentSpec.basic.amount;
+          applied = true;
+        }
+      }
+    });
+    if (applied) toast('内容量を設定しました ✓');
+    else toast('一致する商品名が見つかりませんでした', true);
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 function toggleCustForm() {
