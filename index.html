@@ -301,7 +301,8 @@ function makeEmptySpec() {
       country:'日本', storage:'直射日光、高温多湿を避けて常温で保存してください。',
       storage2:'要冷蔵', gmo:'無', preservative:'無', degradation:'本品特有の風味がなくなること',
       contami:'直射日光、高温多湿を避けて常温で保存してください。',
-      mfr:'合同会社 エニクック', maddr:'福岡県筑紫野市阿志岐133-1', created:todayStr()
+      mfr:'合同会社 エニクック', maddr:'福岡県筑紫野市阿志岐133-1', created:todayStr(),
+      buyer:'', buyerContact:''
     },
     ings: [],
     nutrition: {e:214, p:6.2, f:14.9, c:15.5, s:0.6, w:92.5, sf:'', su:'', unit:'1袋130g', note:'推定値'},
@@ -521,10 +522,14 @@ function renderEditor() {
     +   fld('品質劣化内容',   'text', 'f-degradation', h(b.degradation), 'oninput="currentSpec.basic.degradation=this.value"')
     +   fld('コンタミ注意表示','text','f-contami',      h(b.contami),     'oninput="currentSpec.basic.contami=this.value"')
     + '</div>'
-    + '<div class="card"><h3>製造者情報</h3>'
+    + '<div class="card"><h3>製造者・販売先情報</h3>'
     + '<div class="g2">'
     +   fld('製造者名','text','f-mfr',   h(b.mfr),   'oninput="currentSpec.basic.mfr=this.value"')
     +   fld('所在地',  'text','f-maddr', h(b.maddr), 'oninput="currentSpec.basic.maddr=this.value"')
+    + '</div>'
+    + '<div class="g2">'
+    +   fld('販売先会社名','text','f-buyer',     h(b.buyer||''),     'oninput="currentSpec.basic.buyer=this.value"')
+    +   fld('販売先担当者','text','f-buyerContact', h(b.buyerContact||''), 'oninput="currentSpec.basic.buyerContact=this.value"')
     + '</div>'
     +   fld('作成日','text','f-created', h(b.created), 'oninput="currentSpec.basic.created=this.value"')
     + '</div>'
