@@ -822,7 +822,7 @@ function updateIngSummary() {
   var bw = document.getElementById('banner-weight');
   if (bm) bm.textContent = totalCost.toFixed(1) + ' 円';
   if (bw) bw.textContent = total.toFixed(1) + ' g';
-  // 配合比セル更新（再描画なし）
+  // セル更新（再描画なし）
   currentSpec.ings.forEach(function(ing, i) {
     var rCell = document.getElementById('ratio-cell-'+i);
     var cCell = document.getElementById('cost-cell-'+i);
@@ -833,8 +833,36 @@ function updateIngSummary() {
       cCell.style.color = c > 0 ? '#0f5132' : '#bbb';
       cCell.style.fontWeight = c > 0 ? '700' : '400';
     }
+    // 栄養素セル更新
+    var r2 = (ing.amount||0) / 100;
+    var hasNut = (ing.e||0) > 0;
+    var nutColor = hasNut ? '#5b3a8c' : '#ccc';
+    var cells = {
+      'nut-e-'+i: hasNut||r2>0 ? ((ing.e||0)*r2).toFixed(0) : '—',
+      'nut-p-'+i: hasNut||r2>0 ? ((ing.p||0)*r2).toFixed(1) : '—',
+      'nut-f-'+i: hasNut||r2>0 ? ((ing.f||0)*r2).toFixed(1) : '—',
+      'nut-c-'+i: hasNut||r2>0 ? ((ing.c||0)*r2).toFixed(1) : '—',
+      'nut-s-'+i: hasNut||r2>0 ? ((ing.s||0)*r2).toFixed(2) : '—',
+    };
+    Object.keys(cells).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.textContent = cells[id]; el.style.color = nutColor; }
+    });
   });
   recalcCost();
+  // フッターの栄養素合計を更新
+  var totE=0, totP=0, totF=0, totC=0, totS=0, hasAny=false;
+  currentSpec.ings.forEach(function(ing){
+    var r3 = (ing.amount||0)/100;
+    totE += (ing.e||0)*r3; totP += (ing.p||0)*r3;
+    totF += (ing.f||0)*r3; totC += (ing.c||0)*r3; totS += (ing.s||0)*r3;
+    if ((ing.e||0)>0 || (ing.amount||0)>0) hasAny = true;
+  });
+  var fne = document.getElementById('foot-nut-e'); if(fne) fne.textContent = hasAny ? totE.toFixed(0) : '—';
+  var fnp = document.getElementById('foot-nut-p'); if(fnp) fnp.textContent = hasAny ? totP.toFixed(1) : '—';
+  var fnf = document.getElementById('foot-nut-f'); if(fnf) fnf.textContent = hasAny ? totF.toFixed(1) : '—';
+  var fnc = document.getElementById('foot-nut-c'); if(fnc) fnc.textContent = hasAny ? totC.toFixed(1) : '—';
+  var fns = document.getElementById('foot-nut-s'); if(fns) fns.textContent = hasAny ? totS.toFixed(2) : '—';
 }
 
 function renderIngTbody() {
@@ -848,43 +876,53 @@ function renderIngTbody() {
     }).join('');
     var cost = ingCost(ing);
     var rowBg = i % 2 === 0 ? '#fff' : '#fafcff';
+    // 栄養素（100gあたり値 × 使用量/100）
+    var r = (ing.amount||0) / 100;
+    var nutE = ((ing.e||0) * r).toFixed(0);
+    var nutP = ((ing.p||0) * r).toFixed(1);
+    var nutF = ((ing.f||0) * r).toFixed(1);
+    var nutC = ((ing.c||0) * r).toFixed(1);
+    var nutS = ((ing.s||0) * r).toFixed(2);
+    var hasNut = (ing.e||0) > 0;
+    var nutStyle = 'text-align:right;padding:0 5px;font-size:11px;background:#f8f4ff;color:' + (hasNut ? '#5b3a8c' : '#ccc');
+
     html += '<tr style="background:'+rowBg+'">';
     html += '<td style="text-align:center;color:#aaa;font-size:11px;width:28px">'+(i+1)+'</td>';
-    // 原材料名
     html += '<td><input type="text" value="'+h(ing.name)+'" style="font-weight:500" oninput="updateIngField('+i+',\'name\',this.value)"></td>';
-    // 国名
     html += '<td><input type="text" value="'+h(ing.country)+'" oninput="updateIngField('+i+',\'country\',this.value)"></td>';
-    // アレルゲン
     var alStyle = ing.allergens ? 'color:#c62828;font-weight:500' : '';
     html += '<td><input type="text" value="'+h(ing.allergens)+'" style="'+alStyle+'" oninput="updateIngField('+i+',\'allergens\',this.value)"></td>';
-    // 重量(g) - onchangeでフォーカスを維持しながら更新
+    // 重量
     html += '<td style="background:#f0faf4">';
     html += '<input type="number" id="amt-'+i+'" value="'+(ing.amount||0)+'" min="0" step="0.1"';
     html += ' style="text-align:right;font-weight:600;width:100%"';
     html += ' onchange="updateIngField('+i+',\'amount\',this.value)">';
     html += '</td>';
-    // 単価(円/kg)
+    // 単価
     html += '<td style="background:#f0faf4">';
     html += '<input type="number" id="prc-'+i+'" value="'+(ing.unitPrice||0)+'" min="0" step="1"';
     html += ' style="text-align:right;width:100%"';
     html += ' onchange="updateIngField('+i+',\'unitPrice\',this.value)">';
     html += '</td>';
-    // 原材料費（自動計算）
+    // 原材料費
     var costTxt = cost > 0 ? cost.toFixed(1)+' 円' : '—';
     var costColor = cost > 0 ? '#0f5132' : '#bbb';
     var costFw = cost > 0 ? '700' : '400';
-    html += '<td id="cost-cell-'+i+'" style="text-align:right;padding:0 8px;background:#f0faf4;';
-    html += 'color:'+costColor+';font-size:12px;font-weight:'+costFw+'">'+costTxt+'</td>';
-    // 配合比（自動）
-    html += '<td id="ratio-cell-'+i+'" style="text-align:center;background:#e8f4fd;';
-    html += 'font-size:12px;color:#1a3a5c;font-weight:600">'+(ing.ratio||'0.0')+'%</td>';
+    html += '<td id="cost-cell-'+i+'" style="text-align:right;padding:0 8px;background:#f0faf4;color:'+costColor+';font-size:12px;font-weight:'+costFw+'">'+costTxt+'</td>';
+    // 配合比
+    html += '<td id="ratio-cell-'+i+'" style="text-align:center;background:#e8f4fd;font-size:12px;color:#1a3a5c;font-weight:600">'+(ing.ratio||'0.0')+'%</td>';
+    // 栄養素（使用量あたり計算値）
+    html += '<td id="nut-e-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutE : '—')+'</td>';
+    html += '<td id="nut-p-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutP : '—')+'</td>';
+    html += '<td id="nut-f-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutF : '—')+'</td>';
+    html += '<td id="nut-c-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutC : '—')+'</td>';
+    html += '<td id="nut-s-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutS : '—')+'</td>';
     // 特色原材料
     html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
     // 添加物用途
     html += '<td><input type="text" value="'+h(ing.addUse)+'" oninput="updateIngField('+i+',\'addUse\',this.value)"></td>';
     // 遺伝子組換え
     html += '<td><select style="font-size:11px" onchange="updateIngField('+i+',\'gmo\',this.value)">'+gmoOpts+'</select></td>';
-    // 削除ボタン
     html += '<td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')" style="padding:2px 6px">✕</button></td>';
     html += '</tr>';
   });
@@ -1396,6 +1434,13 @@ async function loadMasterFromFirestore() {
       if (d.packagingCosts)  masterData.packagingCosts  = d.packagingCosts;
       if (d.shippingCosts)   masterData.shippingCosts   = d.shippingCosts;
       if (d.additionalCosts) masterData.additionalCosts = d.additionalCosts;
+      // マスタータブが開いていれば再描画
+      var masterPanel = document.getElementById('panel-master');
+      if (masterPanel) renderMasterTables();
+      var total = masterData.materialPrices.length + masterData.processingCosts.length
+                + masterData.packagingCosts.length + masterData.shippingCosts.length
+                + masterData.additionalCosts.length;
+      if (total > 0) toast('マスター読込完了（' + masterData.materialPrices.length + '品目）✓');
     }
     console.log('[Master] 読込完了');
   } catch(e) { console.warn('[Master] 読込失敗:', e.message); }
@@ -1471,116 +1516,129 @@ function applyMasterToSpec() {
 }
 
 // ===== ⑦ マスター登録タブのHTML生成 =====
+function toggleAccordion(id) {
+  var body = document.getElementById(id);
+  var btn  = document.getElementById(id+'-btn');
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '▶' : '▼';
+}
+
+function accordionCard(title, bodyId, innerHtml) {
+  return '<div class="card" style="margin-bottom:10px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleAccordion(\''+bodyId+'\')">'
+    + '<h3 style="margin:0">'+title+'</h3>'
+    + '<span id="'+bodyId+'-btn" style="font-size:14px;color:#1a3a5c;padding:2px 8px">▼</span>'
+    + '</div>'
+    + '<div id="'+bodyId+'" style="margin-top:10px">'+innerHtml+'</div>'
+    + '</div>';
+}
+
 function renderMasterPanel() {
   var html = '<div id="panel-master" class="panel">';
-
-  // 共通ボタン
-  html += '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">';
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">';
   html += '<strong style="font-size:15px;color:#1a3a5c">⑦ マスター登録</strong>';
   html += '<button class="btn btn-primary btn-sm" onclick="saveMasterToFirestore()">💾 マスター全保存</button>';
+  html += '<button class="btn btn-sm" onclick="loadMasterFromFirestore()">↻ 再読込</button>';
   html += '</div>';
 
   // ---- A. 原材料価格マスター ----
-  html += '<div class="card">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<h3 style="margin:0">A. 原材料価格マスター</h3>';
-  html += '<div style="display:flex;gap:6px">';
-  html += '<button class="btn btn-sm" onclick="exportMaterialCSV()">📥 CSV出力</button>';
-  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importMaterialCSV(this)"></label>';
-  html += '<button class="btn btn-sm" onclick="addMaterialRow()">＋ 追加</button>';
-  html += '</div></div>';
-  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：原材料名,単価(円/kg),有機(1=有機),限定商品名</p>';
-  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
-  html += '<colgroup><col style="width:140px"><col style="width:90px"><col style="width:45px"><col style="width:110px"><col style="width:55px"><col style="width:75px"><col style="width:55px"><col style="width:70px"><col style="width:55px"><col style="width:30px"></colgroup>';
-  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
-  html += '<th style="padding:5px 6px;text-align:left">原材料名</th>';
-  html += '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>';
-  html += '<th style="padding:5px 6px;text-align:center">有機</th>';
-  html += '<th style="padding:5px 6px;text-align:left">限定商品名</th>';
-  html += '<th style="padding:5px 6px;text-align:center">kcal</th>';
-  html += '<th style="padding:5px 6px;text-align:center">たんぱく質g</th>';
-  html += '<th style="padding:5px 6px;text-align:center">脂質g</th>';
-  html += '<th style="padding:5px 6px;text-align:center">炭水化物g</th>';
-  html += '<th style="padding:5px 6px;text-align:center">食塩g</th>';
-  html += '<th></th></tr></thead>';
-  html += '<tbody id="master-mat-tbody"></tbody></table></div></div>';
+  var matInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">'
+    + '<button class="btn btn-sm" onclick="exportMaterialCSV()">📥 CSV出力</button>'
+    + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importMaterialCSV(this)"></label>'
+    + '<button class="btn btn-sm" onclick="addMaterialRow()">＋ 行追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 原材料名,単価(円/kg),有機(1=有機),限定商品名,kcal,たんぱく質,脂質,炭水化物,食塩</p>'
+    + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup><col style="width:140px"><col style="width:90px"><col style="width:45px"><col style="width:110px"><col style="width:55px"><col style="width:75px"><col style="width:55px"><col style="width:70px"><col style="width:55px"><col style="width:30px"></colgroup>'
+    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 6px;text-align:left">原材料名</th>'
+    + '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>'
+    + '<th style="padding:5px 6px;text-align:center">有機</th>'
+    + '<th style="padding:5px 6px;text-align:left">限定商品名</th>'
+    + '<th style="padding:5px 6px;text-align:center">kcal</th>'
+    + '<th style="padding:5px 6px;text-align:center">たんぱく質g</th>'
+    + '<th style="padding:5px 6px;text-align:center">脂質g</th>'
+    + '<th style="padding:5px 6px;text-align:center">炭水化物g</th>'
+    + '<th style="padding:5px 6px;text-align:center">食塩g</th>'
+    + '<th></th></tr></thead>'
+    + '<tbody id="master-mat-tbody"></tbody></table></div>';
+  html += accordionCard('A. 原材料価格マスター（' + masterData.materialPrices.length + '件）', 'acc-mat', matInner);
 
   // ---- B. 商品別加工費マスター ----
-  html += '<div class="card">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<h3 style="margin:0">B. 商品別加工費マスター</h3>';
-  html += '<div style="display:flex;gap:6px">';
-  html += '<button class="btn btn-sm" onclick="exportProcCSV()">📥 CSV出力</button>';
-  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importProcCSV(this)"></label>';
-  html += '<button class="btn btn-sm" onclick="addProcRow()">＋ 追加</button>';
-  html += '</div></div>';
-  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：商品名,労務費(円),光熱費(円)</p>';
-  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
-  html += '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:110px"><col style="width:30px"></colgroup>';
-  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
-  html += '<th style="padding:5px 6px;text-align:left">商品名</th>';
-  html += '<th style="padding:5px 6px;text-align:center">労務費(円)</th>';
-  html += '<th style="padding:5px 6px;text-align:center">光熱費(円)</th>';
-  html += '<th></th></tr></thead>';
-  html += '<tbody id="master-proc-tbody"></tbody></table></div></div>';
+  var procInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="exportProcCSV()">📥 CSV出力</button>'
+    + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importProcCSV(this)"></label>'
+    + '<button class="btn btn-sm" onclick="addProcRow()">＋ 行追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 商品名,労務費(円),光熱費(円)</p>'
+    + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:110px"><col style="width:30px"></colgroup>'
+    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 6px;text-align:left">商品名</th>'
+    + '<th style="padding:5px 6px;text-align:center">労務費(円)</th>'
+    + '<th style="padding:5px 6px;text-align:center">光熱費(円)</th>'
+    + '<th></th></tr></thead>'
+    + '<tbody id="master-proc-tbody"></tbody></table></div>';
+  html += accordionCard('B. 商品別加工費マスター（' + masterData.processingCosts.length + '件）', 'acc-proc', procInner);
 
   // ---- C. 包材費マスター ----
-  html += '<div class="card">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<h3 style="margin:0">C. 包材費マスター</h3>';
-  html += '<div style="display:flex;gap:6px">';
-  html += '<button class="btn btn-sm" onclick="exportPkgCSV()">📥 CSV出力</button>';
-  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importPkgCSV(this)"></label>';
-  html += '<button class="btn btn-sm" onclick="addPkgRow()">＋ 追加</button>';
-  html += '</div></div>';
-  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：商品名,包材費(円),メモ</p>';
-  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
-  html += '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:200px"><col style="width:30px"></colgroup>';
-  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
-  html += '<th style="padding:5px 6px;text-align:left">商品名</th>';
-  html += '<th style="padding:5px 6px;text-align:center">包材費(円)</th>';
-  html += '<th style="padding:5px 6px;text-align:left">メモ</th>';
-  html += '<th></th></tr></thead>';
-  html += '<tbody id="master-pkg-tbody"></tbody></table></div></div>';
+  var pkgInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="exportPkgCSV()">📥 CSV出力</button>'
+    + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importPkgCSV(this)"></label>'
+    + '<button class="btn btn-sm" onclick="addPkgRow()">＋ 行追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 商品名,包材費(円),メモ</p>'
+    + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:200px"><col style="width:30px"></colgroup>'
+    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 6px;text-align:left">商品名</th>'
+    + '<th style="padding:5px 6px;text-align:center">包材費(円)</th>'
+    + '<th style="padding:5px 6px;text-align:left">メモ</th>'
+    + '<th></th></tr></thead>'
+    + '<tbody id="master-pkg-tbody"></tbody></table></div>';
+  html += accordionCard('C. 包材費マスター（' + masterData.packagingCosts.length + '件）', 'acc-pkg', pkgInner);
 
   // ---- D. 商品別追加コスト ----
-  html += '<div class="card">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<h3 style="margin:0">D. 商品別追加コスト</h3>';
-  html += '<div style="display:flex;gap:6px">';
-  html += '<button class="btn btn-sm" onclick="exportAddCSV()">📥 CSV出力</button>';
-  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importAddCSV(this)"></label>';
-  html += '<button class="btn btn-sm" onclick="addAddRow()">＋ 追加</button>';
-  html += '</div></div>';
-  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：商品名,コスト項目名,金額(円)</p>';
-  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
-  html += '<colgroup><col style="width:160px"><col style="width:160px"><col style="width:100px"><col style="width:30px"></colgroup>';
-  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
-  html += '<th style="padding:5px 6px;text-align:left">商品名</th>';
-  html += '<th style="padding:5px 6px;text-align:left">コスト項目名</th>';
-  html += '<th style="padding:5px 6px;text-align:center">金額(円)</th>';
-  html += '<th></th></tr></thead>';
-  html += '<tbody id="master-add-tbody"></tbody></table></div></div>';
+  var addInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="exportAddCSV()">📥 CSV出力</button>'
+    + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importAddCSV(this)"></label>'
+    + '<button class="btn btn-sm" onclick="addAddRow()">＋ 行追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 商品名,コスト項目名,金額(円)</p>'
+    + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup><col style="width:160px"><col style="width:160px"><col style="width:100px"><col style="width:30px"></colgroup>'
+    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 6px;text-align:left">商品名</th>'
+    + '<th style="padding:5px 6px;text-align:left">コスト項目名</th>'
+    + '<th style="padding:5px 6px;text-align:center">金額(円)</th>'
+    + '<th></th></tr></thead>'
+    + '<tbody id="master-add-tbody"></tbody></table></div>';
+  html += accordionCard('D. 商品別追加コスト（' + masterData.additionalCosts.length + '件）', 'acc-add', addInner);
 
   // ---- E. 送料マスター ----
-  html += '<div class="card">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<h3 style="margin:0">E. 送料マスター</h3>';
-  html += '<div style="display:flex;gap:6px">';
-  html += '<button class="btn btn-sm" onclick="exportShipCSV()">📥 CSV出力</button>';
-  html += '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importShipCSV(this)"></label>';
-  html += '<button class="btn btn-sm" onclick="addShipRow()">＋ 追加</button>';
-  html += '</div></div>';
-  html += '<p style="font-size:11px;color:#888;margin-bottom:8px">CSV形式：地域,重量上限(kg),送料(円),配送業者</p>';
-  html += '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">';
-  html += '<colgroup><col style="width:120px"><col style="width:100px"><col style="width:100px"><col style="width:150px"><col style="width:30px"></colgroup>';
-  html += '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">';
-  html += '<th style="padding:5px 6px;text-align:left">地域</th>';
-  html += '<th style="padding:5px 6px;text-align:center">重量上限(kg)</th>';
-  html += '<th style="padding:5px 6px;text-align:center">送料(円)</th>';
-  html += '<th style="padding:5px 6px;text-align:left">配送業者</th>';
-  html += '<th></th></tr></thead>';
-  html += '<tbody id="master-ship-tbody"></tbody></table></div></div>';
+  var shipInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="exportShipCSV()">📥 CSV出力</button>'
+    + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importShipCSV(this)"></label>'
+    + '<button class="btn btn-sm" onclick="addShipRow()">＋ 行追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 地域,重量上限(kg),送料(円),配送業者</p>'
+    + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup><col style="width:120px"><col style="width:100px"><col style="width:100px"><col style="width:150px"><col style="width:30px"></colgroup>'
+    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 6px;text-align:left">地域</th>'
+    + '<th style="padding:5px 6px;text-align:center">重量上限(kg)</th>'
+    + '<th style="padding:5px 6px;text-align:center">送料(円)</th>'
+    + '<th style="padding:5px 6px;text-align:left">配送業者</th>'
+    + '<th></th></tr></thead>'
+    + '<tbody id="master-ship-tbody"></tbody></table></div>';
+  html += accordionCard('E. 送料マスター（' + masterData.shippingCosts.length + '件）', 'acc-ship', shipInner);
 
   html += '</div>'; // panel-master
   return html;
