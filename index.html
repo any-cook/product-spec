@@ -837,16 +837,17 @@ function updateIngSummary() {
     var r2 = (ing.amount||0) / 100;
     var hasNut = (ing.e||0) > 0;
     var nutColor = hasNut ? '#5b3a8c' : '#ccc';
-    var cells = {
-      'nut-e-'+i: hasNut||r2>0 ? ((ing.e||0)*r2).toFixed(0) : '—',
-      'nut-p-'+i: hasNut||r2>0 ? ((ing.p||0)*r2).toFixed(1) : '—',
-      'nut-f-'+i: hasNut||r2>0 ? ((ing.f||0)*r2).toFixed(1) : '—',
-      'nut-c-'+i: hasNut||r2>0 ? ((ing.c||0)*r2).toFixed(1) : '—',
-      'nut-s-'+i: hasNut||r2>0 ? ((ing.s||0)*r2).toFixed(2) : '—',
-    };
-    Object.keys(cells).forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) { el.textContent = cells[id]; el.style.color = nutColor; }
+    var dash = '—';
+    var nutData = [
+      ['nut-e-'+i, hasNut||r2>0 ? ((ing.e||0)*r2).toFixed(0) : dash],
+      ['nut-p-'+i, hasNut||r2>0 ? ((ing.p||0)*r2).toFixed(1) : dash],
+      ['nut-f-'+i, hasNut||r2>0 ? ((ing.f||0)*r2).toFixed(1) : dash],
+      ['nut-c-'+i, hasNut||r2>0 ? ((ing.c||0)*r2).toFixed(1) : dash],
+      ['nut-s-'+i, hasNut||r2>0 ? ((ing.s||0)*r2).toFixed(2) : dash]
+    ];
+    nutData.forEach(function(nd) {
+      var el = document.getElementById(nd[0]);
+      if (el) { el.textContent = nd[1]; el.style.color = nutColor; }
     });
   });
   recalcCost();
