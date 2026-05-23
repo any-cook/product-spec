@@ -634,8 +634,13 @@ function renderEditor() {
     + '</tr>'
     + '</tfoot>'
     + '</table></div>'
-    + '<div style="margin-top:10px"><label class="fl">一括表示用 原材料名（重量順・自動生成）</label>'
-    +   '<textarea id="label-text" rows="2"></textarea></div>'
+    + '<div style="margin-top:10px">'
+    +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+    +     '<label class="fl" style="margin:0">一括表示用 原材料名（重量多い順・自動生成）</label>'
+    +     '<button class="btn btn-sm" style="font-size:11px;padding:2px 8px" onclick="autoLabelText()">↻ 重量順に並び替え</button>'
+    +   '</div>'
+    +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value" placeholder="自動生成されます。直接編集も可能です。"></textarea>'
+    + '</div>'
     + '</div>'
     + '<div class="card"><h3>アレルゲン確認（28品目）</h3><div id="allergen-grid"></div></div>'
     + '</div>';
@@ -680,8 +685,22 @@ function renderEditor() {
     + '</div><div class="g2">'
     +   fld('重量(g)','text','pk-pcWt', h(pk.pcWt),'') + fld('包材材質','text','pk-pcMat', h(pk.pcMat),'')
     + '</div></div>'
-    + '<div class="card"><h3>製造工程</h3><div id="proc-list"></div>'
-    +   '<button class="btn btn-sm" onclick="addProc()" style="margin-top:6px">＋ 工程追加</button>'
+    + '<div class="card"><h3>製造工程</h3>'
+    +   '<div id="proc-list"></div>'
+    +   '<div style="display:flex;gap:6px;margin-top:8px">'
+    +     '<button class="btn btn-sm" onclick="addProc()">＋ 工程追加</button>'
+    +   '</div>'
+    + '</div>';
+
+  // 包材費マスターから現在商品の包材費を表示
+  var pname2 = b.pname || '';
+  var pkgMaster = masterData.packagingCosts.find(function(m){ return m.productName === pname2; });
+  var pkgInfo = pkgMaster
+    ? '包材費マスター: ' + pkgMaster.cost + '円' + (pkgMaster.memo ? ' （'+pkgMaster.memo+'）' : '')
+    : '包材費マスター: 未登録（⑦マスター登録で設定）';
+  pkgHtml += '<div class="card"><h3>包材費（マスター参照）</h3>'
+    + '<div style="padding:8px;background:#eef2f7;border-radius:6px;font-size:13px;color:#1a3a5c">'+h(pkgInfo)+'</div>'
+    + '<p style="font-size:11px;color:#888;margin-top:6px">包材費の変更は⑦マスター登録→C.包材費マスターで行ってください。</p>'
     + '</div></div>';
 
   // ---- ⑤ 注意・調理 ----
@@ -692,19 +711,65 @@ function renderEditor() {
     + '</div>';
 
   // ---- ⑥ 原価計算 ----
-  var costHtml = '<div id="panel-cost" class="panel"><div class="card"><h3>原価計算（1袋あたり）</h3>'
-    + '<p style="font-size:12px;color:#888;margin-bottom:12px">原材料タブで重量・単価を入力すると原材料費が自動計算されます。</p>'
-    + '<div id="cost-ing-detail" style="margin-bottom:12px"></div>'
+  // ロット別加工費データ
+  if (!currentSpec.cost) currentSpec.cost = {};
+  var lotCosts = currentSpec.cost.lotCosts || [];
+  var lotRows = '';
+  lotCosts.forEach(function(lc, i) {
+    lotRows += '<div style="display:grid;grid-template-columns:1fr 100px auto;gap:6px;margin-bottom:5px">'
+      + '<input type="text" value="'+h(lc.label||'')+'" placeholder="例：釜1回分 500袋" style="font-size:13px;padding:5px 8px;border:1px solid #ccc;border-radius:5px" oninput="currentSpec.cost.lotCosts['+i+'].label=this.value">'
+      + '<input type="number" value="'+(lc.cost||0)+'" style="font-size:13px;padding:5px 8px;border:1px solid #ccc;border-radius:5px;text-align:right" oninput="currentSpec.cost.lotCosts['+i+'].cost=+this.value;recalcCost()">'
+      + '<button class="btn btn-sm btn-danger" onclick="currentSpec.cost.lotCosts.splice('+i+',1);renderEditor();" style="padding:3px 8px">✕</button>'
+      + '</div>';
+  });
+
+  var costHtml = '<div id="panel-cost" class="panel">'
+    // ① 原材料費明細
+    + '<div class="card"><h3>① 原材料費明細</h3>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:8px">②原材料タブで重量・単価を入力すると自動計算されます。</p>'
+    + '<div id="cost-ing-detail"></div>'
+    + '<div style="margin-top:6px"><button class="btn btn-sm" onclick="applyMasterToSpec();renderIngTbody();recalcCost();">🔄 マスターから単価を再反映</button></div>'
+    + '</div>'
+    // ② ロット別加工費
+    + '<div class="card"><h3>② ロット別加工費</h3>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:8px">1ロット（釜・バッチ）あたりの加工費と生産袋数を登録すると、1袋あたり加工費を自動計算します。</p>'
+    + '<div style="display:grid;grid-template-columns:1fr 100px 90px auto;gap:6px;margin-bottom:4px;font-size:11px;color:#888;font-weight:700">'
+    +   '<span>ロット名・説明</span><span style="text-align:center">加工費(円)</span><span style="text-align:center">生産袋数</span><span></span>'
+    + '</div>'
+    + '<div id="lot-cost-list"></div>'
+    + '<div style="display:flex;gap:6px;margin-top:8px">'
+    +   '<button class="btn btn-sm" onclick="addLotCost()">＋ ロット追加</button>'
+    + '</div>'
+    + '<div id="lot-cost-summary" style="margin-top:10px;padding:8px;background:#e8f5e9;border-radius:6px;font-size:13px;display:none">1袋あたり加工費: <strong id="lot-per-bag">0</strong> 円</div>'
+    + '</div>'
+    // ③ その他コスト
+    + '<div class="card"><h3>③ その他コスト</h3>'
     + '<div class="g2" style="margin-bottom:10px">'
     +   fld('加工費・労務費（円）','number','co-laborCost',    co.laborCost||0,    'step="1" oninput="recalcCost()"')
     +   fld('光熱費（円）',        'number','co-utilityCost',  co.utilityCost||0,  'step="1" oninput="recalcCost()"')
     +   fld('包材費（円）',        'number','co-packagingCost',co.packagingCost||0,'step="1" oninput="recalcCost()"')
     +   fld('その他経費（円）',    'number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
+    + '</div></div>'
+    // ④ 送料設定
+    + '<div class="card"><h3>④ 送料設定</h3>'
+    + '<div class="g2" style="margin-bottom:8px">'
+    +   '<div class="field"><label class="fl">送料（円）</label>'
+    +     '<input type="number" id="co-shipping" value="'+(co.shipping||0)+'" step="1" oninput="currentSpec.cost.shipping=+this.value;recalcCost()">'
+    +   '</div>'
+    +   '<div class="field"><label class="fl">送料の扱い</label>'
+    +     '<select id="co-shipping-mode" onchange="currentSpec.cost.shippingMode=this.value;recalcCost()">'
+    +       '<option value="exclude"'+(co.shippingMode==='exclude'||!co.shippingMode?' selected':'')+'>送料別（合計に含めない）</option>'
+    +       '<option value="include"'+(co.shippingMode==='include'?' selected':'')+'>送料込み（合計に含める）</option>'
+    +     '</select>'
+    +   '</div>'
     + '</div>'
+    + '<div id="cost-shipping-ref" style="font-size:12px;color:#888"></div>'
+    + '</div>'
+    // ⑤ 合計
+    + '<div class="card"><h3>⑤ 1袋あたり合計金額</h3>'
     + '<div id="cost-result" style="background:#eef2f7;border-radius:8px;padding:14px"></div>'
-    + '<div id="cost-shipping-ref" style="margin-top:8px;font-size:12px;color:#888"></div>'
-    + '<div style="margin-top:10px"><button class="btn btn-sm" onclick="applyMasterToSpec();renderIngTbody();recalcCost();">🔄 マスターから再反映</button></div>'
-    + '</div></div>';
+    + '</div>'
+    + '</div>';
 
   // ---- 規格書プレビュー ----
   var prevHtml = '<div id="panel-preview" class="panel">'
@@ -1132,10 +1197,20 @@ function addCustIng() {
 function autoLabelText() {
   var el = document.getElementById('label-text');
   if (!el) return;
-  var names = currentSpec.ings.map(function(i){ return i.name; }).join('、');
+  // 重量多い順にソート（0のものは元の順序を保持）
+  var sorted = currentSpec.ings.slice().sort(function(a, b) {
+    var wa = a.amount || 0, wb = b.amount || 0;
+    if (wa === 0 && wb === 0) return 0;
+    if (wa === 0) return 1;
+    if (wb === 0) return -1;
+    return wb - wa;
+  });
+  var names = sorted.map(function(i){ return i.name; }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   el.value = names + (checked.length ? '、(一部に'+checked.join('・')+'を含む)' : '');
+  // currentSpecに保存
+  if (currentSpec) currentSpec.labelText = el.value;
 }
 
 // ===== アレルゲン =====
@@ -1163,69 +1238,167 @@ function syncAllergens() {
 }
 
 // ===== 原価再計算 =====
-function recalcCost() {
-  var ingMaterial = currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0);
-  var co = currentSpec.cost || {};
-  var labor = +(document.getElementById('co-laborCost') ? document.getElementById('co-laborCost').value : co.laborCost) || 0;
-  var utility = +(document.getElementById('co-utilityCost') ? document.getElementById('co-utilityCost').value : co.utilityCost) || 0;
-  var packaging = +(document.getElementById('co-packagingCost') ? document.getElementById('co-packagingCost').value : co.packagingCost) || 0;
-  var other = +(document.getElementById('co-otherCost') ? document.getElementById('co-otherCost').value : co.otherCost) || 0;
-  var total = ingMaterial + labor + utility + packaging + other;
+function addLotCost() {
+  if (!currentSpec.cost) currentSpec.cost = {};
+  if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
+  currentSpec.cost.lotCosts.push({label:'', cost:0, bags:1});
+  renderLotCostList();
+}
 
+function renderLotCostList() {
+  var el = document.getElementById('lot-cost-list');
+  if (!el) return;
+  var lotCosts = (currentSpec.cost && currentSpec.cost.lotCosts) || [];
+  var html = '';
+  lotCosts.forEach(function(lc, i) {
+    html += '<div style="display:grid;grid-template-columns:1fr 100px 90px auto;gap:6px;margin-bottom:5px">';
+    html += '<input type="text" value="'+h(lc.label||'')+'" placeholder="例：釜1回 500袋分"';
+    html += ' style="font-size:13px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px"';
+    html += ' oninput="currentSpec.cost.lotCosts['+i+'].label=this.value">';
+    html += '<input type="number" value="'+(lc.cost||0)+'" placeholder="加工費(円)"';
+    html += ' style="font-size:13px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px;text-align:right"';
+    html += ' oninput="currentSpec.cost.lotCosts['+i+'].cost=+this.value;recalcCost()">';
+    html += '<input type="number" value="'+(lc.bags||1)+'" placeholder="袋数"';
+    html += ' style="font-size:13px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px;text-align:right"';
+    html += ' oninput="currentSpec.cost.lotCosts['+i+'].bags=+this.value;recalcCost()">';
+    html += '<button class="btn btn-sm btn-danger" onclick="currentSpec.cost.lotCosts.splice('+i+',1);renderLotCostList();recalcCost();" style="padding:3px 8px">✕</button>';
+    html += '</div>';
+  });
+  if (!html) html = '<p style="font-size:12px;color:#aaa;padding:4px">ロットを追加してください</p>';
+  el.innerHTML = html;
+  recalcCost();
+}
+
+function recalcCost() {
+  if (!currentSpec) return;
+  var co = currentSpec.cost || {};
+  if (!currentSpec.cost) currentSpec.cost = {};
+
+  // ① 原材料費
+  var ingMaterial = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0) : 0;
+
+  // ② ロット別加工費（1袋あたり）
+  var lotCosts = co.lotCosts || [];
+  var lotPerBag = 0;
+  lotCosts.forEach(function(lc){
+    var bags = lc.bags || 1;
+    if (bags > 0) lotPerBag += (lc.cost||0) / bags;
+  });
+  // ロット別加工費サマリー更新
+  var lotSummary = document.getElementById('lot-cost-summary');
+  var lotPerBagEl = document.getElementById('lot-per-bag');
+  if (lotSummary) lotSummary.style.display = lotCosts.length > 0 ? 'block' : 'none';
+  if (lotPerBagEl) lotPerBagEl.textContent = lotPerBag.toFixed(1);
+
+  // ③ その他コスト
+  var labor    = +(document.getElementById('co-laborCost')    ? document.getElementById('co-laborCost').value    : co.laborCost)    || 0;
+  var utility  = +(document.getElementById('co-utilityCost')  ? document.getElementById('co-utilityCost').value  : co.utilityCost)  || 0;
+  var packaging= +(document.getElementById('co-packagingCost')? document.getElementById('co-packagingCost').value: co.packagingCost)|| 0;
+  var other    = +(document.getElementById('co-otherCost')    ? document.getElementById('co-otherCost').value    : co.otherCost)    || 0;
+
+  // ④ 送料
+  var shipping     = +(document.getElementById('co-shipping')      ? document.getElementById('co-shipping').value      : co.shipping)      || 0;
+  var shippingMode = (document.getElementById('co-shipping-mode')  ? document.getElementById('co-shipping-mode').value : co.shippingMode) || 'exclude';
+  currentSpec.cost.shipping     = shipping;
+  currentSpec.cost.shippingMode = shippingMode;
+
+  // 合計（送料別）
+  var subtotal = ingMaterial + lotPerBag + labor + utility + packaging + other;
+  // 合計（送料込み）
+  var totalWithShip = subtotal + shipping;
+
+  // ① 原材料費明細を更新
   var detEl = document.getElementById('cost-ing-detail');
   if (detEl) {
     var rows = '';
-    currentSpec.ings.forEach(function(ing){
-      var c = ingCost(ing);
-      if (!ing.name && !c) return;
-      rows += '<tr><td style="padding:3px 8px;font-size:12px">'+h(ing.name)+'</td>'
-        +'<td style="padding:3px 8px;text-align:right;font-size:12px">'+(ing.amount||0).toFixed(1)+'g</td>'
-        +'<td style="padding:3px 8px;text-align:right;font-size:12px">'+(ing.unitPrice||0).toLocaleString()+'円/kg</td>'
-        +'<td style="padding:3px 8px;text-align:right;font-size:12px;color:#1a3a5c">'+c.toFixed(1)+'円</td></tr>';
-    });
-    detEl.innerHTML = '<table style="width:100%;border-collapse:collapse;margin-bottom:8px">'
+    if (currentSpec.ings) {
+      currentSpec.ings.forEach(function(ing){
+        var c = ingCost(ing);
+        if (!ing.name && !c) return;
+        rows += '<tr>'
+          +'<td style="padding:3px 8px;font-size:12px">'+h(ing.name)+'</td>'
+          +'<td style="padding:3px 8px;text-align:right;font-size:12px">'+(ing.amount||0).toFixed(1)+'g</td>'
+          +'<td style="padding:3px 8px;text-align:right;font-size:12px">'+(ing.unitPrice||0).toLocaleString()+'円/kg</td>'
+          +'<td style="padding:3px 8px;text-align:right;font-size:12px;color:#1a3a5c;font-weight:700">'+c.toFixed(1)+'円</td>'
+          +'</tr>';
+      });
+    }
+    detEl.innerHTML = '<table style="width:100%;border-collapse:collapse;margin-bottom:4px">'
       +'<thead><tr style="background:#eef2f7">'
       +'<th style="padding:4px 8px;font-size:11px;text-align:left;border-bottom:1px solid #ccc">原材料名</th>'
       +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">使用量</th>'
       +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">単価</th>'
       +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">原材料費</th></tr></thead>'
       +'<tbody>'+rows+'</tbody>'
-      +'<tfoot><tr style="border-top:2px solid #1a3a5c">'
-      +'<td colspan="3" style="padding:4px 8px;font-size:12px;font-weight:700">原材料費合計</td>'
-      +'<td style="padding:4px 8px;text-align:right;font-size:13px;font-weight:700;color:#1a3a5c">'+ingMaterial.toFixed(1)+'円</td></tr></tfoot>'
+      +'<tfoot><tr style="border-top:2px solid #1a3a5c;background:#f0f4f8">'
+      +'<td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700">原材料費合計</td>'
+      +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+ingMaterial.toFixed(1)+' 円</td>'
+      +'</tr></tfoot>'
       +'</table>';
   }
 
+  // ⑤ 合計表示
   var resEl = document.getElementById('cost-result');
   if (!resEl) return;
-  var rows2 = [
-    {label:'原材料費',val:ingMaterial},
-    {label:'加工費・労務費',val:labor},
-    {label:'光熱費',val:utility},
-    {label:'包材費',val:packaging},
-    {label:'その他経費',val:other}
+
+  var items = [
+    {label:'① 原材料費',        val:ingMaterial, color:'#333'},
+    {label:'② ロット別加工費（1袋あたり）', val:lotPerBag, color:'#333'},
+    {label:'③ 加工費・労務費',  val:labor,       color:'#333'},
+    {label:'③ 光熱費',          val:utility,     color:'#333'},
+    {label:'③ 包材費',          val:packaging,   color:'#333'},
+    {label:'③ その他経費',      val:other,       color:'#333'},
   ];
+
   var rhtml = '<table style="width:100%;border-collapse:collapse">';
-  rows2.forEach(function(r){
-    rhtml += '<tr><td style="padding:4px 8px;font-size:13px">'+r.label+'</td>'
-      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+r.val.toFixed(1)+'<span style="font-size:11px;color:#888"> 円</span></td></tr>';
+  items.forEach(function(item){
+    if (item.val === 0) return; // 0円は非表示
+    rhtml += '<tr>'
+      +'<td style="padding:4px 8px;font-size:13px;color:'+item.color+'">'+item.label+'</td>'
+      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+item.val.toFixed(1)+' <span style="font-size:11px;color:#888">円</span></td>'
+      +'</tr>';
   });
-  rhtml += '<tr style="border-top:2px solid #1a3a5c;background:#fff">'
-    +'<td style="padding:8px;font-size:15px;font-weight:700;color:#1a3a5c">1袋あたり合計原価</td>'
-    +'<td style="padding:8px;text-align:right;font-size:22px;font-weight:700;color:#1a3a5c">'+total.toFixed(1)+'<span style="font-size:13px;color:#888"> 円</span></td></tr>';
+
+  // 送料別合計
+  rhtml += '<tr style="border-top:2px solid #1a3a5c;background:#e8f0f8">'
+    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#1a3a5c">合計（送料別）</td>'
+    +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#1a3a5c">'+subtotal.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
+    +'</tr>';
+
+  // 送料行
+  rhtml += '<tr style="background:#f5f5f0">'
+    +'<td style="padding:4px 8px;font-size:13px;color:#555">④ 送料</td>'
+    +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipping.toFixed(0)+' <span style="font-size:11px;color:#888">円</span>'
+    +(shippingMode==='exclude'?'<span style="font-size:10px;color:#e67e22;margin-left:4px">（送料別）</span>':'<span style="font-size:10px;color:#27ae60;margin-left:4px">（送料込み）</span>')
+    +'</td></tr>';
+
+  // 送料込み合計
+  rhtml += '<tr style="border-top:2px solid #e67e22;background:#fef9e7">'
+    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#e67e22">合計（送料込み）</td>'
+    +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
+    +'</tr>';
+
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
-  // バナーの1袋あたり原価を更新
+
+  // バナー更新（送料モードに応じて）
   var bt = document.getElementById('banner-total');
-  if (bt) bt.textContent = total.toFixed(1) + ' 円';
-  // 送料情報（参考表示）
+  if (bt) bt.textContent = (shippingMode === 'include' ? totalWithShip : subtotal).toFixed(1) + ' 円';
+
+  // 送料マスター参照
   var shipEl = document.getElementById('cost-shipping-ref');
-  if (shipEl && masterData.shippingCosts.length > 0) {
-    var totalW = currentSpec.ings.reduce(function(s,i){return s+(i.amount||0);},0) / 1000;
-    var matched = masterData.shippingCosts.filter(function(s){ return s.weightLimit >= totalW; });
-    matched.sort(function(a,b){return a.cost-b.cost;});
-    if (matched.length > 0) {
-      shipEl.textContent = '参考送料: ' + matched[0].region + ' ' + matched[0].cost + '円（' + matched[0].carrier + '）';
+  if (shipEl) {
+    if (masterData.shippingCosts.length > 0) {
+      var totalW = currentSpec.ings ? currentSpec.ings.reduce(function(s,i){return s+(i.amount||0);},0)/1000 : 0;
+      var matched = masterData.shippingCosts.filter(function(s){ return (+s.weightLimit||0) >= totalW; });
+      matched.sort(function(a,b){ return (a.cost||0)-(b.cost||0); });
+      if (matched.length > 0) {
+        shipEl.innerHTML = '<span style="color:#1a3a5c">📦 送料マスター参照: '+h(matched[0].region)+' '+matched[0].cost+'円（'+h(matched[0].carrier)+'）</span>';
+      } else {
+        shipEl.textContent = '送料マスターに該当する地域がありません';
+      }
+    } else {
+      shipEl.textContent = '送料マスター未登録（⑦マスター登録で設定）';
     }
   }
 }
@@ -1272,15 +1445,28 @@ function calcNutrition() {
 }
 
 // ===== 製造工程 =====
+function moveProc(i, dir) {
+  var j = i + dir;
+  if (j < 0 || j >= currentSpec.procs.length) return;
+  var tmp = currentSpec.procs[i];
+  currentSpec.procs[i] = currentSpec.procs[j];
+  currentSpec.procs[j] = tmp;
+  renderProcList();
+}
+
 function renderProcList() {
   var el = document.getElementById('proc-list');
   if (!el) return;
+  var total = currentSpec.procs.length;
   var html = '';
   currentSpec.procs.forEach(function(p, i){
-    html += '<div class="proc-row">';
+    html += '<div style="display:grid;grid-template-columns:auto 1fr 1fr auto auto auto;gap:5px;align-items:center;margin-bottom:4px">';
+    html += '<span style="color:#aaa;font-size:11px;min-width:20px;text-align:center">'+(i+1)+'</span>';
     html += '<input type="text" value="'+h(p.name)+'" placeholder="工程名称" oninput="currentSpec.procs['+i+'].name=this.value">';
     html += '<input type="text" value="'+h(p.ctrl)+'" placeholder="管理基準" oninput="currentSpec.procs['+i+'].ctrl=this.value">';
-    html += '<button class="btn btn-sm btn-danger" onclick="removeProc('+i+')">✕</button>';
+    html += '<button class="btn btn-sm" style="padding:2px 7px;font-size:13px" '+(i===0?'disabled':'')+' onclick="moveProc('+i+',-1)">▲</button>';
+    html += '<button class="btn btn-sm" style="padding:2px 7px;font-size:13px" '+(i===total-1?'disabled':'')+' onclick="moveProc('+i+',1)">▼</button>';
+    html += '<button class="btn btn-sm btn-danger" onclick="removeProc('+i+')" style="padding:2px 6px">✕</button>';
     html += '</div>';
   });
   el.innerHTML = html;
