@@ -671,37 +671,60 @@ function renderEditor() {
     + '</div></div>';
 
   // ---- ④ 荷姿・製造 ----
+  // 包材マスターの選択肢を生成
+  var unitOpts = '<option value="">-- 包材を選択 --</option>';
+  masterData.packagingMaster.filter(function(m){ return m.type !== 'case'; }).forEach(function(m){
+    var sel = (pk.puMasterId && pk.puMasterId === m.name) ? ' selected' : '';
+    unitOpts += '<option value="'+h(m.name)+'"'+sel+'>'+h(m.name)+'</option>';
+  });
+  var caseOpts = '<option value="">-- 段ボールを選択 --</option>';
+  masterData.packagingMaster.filter(function(m){ return m.type === 'case'; }).forEach(function(m){
+    var sel = (pk.pcMasterId && pk.pcMasterId === m.name) ? ' selected' : '';
+    caseOpts += '<option value="'+h(m.name)+'"'+sel+'>'+h(m.name)+'</option>';
+  });
+
   var pkgHtml = '<div id="panel-package" class="panel"><div class="card"><h3>荷姿情報</h3>'
-    + '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:6px">個装</p>'
-    + '<div class="g4">'
-    +   fld('縦(mm)','text','pk-puD', h(pk.puD),'') + fld('横(mm)','text','pk-puW', h(pk.puW),'')
-    +   fld('高さ(mm)','text','pk-puH', h(pk.puH),'') + fld('入数','text','pk-puN', h(pk.puN),'')
-    + '</div><div class="g2">'
-    +   fld('重量(g)','text','pk-puWt', h(pk.puWt),'') + fld('包材材質','text','pk-puMat', h(pk.puMat),'')
+    // 個装
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+    +   '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin:0">個装（パウチ・袋など）</p>'
+    +   '<div style="display:flex;align-items:center;gap:6px">'
+    +     '<label style="font-size:12px;color:#555">包材マスターから選択：</label>'
+    +     '<select id="pk-puMaster" style="font-size:12px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;min-width:160px" onchange="applyPackagingMaster(\'unit\',this.value)">'+unitOpts+'</select>'
+    +   '</div>'
     + '</div>'
-    + '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin:8px 0 6px">ケース</p>'
     + '<div class="g4">'
-    +   fld('縦(mm)','text','pk-pcD', h(pk.pcD),'') + fld('横(mm)','text','pk-pcW', h(pk.pcW),'')
-    +   fld('高さ(mm)','text','pk-pcH', h(pk.pcH),'') + fld('入数','text','pk-pcN', h(pk.pcN),'')
-    + '</div><div class="g2">'
-    +   fld('重量(g)','text','pk-pcWt', h(pk.pcWt),'') + fld('包材材質','text','pk-pcMat', h(pk.pcMat),'')
+    +   fld('縦/奥行(mm)','text','pk-puD', h(pk.puD),'oninput="currentSpec.pkg.puD=this.value"')
+    +   fld('横/幅(mm)',  'text','pk-puW', h(pk.puW),'oninput="currentSpec.pkg.puW=this.value"')
+    +   fld('高さ(mm)',   'text','pk-puH', h(pk.puH),'oninput="currentSpec.pkg.puH=this.value"')
+    +   fld('入数',       'text','pk-puN', h(pk.puN),'oninput="currentSpec.pkg.puN=this.value"')
+    + '</div><div class="g3">'
+    +   fld('重量(g)',   'text','pk-puWt',  h(pk.puWt),  'oninput="currentSpec.pkg.puWt=this.value"')
+    +   fld('包材材質', 'text','pk-puMat',  h(pk.puMat), 'oninput="currentSpec.pkg.puMat=this.value"')
+    +   fld('単価(円)', 'text','pk-puPrice',h(pk.puPrice||''),'oninput="currentSpec.pkg.puPrice=this.value"')
+    + '</div>'
+    // ケース
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px">'
+    +   '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin:0">ケース（段ボール）</p>'
+    +   '<div style="display:flex;align-items:center;gap:6px">'
+    +     '<label style="font-size:12px;color:#555">段ボールマスターから選択：</label>'
+    +     '<select id="pk-pcMaster" style="font-size:12px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;min-width:160px" onchange="applyPackagingMaster(\'case\',this.value)">'+caseOpts+'</select>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="g4">'
+    +   fld('縦/奥行(mm)','text','pk-pcD', h(pk.pcD),'oninput="currentSpec.pkg.pcD=this.value"')
+    +   fld('横/幅(mm)',  'text','pk-pcW', h(pk.pcW),'oninput="currentSpec.pkg.pcW=this.value"')
+    +   fld('高さ(mm)',   'text','pk-pcH', h(pk.pcH),'oninput="currentSpec.pkg.pcH=this.value"')
+    +   fld('入数',       'text','pk-pcN', h(pk.pcN),'oninput="currentSpec.pkg.pcN=this.value"')
+    + '</div><div class="g3">'
+    +   fld('重量(g)',   'text','pk-pcWt',  h(pk.pcWt),  'oninput="currentSpec.pkg.pcWt=this.value"')
+    +   fld('包材材質', 'text','pk-pcMat',  h(pk.pcMat), 'oninput="currentSpec.pkg.pcMat=this.value"')
+    +   fld('単価(円)', 'text','pk-pcPrice',h(pk.pcPrice||''),'oninput="currentSpec.pkg.pcPrice=this.value"')
     + '</div></div>'
     + '<div class="card"><h3>製造工程</h3>'
     +   '<div id="proc-list"></div>'
     +   '<div style="display:flex;gap:6px;margin-top:8px">'
     +     '<button class="btn btn-sm" onclick="addProc()">＋ 工程追加</button>'
     +   '</div>'
-    + '</div>';
-
-  // 包材費マスターから現在商品の包材費を表示
-  var pname2 = b.pname || '';
-  var pkgMaster = masterData.packagingCosts.find(function(m){ return m.productName === pname2; });
-  var pkgInfo = pkgMaster
-    ? '包材費マスター: ' + pkgMaster.cost + '円' + (pkgMaster.memo ? ' （'+pkgMaster.memo+'）' : '')
-    : '包材費マスター: 未登録（⑦マスター登録で設定）';
-  pkgHtml += '<div class="card"><h3>包材費（マスター参照）</h3>'
-    + '<div style="padding:8px;background:#eef2f7;border-radius:6px;font-size:13px;color:#1a3a5c">'+h(pkgInfo)+'</div>'
-    + '<p style="font-size:11px;color:#888;margin-top:6px">包材費の変更は⑦マスター登録→C.包材費マスターで行ってください。</p>'
     + '</div></div>';
 
   // ---- ⑤ 注意・調理 ----
@@ -743,13 +766,13 @@ function renderEditor() {
     + '</div>'
     + '<div id="lot-cost-summary" style="margin-top:10px;padding:8px;background:#e8f5e9;border-radius:6px;font-size:13px;display:none">1袋あたり加工費: <strong id="lot-per-bag">0</strong> 円</div>'
     + '</div>'
-    // ③ その他コスト
-    + '<div class="card"><h3>③ その他コスト</h3>'
-    + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('加工費・労務費（円）','number','co-laborCost',    co.laborCost||0,    'step="1" oninput="recalcCost()"')
-    +   fld('光熱費（円）',        'number','co-utilityCost',  co.utilityCost||0,  'step="1" oninput="recalcCost()"')
-    +   fld('包材費（円）',        'number','co-packagingCost',co.packagingCost||0,'step="1" oninput="recalcCost()"')
-    +   fld('その他経費（円）',    'number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
+    // ③ 商品別追加コスト（マスターから自動反映）
+    + '<div class="card"><h3>③ 商品別追加コスト</h3>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:8px">⑦マスター登録→D.商品別追加コストで登録すると自動反映されます。</p>'
+    + '<div id="additional-cost-detail" style="margin-bottom:8px"></div>'
+    + '<div class="g2" style="margin-bottom:8px">'
+    +   fld('包材費（円）',    'number','co-packagingCost',co.packagingCost||0,'step="1" oninput="recalcCost()"')
+    +   fld('その他経費（円）','number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
     + '</div></div>'
     // ④ 送料設定
     + '<div class="card"><h3>④ 送料設定</h3>'
@@ -1247,6 +1270,30 @@ function syncAllergens() {
 }
 
 // ===== 原価再計算 =====
+// ===== 加工費マスターからロット加工費に追加 =====
+function addLotFromProcMaster() {
+  if (!currentSpec) return;
+  if (!masterData.processingCosts.length) {
+    toast('加工費マスターが未登録です。⑦マスター登録→B.加工費マスターで登録してください。', true);
+    return;
+  }
+  if (!currentSpec.cost) currentSpec.cost = {};
+  if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
+  var added = 0;
+  masterData.processingCosts.forEach(function(m) {
+    var total = (m.laborCost||0) + (m.utilityCost||0);
+    if (!total) return;
+    currentSpec.cost.lotCosts.push({
+      label: (m.condition || m.productName || '') + (m.productionRatio ? '（生産割合'+m.productionRatio+'%）' : ''),
+      cost:  total,
+      bags:  1
+    });
+    added++;
+  });
+  renderLotCostList();
+  toast(added + '件の加工費マスターを反映しました ✓');
+}
+
 function addLotCost() {
   if (!currentSpec.cost) currentSpec.cost = {};
   if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
@@ -1317,6 +1364,24 @@ function recalcCost() {
   var totalWithShip = subtotal + shipping;
 
   // ① 原材料費明細を更新
+  // 商品別追加コストを自動反映・表示
+  var addCostEl = document.getElementById('additional-cost-detail');
+  if (addCostEl) {
+    var pname3 = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
+    var addItems = masterData.additionalCosts.filter(function(a){ return !a.productName || a.productName === pname3; });
+    if (addItems.length > 0) {
+      var addHtml = '<table style="width:100%;border-collapse:collapse;margin-bottom:6px">';
+      addItems.forEach(function(a){
+        addHtml += '<tr><td style="padding:3px 8px;font-size:12px">'+h(a.itemName||'')+'</td>'
+          +'<td style="padding:3px 8px;text-align:right;font-size:12px;color:#1a3a5c;font-weight:700">'+(a.cost||0).toFixed(0)+' 円</td></tr>';
+      });
+      addHtml += '</table>';
+      addCostEl.innerHTML = addHtml;
+    } else {
+      addCostEl.innerHTML = '<p style="font-size:12px;color:#aaa">商品別追加コストなし</p>';
+    }
+  }
+
   var detEl = document.getElementById('cost-ing-detail');
   if (detEl) {
     var rows = '';
@@ -1454,6 +1519,31 @@ function calcNutrition() {
 }
 
 // ===== 製造工程 =====
+// ===== 包材マスターを荷姿情報に反映 =====
+function applyPackagingMaster(type, name) {
+  if (!name || !currentSpec) return;
+  var mat = masterData.packagingMaster.find(function(m){ return m.name === name; });
+  if (!mat) return;
+  if (!currentSpec.pkg) currentSpec.pkg = {};
+  if (type === 'unit') {
+    currentSpec.pkg.puMasterId = name;
+    if (mat.depth)  { currentSpec.pkg.puD = mat.depth;  var el=document.getElementById('pk-puD');  if(el) el.value=mat.depth; }
+    if (mat.width)  { currentSpec.pkg.puW = mat.width;  var el=document.getElementById('pk-puW');  if(el) el.value=mat.width; }
+    if (mat.height) { currentSpec.pkg.puH = mat.height; var el=document.getElementById('pk-puH');  if(el) el.value=mat.height; }
+    if (mat.material){ currentSpec.pkg.puMat = mat.material; var el=document.getElementById('pk-puMat'); if(el) el.value=mat.material; }
+    if (mat.unitPrice){ currentSpec.pkg.puPrice = mat.unitPrice; var el=document.getElementById('pk-puPrice'); if(el) el.value=mat.unitPrice; }
+    toast('個装包材「'+name+'」を反映しました ✓');
+  } else {
+    currentSpec.pkg.pcMasterId = name;
+    if (mat.depth)  { currentSpec.pkg.pcD = mat.depth;  var el=document.getElementById('pk-pcD');  if(el) el.value=mat.depth; }
+    if (mat.width)  { currentSpec.pkg.pcW = mat.width;  var el=document.getElementById('pk-pcW');  if(el) el.value=mat.width; }
+    if (mat.height) { currentSpec.pkg.pcH = mat.height; var el=document.getElementById('pk-pcH');  if(el) el.value=mat.height; }
+    if (mat.material){ currentSpec.pkg.pcMat = mat.material; var el=document.getElementById('pk-pcMat'); if(el) el.value=mat.material; }
+    if (mat.unitPrice){ currentSpec.pkg.pcPrice = mat.unitPrice; var el=document.getElementById('pk-pcPrice'); if(el) el.value=mat.unitPrice; }
+    toast('ケース「'+name+'」を反映しました ✓');
+  }
+}
+
 function moveProc(i, dir) {
   var j = i + dir;
   if (j < 0 || j >= currentSpec.procs.length) return;
@@ -1609,7 +1699,8 @@ window.addEventListener('load', function() {
 var masterData = {
   materialPrices:   [],  // 原材料価格マスター [{name, unitPrice, isOrganic, limitedTo}]
   processingCosts:  [],  // 加工費マスター [{condition, productionRatio, laborCost, utilityCost}]
-  packagingCosts:   [],  // 包材費マスター [{productName, cost, memo}]
+  packagingMaster:  [],  // 包材品目マスター [{name, type, width, height, depth, unitPrice, memo}]
+  packagingCosts:   [],  // 商品別包材費 [{productName, cost, memo}]
   shippingCosts:    [],  // 送料マスター [{region, weight, cost, carrier}]
   additionalCosts:  [],  // 商品別追加コスト [{productName, itemName, cost}]
 };
@@ -1625,11 +1716,12 @@ async function loadMasterFromFirestore() {
     var doc = await db.collection('masters').doc('all').get();
     if (doc.exists) {
       var d = doc.data();
-      if (d.materialPrices)  masterData.materialPrices  = d.materialPrices;
-      if (d.processingCosts) masterData.processingCosts = d.processingCosts;
-      if (d.packagingCosts)  masterData.packagingCosts  = d.packagingCosts;
-      if (d.shippingCosts)   masterData.shippingCosts   = d.shippingCosts;
-      if (d.additionalCosts) masterData.additionalCosts = d.additionalCosts;
+      if (d.materialPrices)   masterData.materialPrices   = d.materialPrices;
+      if (d.processingCosts)  masterData.processingCosts  = d.processingCosts;
+      if (d.packagingMaster)  masterData.packagingMaster  = d.packagingMaster;
+      if (d.packagingCosts)   masterData.packagingCosts   = d.packagingCosts;
+      if (d.shippingCosts)    masterData.shippingCosts    = d.shippingCosts;
+      if (d.additionalCosts)  masterData.additionalCosts  = d.additionalCosts;
       // master-areaが存在すれば再描画（常に存在するはず）
       renderMasterTables();
       var total = masterData.materialPrices.length + masterData.processingCosts.length
@@ -1838,6 +1930,30 @@ function renderMasterPanel() {
     + '<tbody id="master-ship-tbody"></tbody></table></div>';
   html += accordionCard('E. 送料マスター（' + masterData.shippingCosts.length + '件）', 'acc-ship', shipInner);
 
+  // ---- F. 包材品目マスター ----
+  var pkgMasterInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="exportPkgMasterCSV()">📥 CSV出力</button>'
+    + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importPkgMasterCSV(this)"></label>'
+    + '<button class="btn btn-sm" onclick="addPkgMasterRow(\'unit\')">＋ 個装追加</button>'
+    + '<button class="btn btn-sm" onclick="addPkgMasterRow(\'case\')">＋ ケース追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 包材名,種別(unit/case),奥行(mm),幅(mm),高さ(mm),材質,単価(円),メモ</p>'
+    + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<colgroup><col style="width:150px"><col style="width:60px"><col style="width:65px"><col style="width:65px"><col style="width:65px"><col style="width:80px"><col style="width:75px"><col style="width:120px"><col style="width:30px"></colgroup>'
+    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 6px;text-align:left">包材名</th>'
+    + '<th style="padding:5px 6px;text-align:center">種別</th>'
+    + '<th style="padding:5px 6px;text-align:center">奥行(mm)</th>'
+    + '<th style="padding:5px 6px;text-align:center">幅(mm)</th>'
+    + '<th style="padding:5px 6px;text-align:center">高さ(mm)</th>'
+    + '<th style="padding:5px 6px;text-align:left">材質</th>'
+    + '<th style="padding:5px 6px;text-align:center">単価(円)</th>'
+    + '<th style="padding:5px 6px;text-align:left">メモ</th>'
+    + '<th></th></tr></thead>'
+    + '<tbody id="master-pkgm-tbody"></tbody></table></div>';
+  html += accordionCard('F. 包材品目マスター（' + masterData.packagingMaster.length + '件）', 'acc-pkgm', pkgMasterInner);
+
   html += '</div>'; // panel-master
   return html;
 }
@@ -1866,7 +1982,71 @@ function renderMasterTables() {
   renderPkgTable();
   renderAddTable();
   renderShipTable();
+  renderPkgMasterTable();
   updateAccordionTitles();
+}
+
+function renderPkgMasterTable() {
+  var tbody = document.getElementById('master-pkgm-tbody'); if(!tbody) return;
+  var html = '';
+  masterData.packagingMaster.forEach(function(m, i) {
+    var rowBg = i%2===0?'#fff':'#fafcff';
+    var typeBg = m.type==='case' ? 'background:#fff3e0' : 'background:#e8f5e9';
+    var typeLabel = m.type==='case' ? 'ケース' : '個装';
+    html += '<tr style="background:'+rowBg+'">';
+    html += mkTd(m.name,      'name',       i, 'masterData.packagingMaster');
+    html += '<td style="text-align:center;'+typeBg+'"><select onchange="masterData.packagingMaster['+i+'].type=this.value">'
+      + '<option value="unit"'+(m.type==='unit'?' selected':'')+'>個装</option>'
+      + '<option value="case"'+(m.type==='case'?' selected':'')+'>ケース</option>'
+      + '</select></td>';
+    html += mkTd(m.depth||'',    'depth',    i, 'masterData.packagingMaster', 'number');
+    html += mkTd(m.width||'',    'width',    i, 'masterData.packagingMaster', 'number');
+    html += mkTd(m.height||'',   'height',   i, 'masterData.packagingMaster', 'number');
+    html += mkTd(m.material||'', 'material', i, 'masterData.packagingMaster');
+    html += mkTd(m.unitPrice||0, 'unitPrice',i, 'masterData.packagingMaster', 'number');
+    html += mkTd(m.memo||'',     'memo',     i, 'masterData.packagingMaster');
+    html += mkDelBtn('masterData.packagingMaster', i, 'renderPkgMasterTable');
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function addPkgMasterRow(type) {
+  masterData.packagingMaster.push({name:'', type:type||'unit', depth:'', width:'', height:'', material:'', unitPrice:0, memo:''});
+  renderPkgMasterTable();
+  updateAccordionTitles();
+}
+
+function exportPkgMasterCSV() {
+  var rows = [['包材名','種別(unit=個装/case=ケース)','奥行(mm)','幅(mm)','高さ(mm)','材質','単価(円)','メモ']];
+  masterData.packagingMaster.forEach(function(m){
+    rows.push([m.name, m.type||'unit', m.depth||'', m.width||'', m.height||'', m.material||'', m.unitPrice||0, m.memo||'']);
+  });
+  downloadCSV('包材品目マスター.csv', rows);
+}
+
+function importPkgMasterCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    var imported = 0;
+    rows.forEach(function(r, i) {
+      if (i===0 || r.length < 2) return;
+      var name = r[0].trim(); if(!name) return;
+      var ex = masterData.packagingMaster.find(function(m){ return m.name===name; });
+      if (ex) {
+        ex.type=r[1]||'unit'; ex.depth=r[2]||''; ex.width=r[3]||''; ex.height=r[4]||'';
+        ex.material=r[5]||''; ex.unitPrice=+r[6]||0; ex.memo=r[7]||'';
+      } else {
+        masterData.packagingMaster.push({name:name,type:r[1]||'unit',depth:r[2]||'',width:r[3]||'',height:r[4]||'',material:r[5]||'',unitPrice:+r[6]||0,memo:r[7]||''});
+      }
+      imported++;
+    });
+    renderPkgMasterTable(); updateAccordionTitles();
+    toast(imported+'件の包材マスターを取込みました ✓'); input.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 function mkTd(val, field, idx, arr, type) {
