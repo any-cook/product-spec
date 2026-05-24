@@ -847,18 +847,7 @@ function renderEditor() {
     + '</div></div>'
     // ④ 送料設定
     + '<div class="card"><h3>④ 送料設定</h3>'
-    + '<div class="g2" style="margin-bottom:8px">'
-    +   '<div class="field"><label class="fl">送料（円）</label>'
-    +     '<input type="number" id="co-shipping" value="'+(co.shipping||0)+'" step="1" oninput="currentSpec.cost.shipping=+this.value;recalcCost()">'
-    +   '</div>'
-    +   '<div class="field"><label class="fl">送料の扱い</label>'
-    +     '<select id="co-shipping-mode" onchange="currentSpec.cost.shippingMode=this.value;recalcCost()">'
-    +       '<option value="exclude"'+(co.shippingMode==='exclude'||!co.shippingMode?' selected':'')+'>送料別（合計に含めない）</option>'
-    +       '<option value="include"'+(co.shippingMode==='include'?' selected':'')+'>送料込み（合計に含める）</option>'
-    +     '</select>'
-    +   '</div>'
-    + '</div>'
-    + '<div id="cost-shipping-ref" style="font-size:12px;color:#888"></div>'
+    + buildShipSelector(co)
     + '</div>'
     // ⑤ 合計
     + '<div class="card"><h3>⑤ 1袋あたり合計金額</h3>'
@@ -902,6 +891,98 @@ function renderEditor() {
     mEl.innerHTML = renderMasterPanel();
     var mainArea = document.getElementById('main-area');
     if (mainArea) mainArea.appendChild(mEl.firstChild);
+  }
+}
+
+// ---- 送料セレクター生成 ----
+function buildShipSelector(co) {
+  var ships = masterData.shippingCosts;
+  // 地域リストを一意抽出
+  var regions = [];
+  ships.forEach(function(s){ if(s.region && regions.indexOf(s.region)<0) regions.push(s.region); });
+  // サイズ区分リストを一意抽出
+  var sizes = [];
+  ships.forEach(function(s){ if(s.sizeCategory && sizes.indexOf(s.sizeCategory)<0) sizes.push(s.sizeCategory); });
+
+  var selRegion = co.shipRegion || '';
+  var selSize   = co.shipSize   || '';
+
+  var html = '';
+  if (ships.length === 0) {
+    // マスター未登録の場合は手動入力
+    html += '<p style="font-size:12px;color:#e67e22;margin-bottom:8px">⑦マスター登録→E.送料マスターで送料を登録すると、ここから選択できます。</p>';
+    html += '<div class="g2" style="margin-bottom:8px">'
+      + '<div class="field"><label class="fl">送料（円）</label>'
+      + '<input type="number" id="co-shipping" value="'+(co.shipping||0)+'" step="1" oninput="currentSpec.cost.shipping=+this.value;recalcCost()"></div>'
+      + '</div>';
+  } else {
+    // マスターから選択
+    var regionOpts = '<option value="">地域を選択</option>';
+    regions.forEach(function(r){ regionOpts += '<option value="'+h(r)+'"'+(selRegion===r?' selected':'')+'>'+h(r)+'</option>'; });
+    var sizeOpts = '<option value="">サイズを選択</option>';
+    sizes.forEach(function(sz){ sizeOpts += '<option value="'+h(sz)+'"'+(selSize===sz?' selected':'')+'>'+h(sz)+'</option>'; });
+
+    html += '<div class="g2" style="margin-bottom:8px">'
+      + '<div class="field"><label class="fl">地域</label>'
+      + '<select id="co-ship-region" onchange="selectShippingRate()">'+ regionOpts +'</select></div>'
+      + '<div class="field"><label class="fl">サイズ区分</label>'
+      + '<select id="co-ship-size" onchange="selectShippingRate()">'+ sizeOpts +'</select></div>'
+      + '</div>'
+      + '<div id="ship-match-result" style="margin-bottom:8px;padding:8px;background:#eef7f0;border-radius:6px;font-size:13px;display:none"></div>'
+      + '<div class="g2">'
+      + '<div class="field"><label class="fl">送料（円）</label>'
+      + '<input type="number" id="co-shipping" value="'+(co.shipping||0)+'" step="1" oninput="currentSpec.cost.shipping=+this.value;recalcCost()"></div>'
+      + '</div>';
+  }
+  html += '<div class="field" style="margin-top:4px"><label class="fl">送料の扱い</label>'
+    + '<select id="co-shipping-mode" onchange="currentSpec.cost.shippingMode=this.value;recalcCost()">'
+    + '<option value="exclude"'+(co.shippingMode==='exclude'||!co.shippingMode?' selected':'')+'>送料別（合計に含めない）</option>'
+    + '<option value="include"'+(co.shippingMode==='include'?' selected':'')+'>送料込み（合計に含める）</option>'
+    + '</select></div>'
+    + '<div id="cost-shipping-ref" style="font-size:12px;color:#888;margin-top:6px"></div>';
+  return html;
+}
+
+// 送料マスターから地域・サイズを選択して金額を反映
+function selectShippingRate() {
+  var regionEl = document.getElementById('co-ship-region');
+  var sizeEl   = document.getElementById('co-ship-size');
+  if (!regionEl || !sizeEl) return;
+  var region = regionEl.value;
+  var size   = sizeEl.value;
+  if (!currentSpec.cost) currentSpec.cost = {};
+  currentSpec.cost.shipRegion = region;
+  currentSpec.cost.shipSize   = size;
+
+  // マスターから一致する送料を検索
+  var matched = masterData.shippingCosts.filter(function(s){
+    var regionOk = !region || s.region === region;
+    var sizeOk   = !size   || s.sizeCategory === size;
+    return regionOk && sizeOk;
+  });
+
+  var resEl = document.getElementById('ship-match-result');
+  var shipEl2 = document.getElementById('co-shipping');
+
+  if (matched.length > 0) {
+    // 複数ある場合は最安値
+    matched.sort(function(a,b){ return (a.cost||0)-(b.cost||0); });
+    var best = matched[0];
+    var cost = best.cost || 0;
+    if (shipEl2) shipEl2.value = cost;
+    currentSpec.cost.shipping = cost;
+    if (resEl) {
+      resEl.style.display = 'block';
+      resEl.innerHTML = '📦 <strong>'+h(best.region)+'</strong>'
+        + (best.sizeCategory ? ' / '+h(best.sizeCategory) : '')
+        + (best.carrier ? ' ('+h(best.carrier)+')' : '')
+        + ' → <strong style="color:#1a3a5c;font-size:15px">'+cost.toLocaleString()+'円</strong>';
+    }
+    recalcCost();
+  } else if (region || size) {
+    if (resEl) { resEl.style.display='block'; resEl.innerHTML='<span style="color:#c62828">該当する送料が見つかりません</span>'; }
+  } else {
+    if (resEl) resEl.style.display = 'none';
   }
 }
 
@@ -1091,8 +1172,11 @@ function renderIngTbody() {
     html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
     // 添加物用途
     html += '<td><input type="text" value="'+h(ing.addUse)+'" oninput="updateIngField('+i+',\'addUse\',this.value)"></td>';
-    // 遺伝子組換え（マスターから反映・ここでも編集可）
-    html += '<td style="'+(ing.gmo?'background:#e8f5e9':'')+'"><select style="font-size:11px" onchange="updateIngField('+i+',\'gmo\',this.value)">'+gmoOpts+'</select></td>';
+    // 遺伝子組換え（マスターから自動反映・表示のみ）
+    var gmoDispBg = ing.gmo === '非組換え' ? '#e8f5e9' : ing.gmo === '組換え' ? '#fff0f0' : ing.gmo === '不分別' ? '#fff8e1' : ing.gmo === '対象外' ? '#f5f5f5' : '';
+    var gmoDispColor = ing.gmo === '非組換え' ? '#155a32' : ing.gmo === '組換え' ? '#c62828' : '#555';
+    var gmoDisp = ing.gmo || '—';
+    html += '<td style="text-align:center;font-size:11px;padding:3px 4px;background:'+gmoDispBg+';color:'+gmoDispColor+';font-weight:'+(ing.gmo?'700':'400')+'">'+h(gmoDisp)+'</td>';
     html += '<td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')" style="padding:2px 6px">✕</button></td>';
     html += '</tr>';
   });
@@ -1311,11 +1395,18 @@ function autoLabelText() {
     if (wb === 0) return -1;
     return wb - wa;
   });
+  // 原産国：基本情報の製造国 または 原材料の産地から生成
+  var countryText = '';
+  var basicCountry = currentSpec.basic && currentSpec.basic.country ? currentSpec.basic.country : '';
+  if (basicCountry) {
+    countryText = '（原産国：' + basicCountry + '）';
+  }
   var names = sorted.map(function(i){ return i.name; }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  el.value = names + (checked.length ? '、(一部に'+checked.join('・')+'を含む)' : '');
-  // currentSpecに保存
+  var allergenText = checked.length ? '（一部に'+checked.join('・')+'を含む）' : '';
+  // 原産国を先頭に配置
+  el.value = countryText + names + allergenText;
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
@@ -2422,21 +2513,18 @@ function renderMatTable() {
     html += mkTd(m.origin||'',     'origin',    i, 'masterData.materialPrices');
     // アレルゲン
     html += mkTd(m.allergens||'',  'allergens', i, 'masterData.materialPrices');
-    // GMO確認（対象品目は赤背景）
-    if (needsGmo) {
-      var gmoBg = gmoVal ? '#e8f5e9' : '#fff0f0';
-      html += '<td style="background:'+gmoBg+';padding:2px">'
-        + '<select onchange="masterData.materialPrices['+i+'].gmoCheck=this.value;renderMatTable()"'
-        + ' style="width:100%;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;background:'+gmoBg+'">'
-        + '<option value=""'+(gmoVal===''?' selected':'')+'>⚠ 未確認</option>'
-        + '<option value="非組換え"'+(gmoVal==='非組換え'?' selected':'')+'>✓ 非組換え</option>'
-        + '<option value="組換え"'+(gmoVal==='組換え'?' selected':'')+'>組換え</option>'
-        + '<option value="不分別"'+(gmoVal==='不分別'?' selected':'')+'>不分別</option>'
-        + '<option value="対象外"'+(gmoVal==='対象外'?' selected':'')+'>対象外</option>'
-        + '</select></td>';
-    } else {
-      html += '<td style="text-align:center;color:#bbb;font-size:11px">—</td>';
-    }
+    // GMO確認（対象品目は赤/緑背景、それ以外は灰色背景）
+    var gmoBg2 = needsGmo ? (gmoVal ? '#e8f5e9' : '#fff0f0') : '#f5f5f5';
+    var gmoTip = needsGmo ? '' : ' title="確認不要品目"';
+    html += '<td style="background:'+gmoBg2+';padding:2px">'
+      + '<select onchange="masterData.materialPrices['+i+'].gmoCheck=this.value;renderMatTable();applyGmoCheckToSpec(masterData.materialPrices['+i+'].name,this.value)"'+gmoTip
+      + ' style="width:100%;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;background:'+gmoBg2+'">'
+      + '<option value=""'+(gmoVal===''?' selected':'')+'>'+( needsGmo ? '⚠ 未確認' : '— 未設定')+'</option>'
+      + '<option value="非組換え"'+(gmoVal==='非組換え'?' selected':'')+'>✓ 非組換え</option>'
+      + '<option value="組換え"'+(gmoVal==='組換え'?' selected':'')+'>組換え</option>'
+      + '<option value="不分別"'+(gmoVal==='不分別'?' selected':'')+'>不分別</option>'
+      + '<option value="対象外"'+(gmoVal==='対象外'?' selected':'')+'>対象外</option>'
+      + '</select></td>';
     // 栄養素
     html += mkTd(m.e||0, 'e', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.p||0, 'p', i, 'masterData.materialPrices', 'number');
