@@ -1041,7 +1041,7 @@ function renderIngTbody() {
   calcRatio();
   var html = '';
   currentSpec.ings.forEach(function(ing, i) {
-    var gmoOpts = ['','非組換え','組換え','不分別'].map(function(o){
+    var gmoOpts = ['','未確認','非組換え','組換え','不分別','対象外'].map(function(o){
       return '<option'+(ing.gmo===o?' selected':'')+'>'+o+'</option>';
     }).join('');
     var cost = ingCost(ing);
@@ -1091,8 +1091,8 @@ function renderIngTbody() {
     html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
     // 添加物用途
     html += '<td><input type="text" value="'+h(ing.addUse)+'" oninput="updateIngField('+i+',\'addUse\',this.value)"></td>';
-    // 遺伝子組換え
-    html += '<td><select style="font-size:11px" onchange="updateIngField('+i+',\'gmo\',this.value)">'+gmoOpts+'</select></td>';
+    // 遺伝子組換え（マスターから反映・ここでも編集可）
+    html += '<td style="'+(ing.gmo?'background:#e8f5e9':'')+'"><select style="font-size:11px" onchange="updateIngField('+i+',\'gmo\',this.value)">'+gmoOpts+'</select></td>';
     html += '<td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')" style="padding:2px 6px">✕</button></td>';
     html += '</tr>';
   });
@@ -2238,7 +2238,85 @@ function renderMasterTables() {
   renderPkgTable();
   renderAddTable();
   renderShipTable();
+  renderCautionList();
+  renderCookingList();
+  updateAccordionTitles();
+}
 
+// ===== 注意事項マスター =====
+function renderCautionList() {
+  var el = document.getElementById('master-caution-list');
+  if (!el) return;
+  var html = '';
+  masterData.cautionMaster.forEach(function(m, i) {
+    var rowBg = i%2===0?'#f9f9f9':'#fff';
+    html += '<div style="background:'+rowBg+';padding:8px;margin-bottom:6px;border:1px solid #e0e0e0;border-radius:6px">';
+    html += '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">';
+    html += '<input type="text" value="'+h(m.category||'')+'" placeholder="カテゴリ（例：レトルト/湯煎専用）"'
+      + ' style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px"'
+      + ' oninput="masterData.cautionMaster['+i+'].category=this.value">';
+    html += '<button class="btn btn-sm btn-danger" style="padding:2px 10px"'
+      + ' onclick="masterData.cautionMaster.splice('+i+',1);renderCautionList();updateAccordionTitles()">✕</button>';
+    html += '</div>';
+    html += '<textarea'
+      + ' style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px;border:1.5px solid #b0bec5;border-radius:5px;min-height:70px;resize:vertical"'
+      + ' placeholder="注意事項テキストを入力してください"'
+      + ' onchange="masterData.cautionMaster['+i+'].text=this.value">'
+      + h(m.text||'')
+      + '</textarea>';
+    html += '</div>';
+  });
+  if (!html) html = '<p style="font-size:12px;color:#aaa;padding:6px">未登録です。「＋ 追加」ボタンで登録してください。</p>';
+  el.innerHTML = html;
+}
+
+function addCautionRow() {
+  masterData.cautionMaster.push({category:'', text:''});
+  renderCautionList();
+  updateAccordionTitles();
+}
+
+// ===== 調理方法マスター =====
+function renderCookingList() {
+  var el = document.getElementById('master-cooking-list');
+  if (!el) return;
+  var html = '';
+  var foodTypes = [{v:'',l:'食品種別を選択'},{v:'レトルト',l:'レトルト食品'},{v:'冷凍',l:'冷凍食品'},{v:'冷蔵',l:'冷蔵食品'}];
+  var methods   = [{v:'',l:'加熱方法を選択'},{v:'湯煎専用',l:'湯煎専用'},{v:'レンジ対応',l:'レンジ対応'},{v:'湯煎・レンジ両対応',l:'湯煎・レンジ両対応'},{v:'その他',l:'その他'}];
+  masterData.cookingMaster.forEach(function(m, i) {
+    var rowBg = i%2===0?'#f9f9f9':'#fff';
+    html += '<div style="background:'+rowBg+';padding:8px;margin-bottom:6px;border:1px solid #e0e0e0;border-radius:6px">';
+    html += '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">';
+    // 食品種別
+    var ftOpts = foodTypes.map(function(ft){
+      return '<option value="'+ft.v+'"'+(m.category===ft.v?' selected':'')+'>'+ft.l+'</option>';
+    }).join('');
+    html += '<select onchange="masterData.cookingMaster['+i+'].category=this.value"'
+      + ' style="font-size:12px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px">'+ftOpts+'</select>';
+    // 加熱方法
+    var hmOpts = methods.map(function(me){
+      return '<option value="'+me.v+'"'+(m.method===me.v?' selected':'')+'>'+me.l+'</option>';
+    }).join('');
+    html += '<select onchange="masterData.cookingMaster['+i+'].method=this.value"'
+      + ' style="font-size:12px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px">'+hmOpts+'</select>';
+    html += '<button class="btn btn-sm btn-danger" style="padding:2px 10px"'
+      + ' onclick="masterData.cookingMaster.splice('+i+',1);renderCookingList();updateAccordionTitles()">✕</button>';
+    html += '</div>';
+    html += '<textarea'
+      + ' style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px;border:1.5px solid #b0bec5;border-radius:5px;min-height:70px;resize:vertical"'
+      + ' placeholder="調理方法テキストを入力してください"'
+      + ' onchange="masterData.cookingMaster['+i+'].text=this.value">'
+      + h(m.text||'')
+      + '</textarea>';
+    html += '</div>';
+  });
+  if (!html) html = '<p style="font-size:12px;color:#aaa;padding:6px">未登録です。「＋ 追加」ボタンで登録してください。</p>';
+  el.innerHTML = html;
+}
+
+function addCookingRow() {
+  masterData.cookingMaster.push({category:'', method:'', text:''});
+  renderCookingList();
   updateAccordionTitles();
 }
 
