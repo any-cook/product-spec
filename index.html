@@ -349,7 +349,10 @@ async function openSpec(id) {
     if (!currentSpec.cost) currentSpec.cost = {laborCost:0,utilityCost:0,packagingCost:0,otherCost:0};
     currentSpec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
     renderEditor();
-    setTimeout(applyMasterToSpec, 300);
+    setTimeout(function() {
+      applyMasterToSpec();
+      calcNutritionSilent();
+    }, 400);
   } catch(e) {
     toast('読込失敗: '+e.message, true);
     console.error(e);
@@ -1118,6 +1121,7 @@ function addFoodIng(name) {
   var r=document.getElementById('food-results'); if(r) r.style.display='none';
   renderIngTbody();
   syncAllergens();
+  calcNutritionSilent();
   var src = mat ? 'マスターDB' : (fd ? '内蔵DB' : '');
   toast('「'+name+'」を追加しました'+(src?' ('+src+')':'')+' ✓');
 }
@@ -1161,6 +1165,7 @@ function addAllMasterIngs() {
 
   renderIngTbody();
   syncAllergens();
+  calcNutritionSilent();
   toast('マスターから ' + added + '品目を追加しました ✓');
 }
 
@@ -1232,6 +1237,7 @@ function addCustIng() {
   ['cf-name','cf-country','cf-al','cf-e','cf-p','cf-f','cf-c','cf-s','cf-g','cf-price','cf-feat','cf-use'].forEach(function(id){ sv(id,''); });
   renderIngTbody();
   syncAllergens();
+  calcNutritionSilent();
   toast('原材料を追加しました ✓');
 }
 
@@ -1491,17 +1497,18 @@ function recalcCost() {
 function calcNutritionSilent() {
   var e=0, p=0, f=0, c=0, s=0, hasData=false;
   currentSpec.ings.forEach(function(ing){
-    if (!ing.amount) return;
+    // 重量が0でも栄養素データがあれば計算に含める（重量入力待ちの状態でも表示）
+    var amount = ing.amount || 0;
+    if (amount <= 0 && !(ing.e||ing.p||ing.f||ing.c||ing.s)) return;
+    if (amount <= 0) return; // 重量0はスキップ（計算の意味がない）
     hasData = true;
-    var r = ing.amount / 100;
+    var r = amount / 100;
     e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
     c += (ing.c||0)*r; s += (ing.s||0)*r;
   });
   if (hasData) {
-    // 画面の栄養成分タブのフィールドを更新
     sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
     sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2));
-    // currentSpec.nutritionオブジェクトも更新（保存時に自動反映）
     if (!currentSpec.nutrition) currentSpec.nutrition = {};
     currentSpec.nutrition.e = Math.round(e);
     currentSpec.nutrition.p = +p.toFixed(1);
@@ -1809,7 +1816,12 @@ function applyMasterToSpec() {
     if (!currentSpec.cost) currentSpec.cost = {};
     currentSpec.cost.otherCost = addCosts.reduce(function(s,a){ return s + (a.cost||0); }, 0);
   }
-  if (applied > 0) toast('マスターから ' + applied + '品目の単価を反映しました ✓');
+  if (applied > 0) {
+    toast('マスターから ' + applied + '品目の単価・栄養素を反映しました ✓');
+    // 画面を更新
+    renderIngTbody();
+    calcNutritionSilent();
+  }
   return applied;
 }
 
