@@ -1848,44 +1848,38 @@ function renderMasterPanel() {
     + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importMaterialCSV(this)"></label>'
     + '<button class="btn btn-sm" onclick="addMaterialRow()">＋ 行追加</button>'
     + '</div>'
-    + '<p style="font-size:11px;color:#888;margin-bottom:4px">CSV: 有機,限定,原材料名,単価(円/kg),産地,アレルゲン,遺伝子組換え確認,kcal,たんぱく質,脂質,炭水化物,食塩</p>'
-    + '<p style="font-size:11px;color:#c62828;margin-bottom:6px">★遺伝子組換え確認対象：大豆・とうもろこし・ばれいしょ・なたね・綿実・アルファルファ・てん菜・パパイヤ・からしな</p>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:4px">CSV: 有機(1/0),限定(1/0),原材料名,単価(円/kg),産地,アレルゲン,GMO確認,kcal,たんぱく質,脂質,炭水化物,食塩,限定商品名</p>'
+    + '<p style="font-size:11px;color:#c62828;font-weight:700;margin-bottom:6px">★GMO確認対象：大豆・とうもろこし・ばれいしょ・なたね・綿実・アルファルファ・てん菜・パパイヤ・からしな</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
     + '<colgroup>'
-    + '<col style="width:36px">'   // 有機
-    + '<col style="width:36px">'   // 限定
-    + '<col style="width:140px">'  // 原材料名
-    + '<col style="width:85px">'   // 単価
-    + '<col style="width:80px">'   // 産地
-    + '<col style="width:100px">'  // アレルゲン
-    + '<col style="width:95px">'   // GMO確認
-    + '<col style="width:48px">'   // kcal
-    + '<col style="width:52px">'   // たんぱく質
-    + '<col style="width:45px">'   // 脂質
-    + '<col style="width:52px">'   // 炭水化物
-    + '<col style="width:45px">'   // 食塩
-    + '<col style="width:30px">'   // 削除
+    + '<col style="width:36px">'
+    + '<col style="width:36px">'
+    + '<col style="width:150px">'
+    + '<col style="width:90px">'
+    + '<col style="width:85px">'
+    + '<col style="width:110px">'
+    + '<col style="width:100px">'
+    + '<col style="width:50px">'
+    + '<col style="width:55px">'
+    + '<col style="width:45px">'
+    + '<col style="width:55px">'
+    + '<col style="width:45px">'
+    + '<col style="width:30px">'
     + '</colgroup>'
     + '<thead>'
-    + '<tr style="background:#1a3a5c;color:#fff;font-size:10px">'
-    + '<th colspan="2" style="padding:4px;text-align:center;background:#155a32">フラグ</th>'
-    + '<th style="padding:4px 6px;text-align:left">原材料名</th>'
-    + '<th style="padding:4px 6px;text-align:center">単価(円/kg)</th>'
-    + '<th style="padding:4px 6px;text-align:center">産地</th>'
-    + '<th style="padding:4px 6px;text-align:center">アレルゲン</th>'
-    + '<th style="padding:4px 6px;text-align:center;background:#6b2020">遺伝子組換確認</th>'
-    + '<th style="padding:4px 6px;text-align:center">kcal</th>'
-    + '<th style="padding:4px 6px;text-align:center">蛋白g</th>'
-    + '<th style="padding:4px 6px;text-align:center">脂g</th>'
-    + '<th style="padding:4px 6px;text-align:center">糖g</th>'
-    + '<th style="padding:4px 6px;text-align:center">塩g</th>'
-    + '<th></th>'
-    + '</tr>'
-    + '<tr style="background:#2c4a6e;color:#fff;font-size:10px">'
-    + '<th style="padding:3px 2px;text-align:center;background:#155a32">有機</th>'
-    + '<th style="padding:3px 2px;text-align:center;background:#155a32">限定</th>'
-    + '<th colspan="5" style="padding:3px 6px;font-size:9px;color:#aad4ff">原材料名・単価・産地・アレルゲン・GMO確認を入力</th>'
-    + '<th colspan="5" style="padding:3px 6px;font-size:9px;color:#aad4ff">栄養素（100gあたり）</th>'
+    + '<tr style="background:#1a3a5c;color:#fff;font-size:11px">'
+    + '<th style="padding:5px 3px;text-align:center;background:#155a32">有機</th>'
+    + '<th style="padding:5px 3px;text-align:center;background:#155a32">限定</th>'
+    + '<th style="padding:5px 6px;text-align:left">原材料名</th>'
+    + '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>'
+    + '<th style="padding:5px 6px;text-align:center">産地</th>'
+    + '<th style="padding:5px 6px;text-align:center">アレルゲン</th>'
+    + '<th style="padding:5px 6px;text-align:center;background:#6b2020">GMO確認</th>'
+    + '<th style="padding:5px 3px;text-align:center;background:#3a2060;font-size:10px">kcal</th>'
+    + '<th style="padding:5px 3px;text-align:center;background:#3a2060;font-size:10px">蛋白g</th>'
+    + '<th style="padding:5px 3px;text-align:center;background:#3a2060;font-size:10px">脂g</th>'
+    + '<th style="padding:5px 3px;text-align:center;background:#3a2060;font-size:10px">糖g</th>'
+    + '<th style="padding:5px 3px;text-align:center;background:#3a2060;font-size:10px">塩g</th>'
     + '<th></th>'
     + '</tr>'
     + '</thead>'
@@ -2100,21 +2094,64 @@ function mkDelBtn(arr, idx, fn) {
 
 function renderMatTable() {
   var tbody = document.getElementById('master-mat-tbody'); if(!tbody) return;
+  var GMO_CROPS = ['大豆','とうもろこし','ばれいしょ','なたね','綿実','アルファルファ','てん菜','パパイヤ','からしな'];
   var html = '';
   masterData.materialPrices.forEach(function(m, i) {
     var rowBg = i%2===0?'#fff':'#fafcff';
-    html += '<tr style="background:' + rowBg + '">';
-    html += mkTd(m.name,      'name',      i, 'masterData.materialPrices');
-    html += mkTd(m.unitPrice, 'unitPrice', i, 'masterData.materialPrices', 'number');
-    html += mkCheckTd(m.isOrganic, 'isOrganic', i, 'masterData.materialPrices');
-    html += mkTd(m.limitedTo, 'limitedTo', i, 'masterData.materialPrices');
-    html += mkTd(m.e||'', 'e', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.p||'', 'p', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.f||'', 'f', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.c||'', 'c', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.s||'', 's', i, 'masterData.materialPrices', 'number');
+    var needsGmo = GMO_CROPS.some(function(c){ return (m.name||'').indexOf(c)>=0; });
+    var gmoVal = m.gmoCheck || '';
+    html += '<tr style="background:'+rowBg+'">';
+    // 有機チェック
+    html += '<td style="text-align:center;background:#f0faf4;padding:3px">'
+      + '<input type="checkbox" '+(m.isOrganic?'checked':'')+' title="有機"'
+      + ' onchange="masterData.materialPrices['+i+'].isOrganic=this.checked">'
+      + '</td>';
+    // 限定チェック
+    html += '<td style="text-align:center;background:#f0f4ff;padding:3px">'
+      + '<input type="checkbox" '+(m.isLimited?'checked':'')+' title="特定商品限定"'
+      + ' onchange="masterData.materialPrices['+i+'].isLimited=this.checked;renderMatTable()">'
+      + '</td>';
+    // 原材料名
+    html += mkTd(m.name||'',       'name',      i, 'masterData.materialPrices');
+    // 単価
+    html += mkTd(m.unitPrice||0,   'unitPrice', i, 'masterData.materialPrices', 'number');
+    // 産地
+    html += mkTd(m.origin||'',     'origin',    i, 'masterData.materialPrices');
+    // アレルゲン
+    html += mkTd(m.allergens||'',  'allergens', i, 'masterData.materialPrices');
+    // GMO確認（対象品目は赤背景）
+    if (needsGmo) {
+      var gmoBg = gmoVal ? '#e8f5e9' : '#fff0f0';
+      html += '<td style="background:'+gmoBg+';padding:2px">'
+        + '<select onchange="masterData.materialPrices['+i+'].gmoCheck=this.value;renderMatTable()"'
+        + ' style="width:100%;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;background:'+gmoBg+'">'
+        + '<option value=""'+(gmoVal===''?' selected':'')+'>⚠ 未確認</option>'
+        + '<option value="非組換え"'+(gmoVal==='非組換え'?' selected':'')+'>✓ 非組換え</option>'
+        + '<option value="組換え"'+(gmoVal==='組換え'?' selected':'')+'>組換え</option>'
+        + '<option value="不分別"'+(gmoVal==='不分別'?' selected':'')+'>不分別</option>'
+        + '<option value="対象外"'+(gmoVal==='対象外'?' selected':'')+'>対象外</option>'
+        + '</select></td>';
+    } else {
+      html += '<td style="text-align:center;color:#bbb;font-size:11px">—</td>';
+    }
+    // 栄養素
+    html += mkTd(m.e||0, 'e', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.p||0, 'p', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.f||0, 'f', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.c||0, 'c', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.s||0, 's', i, 'masterData.materialPrices', 'number');
     html += mkDelBtn('masterData.materialPrices', i, 'renderMatTable');
     html += '</tr>';
+    // 限定商品名入力行
+    if (m.isLimited) {
+      html += '<tr style="background:#eef2ff">'
+        + '<td colspan="2" style="padding:2px 6px;font-size:11px;color:#555;text-align:right">限定商品名：</td>'
+        + '<td colspan="10" style="padding:2px 4px">'
+        + '<input type="text" value="'+h(m.limitedTo||'')+'" placeholder="例：有機八宝菜（空欄=全商品）"'
+        + ' style="width:100%;font-size:12px;padding:3px 6px;border:1px solid #aab4d4;border-radius:3px"'
+        + ' oninput="masterData.materialPrices['+i+'].limitedTo=this.value">'
+        + '</td><td></td></tr>';
+    }
   });
   tbody.innerHTML = html;
 }
