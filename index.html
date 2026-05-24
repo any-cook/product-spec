@@ -741,10 +741,68 @@ function renderEditor() {
     + '</div></div>';
 
   // ---- ⑤ 注意・調理 ----
+  // 食品種別・加熱方法
+  var foodType    = currentSpec.remarks && currentSpec.remarks.foodType    ? currentSpec.remarks.foodType    : '';
+  var heatMethod  = currentSpec.remarks && currentSpec.remarks.heatMethod  ? currentSpec.remarks.heatMethod  : '';
+
+  // 注意マスター選択肢
+  var cautOpts = '<option value="">-- 注意事項マスターから選択 --</option>';
+  masterData.cautionMaster.forEach(function(m, idx){
+    cautOpts += '<option value="'+idx+'">'+h(m.category)+': '+h(m.text.slice(0,20))+'...</option>';
+  });
+  // 調理マスター選択肢
+  var cookOpts = '<option value="">-- 調理方法マスターから選択 --</option>';
+  masterData.cookingMaster.forEach(function(m, idx){
+    cookOpts += '<option value="'+idx+'">'+h(m.category)+'/'+h(m.method)+': '+h(m.text.slice(0,20))+'...</option>';
+  });
+
   var remHtml = '<div id="panel-remarks" class="panel">'
-    + '<div class="card"><h3>注意表示</h3><textarea id="r-notes" rows="4"></textarea></div>'
-    + '<div class="card"><h3>調理方法</h3><textarea id="r-cooking" rows="4"></textarea></div>'
-    + '<div class="card"><h3>特記事項</h3><textarea id="r-special" rows="3"></textarea></div>'
+    // 食品種別設定
+    + '<div class="card"><h3>食品種別・加熱方法</h3>'
+    +   '<div class="g2">'
+    +     '<div class="field"><label class="fl">食品種別</label>'
+    +       '<select id="r-foodType" onchange="if(!currentSpec.remarks)currentSpec.remarks={};currentSpec.remarks.foodType=this.value;applyRemarksTemplate()">'
+    +         '<option value=""'+(foodType===''?' selected':'')+'>選択してください</option>'
+    +         '<option value="retort"'+(foodType==='retort'?' selected':'')+'>レトルト食品</option>'
+    +         '<option value="frozen"'+(foodType==='frozen'?' selected':'')+'>冷凍食品</option>'
+    +         '<option value="chilled"'+(foodType==='chilled'?' selected':'')+'>冷蔵食品</option>'
+    +       '</select>'
+    +     '</div>'
+    +     '<div class="field"><label class="fl">加熱方法</label>'
+    +       '<select id="r-heatMethod" onchange="if(!currentSpec.remarks)currentSpec.remarks={};currentSpec.remarks.heatMethod=this.value;applyRemarksTemplate()">'
+    +         '<option value=""'+(heatMethod===''?' selected':'')+'>選択してください</option>'
+    +         '<option value="boil_only"'+(heatMethod==='boil_only'?' selected':'')+'>湯煎専用</option>'
+    +         '<option value="microwave"'+(heatMethod==='microwave'?' selected':'')+'>レンジ対応</option>'
+    +         '<option value="both"'+(heatMethod==='both'?' selected':'')+'>湯煎・レンジ両対応</option>'
+    +         '<option value="other"'+(heatMethod==='other'?' selected':'')+'>その他</option>'
+    +       '</select>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div style="margin-top:8px">'
+    +     '<button class="btn btn-sm" style="background:#e8f0f8;color:#1a3a5c" onclick="applyRemarksTemplate()">📋 テンプレートを適用</button>'
+    +     '<span style="font-size:11px;color:#888;margin-left:8px">食品種別・加熱方法を選択後にクリックすると注意・調理方法を自動入力します</span>'
+    +   '</div>'
+    + '</div>'
+    // 注意表示
+    + '<div class="card"><h3>注意表示</h3>'
+    +   '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">'
+    +     '<select id="caution-master-sel" style="font-size:12px;flex:1;padding:4px 6px;border:1px solid #ccc;border-radius:5px">'+cautOpts+'</select>'
+    +     '<button class="btn btn-sm" onclick="insertCautionFromMaster()">↓ 挿入</button>'
+    +   '</div>'
+    +   '<textarea id="r-notes" rows="5" placeholder="注意事項を入力（マスターから挿入または直接入力）"></textarea>'
+    + '</div>'
+    // 調理方法
+    + '<div class="card"><h3>調理方法</h3>'
+    +   '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">'
+    +     '<select id="cooking-master-sel" style="font-size:12px;flex:1;padding:4px 6px;border:1px solid #ccc;border-radius:5px">'+cookOpts+'</select>'
+    +     '<button class="btn btn-sm" onclick="insertCookingFromMaster()">↓ 挿入</button>'
+    +   '</div>'
+    +   '<textarea id="r-cooking" rows="5" placeholder="調理方法を入力（マスターから挿入または直接入力）"></textarea>'
+    + '</div>'
+    // 特記事項
+    + '<div class="card"><h3>特記事項</h3>'
+    +   '<textarea id="r-special" rows="3" placeholder="その他特記事項"></textarea>'
+    + '</div>'
     + '</div>';
 
   // ---- ⑥ 原価計算 ----
@@ -1495,26 +1553,25 @@ function recalcCost() {
 
 // ===== 栄養再計算 =====
 function calcNutritionSilent() {
-  var e=0, p=0, f=0, c=0, s=0, hasData=false;
+  var e=0, p=0, f=0, c=0, s=0, w=0, hasData=false;
   currentSpec.ings.forEach(function(ing){
-    // 重量が0でも栄養素データがあれば計算に含める（重量入力待ちの状態でも表示）
     var amount = ing.amount || 0;
-    if (amount <= 0 && !(ing.e||ing.p||ing.f||ing.c||ing.s)) return;
-    if (amount <= 0) return; // 重量0はスキップ（計算の意味がない）
+    if (amount <= 0) return;
     hasData = true;
     var r = amount / 100;
     e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
-    c += (ing.c||0)*r; s += (ing.s||0)*r;
+    c += (ing.c||0)*r; s += (ing.s||0)*r; w += (ing.w||0)*r;
   });
   if (hasData) {
     sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
-    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2));
+    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2)); sv('n-w', w.toFixed(1));
     if (!currentSpec.nutrition) currentSpec.nutrition = {};
     currentSpec.nutrition.e = Math.round(e);
     currentSpec.nutrition.p = +p.toFixed(1);
     currentSpec.nutrition.f = +f.toFixed(1);
     currentSpec.nutrition.c = +c.toFixed(1);
     currentSpec.nutrition.s = +s.toFixed(2);
+    currentSpec.nutrition.w = +w.toFixed(1);
   }
 }
 
@@ -1610,6 +1667,58 @@ function applyPackagingMaster(type, name) {
     if (mat.unitPrice){ currentSpec.pkg.pcPrice = mat.unitPrice; var el=document.getElementById('pk-pcPrice'); if(el) el.value=mat.unitPrice; }
     toast('ケース「'+name+'」を反映しました ✓');
   }
+}
+
+// ===== 注意・調理テンプレート =====
+var REMARKS_TEMPLATES = {"retort": {"caution": {"boil_only": "【保存方法】直射日光を避け、常温で保存してください。\n【注意】開封後はすぐにお召し上がりください。加熱後の袋は高温になっておりますので、取り出す際はご注意ください。袋のまま電子レンジでの加熱はしないでください。", "microwave": "【保存方法】直射日光を避け、常温で保存してください。\n【注意】開封後はすぐにお召し上がりください。加熱後の容器は高温になっておりますので、取り出す際はご注意ください。", "both": "【保存方法】直射日光を避け、常温で保存してください。\n【注意】開封後はすぐにお召し上がりください。加熱後の袋・容器は高温になっておりますので、取り出す際はご注意ください。", "other": "【保存方法】直射日光を避け、常温で保存してください。\n【注意】開封後はすぐにお召し上がりください。"}, "cooking": {"boil_only": "【湯煎の場合】袋のまま沸騰したお湯の中に入れ、約5分間温めてください。袋を取り出す際はやけどにご注意ください。袋を開け、お皿に盛り付けてお召し上がりください。", "microwave": "【電子レンジの場合】袋から取り出し耐熱容器に移し、ラップをかけて500Wで約2〜3分加熱してください。加熱後はやけどにご注意ください。", "both": "【湯煎の場合】袋のまま沸騰したお湯の中に入れ、約5分間温めてください。\n【電子レンジの場合】袋から取り出し耐熱容器に移し、ラップをかけて500Wで約2〜3分加熱してください。加熱後はやけどにご注意ください。", "other": "加熱してお召し上がりください。"}}, "frozen": {"caution": {"boil_only": "【保存方法】-18℃以下で保存してください。\n【注意】一度解凍したものは再凍結しないでください。袋のまま電子レンジでの加熱はしないでください。加熱後の袋は高温になっておりますので、取り出す際はご注意ください。", "microwave": "【保存方法】-18℃以下で保存してください。\n【注意】一度解凍したものは再凍結しないでください。加熱後の容器は高温になっておりますので、取り出す際はご注意ください。", "both": "【保存方法】-18℃以下で保存してください。\n【注意】一度解凍したものは再凍結しないでください。加熱後の袋・容器は高温になっておりますので、取り出す際はご注意ください。", "other": "【保存方法】-18℃以下で保存してください。\n【注意】一度解凍したものは再凍結しないでください。"}, "cooking": {"boil_only": "【湯煎の場合】凍ったまま袋をお湯の中に入れ、沸騰後約7〜8分間温めてください。袋を取り出す際はやけどにご注意ください。袋を開け、お皿に盛り付けてお召し上がりください。", "microwave": "【電子レンジの場合】袋から取り出し耐熱容器に移し、ラップをかけて500Wで約3〜4分加熱してください。加熱後はやけどにご注意ください。", "both": "【湯煎の場合】凍ったまま袋をお湯の中に入れ、沸騰後約7〜8分間温めてください。\n【電子レンジの場合】袋から取り出し耐熱容器に移し、ラップをかけて500Wで約3〜4分加熱してください。加熱後はやけどにご注意ください。", "other": "加熱してお召し上がりください。"}}, "chilled": {"caution": {"boil_only": "【保存方法】10℃以下で冷蔵保存してください。\n【注意】開封後はすぐにお召し上がりください。袋のまま電子レンジでの加熱はしないでください。加熱後の袋は高温になっておりますので、取り出す際はご注意ください。", "microwave": "【保存方法】10℃以下で冷蔵保存してください。\n【注意】開封後はすぐにお召し上がりください。加熱後の容器は高温になっておりますので、取り出す際はご注意ください。", "both": "【保存方法】10℃以下で冷蔵保存してください。\n【注意】開封後はすぐにお召し上がりください。加熱後の袋・容器は高温になっておりますので、取り出す際はご注意ください。", "other": "【保存方法】10℃以下で冷蔵保存してください。\n【注意】開封後はすぐにお召し上がりください。"}, "cooking": {"boil_only": "【湯煎の場合】袋のまま沸騰したお湯の中に入れ、約3〜5分間温めてください。袋を取り出す際はやけどにご注意ください。袋を開け、お皿に盛り付けてお召し上がりください。", "microwave": "【電子レンジの場合】袋から取り出し耐熱容器に移し、ラップをかけて500Wで約2分加熱してください。加熱後はやけどにご注意ください。", "both": "【湯煎の場合】袋のまま沸騰したお湯の中に入れ、約3〜5分間温めてください。\n【電子レンジの場合】袋から取り出し耐熱容器に移し、ラップをかけて500Wで約2分加熱してください。加熱後はやけどにご注意ください。", "other": "温めてお召し上がりください。"}}};
+
+function applyRemarksTemplate() {
+  if (!currentSpec.remarks) currentSpec.remarks = {};
+  var ft = document.getElementById('r-foodType');
+  var hm = document.getElementById('r-heatMethod');
+  var foodType   = ft ? ft.value : '';
+  var heatMethod = hm ? hm.value : '';
+  if (!foodType || !heatMethod) {
+    toast('食品種別と加熱方法を両方選択してください', true);
+    return;
+  }
+  var tmpl = REMARKS_TEMPLATES[foodType];
+  if (!tmpl) return;
+  var cautionText = tmpl.caution[heatMethod] || '';
+  var cookingText = tmpl.cooking[heatMethod] || '';
+  var notesEl   = document.getElementById('r-notes');
+  var cookingEl = document.getElementById('r-cooking');
+  if (notesEl)   { notesEl.value   = cautionText; currentSpec.notes   = cautionText; }
+  if (cookingEl) { cookingEl.value = cookingText; currentSpec.cooking = cookingText; }
+  currentSpec.remarks.foodType   = foodType;
+  currentSpec.remarks.heatMethod = heatMethod;
+  toast('テンプレートを適用しました ✓');
+}
+
+function insertCautionFromMaster() {
+  var sel = document.getElementById('caution-master-sel');
+  if (!sel || sel.value === '') return;
+  var m = masterData.cautionMaster[+sel.value];
+  if (!m) return;
+  var el = document.getElementById('r-notes');
+  if (el) {
+    el.value = el.value ? el.value + '\n' + m.text : m.text;
+    currentSpec.notes = el.value;
+  }
+  sel.value = '';
+}
+
+function insertCookingFromMaster() {
+  var sel = document.getElementById('cooking-master-sel');
+  if (!sel || sel.value === '') return;
+  var m = masterData.cookingMaster[+sel.value];
+  if (!m) return;
+  var el = document.getElementById('r-cooking');
+  if (el) {
+    el.value = el.value ? el.value + '\n' + m.text : m.text;
+    currentSpec.cooking = el.value;
+  }
+  sel.value = '';
 }
 
 function moveProc(i, dir) {
@@ -1765,12 +1874,13 @@ window.addEventListener('load', function() {
 // Firestore collection: 'masters' / doc: 'material_prices', 'processing_costs', 'packaging_costs', 'shipping', 'additional_costs'
 
 var masterData = {
-  materialPrices:   [],  // 原材料マスター [{name, isOrganic, isLimited, limitedTo, unitPrice, origin, allergens, gmoCheck, e, p, f, c, s}]
-  processingCosts:  [],  // 加工費マスター [{condition, productionRatio, laborCost, utilityCost}]
-  // packagingMaster は packagingCosts に統合（type, name フィールドで管理）
-  packagingCosts:   [],  // 商品別包材費 [{productName, cost, memo}]
-  shippingCosts:    [],  // 送料マスター [{region, weight, cost, carrier}]
-  additionalCosts:  [],  // 商品別追加コスト [{productName, itemName, cost}]
+  materialPrices:   [],  // 原材料マスター
+  processingCosts:  [],  // 加工費マスター
+  packagingCosts:   [],  // 包材マスター（個装・ケース統合）
+  shippingCosts:    [],  // 送料マスター
+  additionalCosts:  [],  // 商品別追加コスト
+  cautionMaster:    [],  // 注意事項マスター [{category, text}]
+  cookingMaster:    [],  // 調理方法マスター [{category, method, text}]
 };
 
 // ===== マスター初期化（Firestoreから読込） =====
@@ -1802,6 +1912,8 @@ async function loadMasterFromFirestore() {
       if (d.packagingCosts)   masterData.packagingCosts   = d.packagingCosts;
       if (d.shippingCosts)    masterData.shippingCosts    = d.shippingCosts;
       if (d.additionalCosts)  masterData.additionalCosts  = d.additionalCosts;
+      if (d.cautionMaster)    masterData.cautionMaster    = d.cautionMaster;
+      if (d.cookingMaster)    masterData.cookingMaster    = d.cookingMaster;
       // master-areaが存在すれば再描画（常に存在するはず）
       renderMasterTables();
       // 荷姿タブの包材選択ドロップダウンを更新
@@ -2078,6 +2190,24 @@ function renderMasterPanel() {
 
 
 
+  // ---- G. 注意事項マスター ----
+  var cautInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="addCautionRow()">＋ 追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">カテゴリと注意事項テキストを登録します。⑤注意・調理タブから選択して挿入できます。</p>'
+    + '<div id="master-caution-list"></div>';
+  html += accordionCard('G. 注意事項マスター（' + masterData.cautionMaster.length + '件）', 'acc-caution', cautInner);
+
+  // ---- H. 調理方法マスター ----
+  var cookInner = ''
+    + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+    + '<button class="btn btn-sm" onclick="addCookingRow()">＋ 追加</button>'
+    + '</div>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">カテゴリ（レトルト/冷凍/冷蔵）・方法（湯煎/レンジ）・テキストを登録します。</p>'
+    + '<div id="master-cooking-list"></div>';
+  html += accordionCard('H. 調理方法マスター（' + masterData.cookingMaster.length + '件）', 'acc-cooking', cookInner);
+
   html += '</div>'; // panel-master
   return html;
 }
@@ -2089,7 +2219,9 @@ function updateAccordionTitles() {
     'acc-proc': 'B. 商品別加工費マスター（' + masterData.processingCosts.length + '件）',
     'acc-pkg':  'C. 包材費マスター（' + masterData.packagingCosts.length + '件）',
     'acc-add':  'D. 商品別追加コスト（' + masterData.additionalCosts.length + '件）',
-    'acc-ship': 'E. 送料マスター（' + masterData.shippingCosts.length + '件）',
+    'acc-ship':    'E. 送料マスター（' + masterData.shippingCosts.length + '件）',
+    'acc-caution': 'G. 注意事項マスター（' + masterData.cautionMaster.length + '件）',
+    'acc-cooking': 'H. 調理方法マスター（' + masterData.cookingMaster.length + '件）',
   };
   Object.keys(titles).forEach(function(id) {
     // アコーディオンカードのh3要素を更新
