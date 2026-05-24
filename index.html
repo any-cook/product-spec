@@ -465,6 +465,7 @@ function swTab(name) {
   if (panel) panel.classList.add('active');
 
   if (name === 'master') renderMasterTables();
+  if (name === 'package') refreshPackagingSelects();
   if (name === 'preview') genPreview();
 }
 
@@ -900,7 +901,6 @@ function updateIngField(i, field, val) {
     if (mat) {
       if (mat.unitPrice > 0) {
         ing.unitPrice = mat.unitPrice;
-        // 単価セルをリアルタイム更新
         var prcEl = document.getElementById('prc-'+i);
         if (prcEl) prcEl.value = mat.unitPrice;
       }
@@ -909,6 +909,7 @@ function updateIngField(i, field, val) {
       if (mat.f != null) ing.f = mat.f;
       if (mat.c != null) ing.c = mat.c;
       if (mat.s != null) ing.s = mat.s;
+      if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
     }
     autoLabelText();
     updateIngSummary();
@@ -1114,7 +1115,7 @@ function addFoodIng(name) {
     s: mat && mat.s != null ? mat.s : (fd ? fd.s : 0),
   };
   if (mat && mat.isOrganic) ing.feature = '有機';
-  if (mat && mat.gmo) ing.gmo = mat.gmo;
+  if (mat && mat.gmoCheck) ing.gmo = mat.gmoCheck;
 
   currentSpec.ings.push(ing);
   sv('isearch','');
@@ -1537,6 +1538,51 @@ function calcNutrition() {
 
 // ===== 製造工程 =====
 // ===== 包材マスターを荷姿情報に反映 =====
+// ===== 包材マスターのドロップダウンを更新 =====
+// ===== マスターのGMO変更を規格書の原材料に即反映 =====
+function applyGmoCheckToSpec(matName, gmoVal) {
+  if (!currentSpec || !currentSpec.ings) return;
+  currentSpec.ings.forEach(function(ing) {
+    if (matchMaster(ing.name, matName)) {
+      ing.gmo = gmoVal;
+    }
+  });
+  // renderIngTbodyでGMOセルを更新
+  renderIngTbody();
+}
+
+function refreshPackagingSelects() {
+  var unitSel = document.getElementById('pk-puMaster');
+  var caseSel = document.getElementById('pk-pcMaster');
+  if (!unitSel && !caseSel) return;
+
+  var pk = currentSpec && currentSpec.pkg ? currentSpec.pkg : {};
+
+  if (unitSel) {
+    var unitOpts2 = '<option value="">-- 包材を選択 --</option>';
+    masterData.packagingMaster.filter(function(m){ return m.type !== 'case'; }).forEach(function(m){
+      var sel = (pk.puMasterId && pk.puMasterId === m.name) ? ' selected' : '';
+      unitOpts2 += '<option value="'+h(m.name)+'"'+sel+'>'+h(m.name)+'</option>';
+    });
+    unitSel.innerHTML = unitOpts2;
+    if (masterData.packagingMaster.filter(function(m){return m.type!=='case';}).length > 0) {
+      unitSel.style.borderColor = '#4CAF50';
+    }
+  }
+
+  if (caseSel) {
+    var caseOpts2 = '<option value="">-- 段ボールを選択 --</option>';
+    masterData.packagingMaster.filter(function(m){ return m.type === 'case'; }).forEach(function(m){
+      var sel = (pk.pcMasterId && pk.pcMasterId === m.name) ? ' selected' : '';
+      caseOpts2 += '<option value="'+h(m.name)+'"'+sel+'>'+h(m.name)+'</option>';
+    });
+    caseSel.innerHTML = caseOpts2;
+    if (masterData.packagingMaster.filter(function(m){return m.type==='case';}).length > 0) {
+      caseSel.style.borderColor = '#4CAF50';
+    }
+  }
+}
+
 function applyPackagingMaster(type, name) {
   if (!name || !currentSpec) return;
   var mat = masterData.packagingMaster.find(function(m){ return m.name === name; });
@@ -1741,6 +1787,8 @@ async function loadMasterFromFirestore() {
       if (d.additionalCosts)  masterData.additionalCosts  = d.additionalCosts;
       // master-areaが存在すれば再描画（常に存在するはず）
       renderMasterTables();
+      // 荷姿タブの包材選択ドロップダウンを更新
+      refreshPackagingSelects();
       var total = masterData.materialPrices.length + masterData.processingCosts.length
                 + masterData.packagingCosts.length + masterData.shippingCosts.length
                 + masterData.additionalCosts.length;
@@ -1794,6 +1842,8 @@ function applyMasterToSpec() {
       if (mat.s != null) ing.s = mat.s;
       // 有機フラグ
       if (mat.isOrganic && !ing.feature) ing.feature = '有機';
+      // GMO確認結果をマスターから反映
+      if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
       applied++;
     }
   });
@@ -1818,10 +1868,11 @@ function applyMasterToSpec() {
   }
   if (applied > 0) {
     toast('マスターから ' + applied + '品目の単価・栄養素を反映しました ✓');
-    // 画面を更新
     renderIngTbody();
     calcNutritionSilent();
   }
+  // 包材選択ドロップダウンも更新（マスター読込後に荷姿タブの選択肢を反映）
+  refreshPackagingSelects();
   return applied;
 }
 
