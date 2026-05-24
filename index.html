@@ -594,18 +594,23 @@ function renderEditor() {
     + '<div style="overflow-x:auto;margin-top:8px">'
     + '<table class="ing-table" style="table-layout:fixed;width:100%">'
     + '<colgroup>'
-    +   '<col style="width:30px">'
-    +   '<col style="width:140px">'
-    +   '<col style="width:80px">'
-    +   '<col style="width:80px">'
-    +   '<col style="width:72px">'
-    +   '<col style="width:85px">'
-    +   '<col style="width:75px">'
-    +   '<col style="width:58px">'
-    +   '<col style="width:65px">'
-    +   '<col style="width:65px">'
-    +   '<col style="width:75px">'
-    +   '<col style="width:30px">'
+    +   '<col style="width:28px">'    // No
+    +   '<col style="width:130px">'   // 原材料名
+    +   '<col style="width:70px">'    // 国名
+    +   '<col style="width:75px">'    // アレルゲン
+    +   '<col style="width:65px">'    // 重量
+    +   '<col style="width:78px">'    // 単価
+    +   '<col style="width:65px">'    // 原材料費
+    +   '<col style="width:52px">'    // 配合比
+    +   '<col style="width:44px">'    // kcal
+    +   '<col style="width:44px">'    // 蛋白
+    +   '<col style="width:40px">'    // 脂質
+    +   '<col style="width:44px">'    // 炭水化物
+    +   '<col style="width:40px">'    // 食塩
+    +   '<col style="width:55px">'    // 特色原材料
+    +   '<col style="width:55px">'    // 添加物用途
+    +   '<col style="width:68px">'    // 遺伝子組換え
+    +   '<col style="width:30px">'    // 削除
     + '</colgroup>'
     + '<thead>'
     + '<tr style="background:#2c4a6e;color:#fff;font-size:11px">'
@@ -617,9 +622,14 @@ function renderEditor() {
     +   '<th style="padding:6px 4px;text-align:center;background:#155a32">単価(円/kg)</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#155a32">原材料費</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#155a32">配合比</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">特色原材料</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">添加物用途</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">遺伝子組換え</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">kcal</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">蛋白g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">脂g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">糖g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">塩g</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">特色</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">添加物</th>'
+    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">GMO</th>'
     +   '<th style="padding:6px 4px;background:#333"></th>'
     + '</tr>'
     + '</thead>'
