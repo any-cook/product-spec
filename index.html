@@ -801,6 +801,14 @@ function renderEditor() {
   renderIngTbody();
   renderProcList();
   renderAllergenGrid();
+
+  // panel-masterをmain-areaに再挿入（renderEditorでinnerHTMLが書き換わるため）
+  if (!document.getElementById('panel-master')) {
+    var mEl = document.createElement('div');
+    mEl.innerHTML = renderMasterPanel();
+    var mainArea = document.getElementById('main-area');
+    if (mainArea) mainArea.appendChild(mEl.firstChild);
+  }
 }
 
 // ---- フィールド生成ヘルパー ----
@@ -1600,7 +1608,7 @@ window.addEventListener('load', function() {
 
 var masterData = {
   materialPrices:   [],  // 原材料価格マスター [{name, unitPrice, isOrganic, limitedTo}]
-  processingCosts:  [],  // 商品別加工費マスター [{productName, laborCost, utilityCost}]
+  processingCosts:  [],  // 加工費マスター [{condition, productionRatio, laborCost, utilityCost}]
   packagingCosts:   [],  // 包材費マスター [{productName, cost, memo}]
   shippingCosts:    [],  // 送料マスター [{region, weight, cost, carrier}]
   additionalCosts:  [],  // 商品別追加コスト [{productName, itemName, cost}]
@@ -1762,16 +1770,18 @@ function renderMasterPanel() {
     + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importProcCSV(this)"></label>'
     + '<button class="btn btn-sm" onclick="addProcRow()">＋ 行追加</button>'
     + '</div>'
-    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 商品名,労務費(円),光熱費(円)</p>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 加工条件,生産割合(%),人件費(円),光熱費(円)</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
-    + '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:110px"><col style="width:30px"></colgroup>'
+    + '<colgroup><col style="width:160px"><col style="width:80px"><col style="width:90px"><col style="width:90px"><col style="width:80px"><col style="width:30px"></colgroup>'
     + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
-    + '<th style="padding:5px 6px;text-align:left">商品名</th>'
-    + '<th style="padding:5px 6px;text-align:center">労務費(円)</th>'
+    + '<th style="padding:5px 6px;text-align:left">加工条件</th>'
+    + '<th style="padding:5px 6px;text-align:center">生産割合(%)</th>'
+    + '<th style="padding:5px 6px;text-align:center">人件費(円)</th>'
     + '<th style="padding:5px 6px;text-align:center">光熱費(円)</th>'
+    + '<th style="padding:5px 6px;text-align:center;background:#1a4a6e">加工費合計</th>'
     + '<th></th></tr></thead>'
     + '<tbody id="master-proc-tbody"></tbody></table></div>';
-  html += accordionCard('B. 商品別加工費マスター（' + masterData.processingCosts.length + '件）', 'acc-proc', procInner);
+  html += accordionCard('B. 加工費マスター（' + masterData.processingCosts.length + '件）', 'acc-proc', procInner);
 
   // ---- C. 包材費マスター ----
   var pkgInner = ''
@@ -1902,17 +1912,23 @@ function renderProcTable() {
   var html = '';
   masterData.processingCosts.forEach(function(m, i) {
     var rowBg = i%2===0?'#fff':'#fafcff';
+    var labor   = m.laborCost   || 0;
+    var utility = m.utilityCost || 0;
+    var ratio   = m.productionRatio != null ? m.productionRatio : 100;
+    var total   = labor + utility;
     html += '<tr style="background:' + rowBg + '">';
-    html += mkTd(m.productName, 'productName', i, 'masterData.processingCosts');
-    html += mkTd(m.laborCost,   'laborCost',   i, 'masterData.processingCosts', 'number');
-    html += mkTd(m.utilityCost, 'utilityCost', i, 'masterData.processingCosts', 'number');
+    html += mkTd(m.condition || m.productName || '', 'condition', i, 'masterData.processingCosts');
+    html += mkTd(ratio,   'productionRatio', i, 'masterData.processingCosts', 'number');
+    html += mkTd(labor,   'laborCost',       i, 'masterData.processingCosts', 'number');
+    html += mkTd(utility, 'utilityCost',     i, 'masterData.processingCosts', 'number');
+    html += '<td style="text-align:right;padding:0 8px;font-size:12px;font-weight:700;color:#1a3a5c;background:#eef2f7">' + total.toLocaleString() + ' 円</td>';
     html += mkDelBtn('masterData.processingCosts', i, 'renderProcTable');
     html += '</tr>';
   });
   tbody.innerHTML = html;
 }
 function addProcRow() {
-  masterData.processingCosts.push({productName:'', laborCost:0, utilityCost:0});
+  masterData.processingCosts.push({condition:'', productionRatio:100, laborCost:0, utilityCost:0});
   renderProcTable();
   updateAccordionTitles();
 }
@@ -2050,8 +2066,11 @@ function importMaterialCSV(input) {
 }
 
 function exportProcCSV() {
-  var rows = [['商品名','労務費(円)','光熱費(円)']];
-  masterData.processingCosts.forEach(function(m){ rows.push([m.productName, m.laborCost, m.utilityCost]); });
+  var rows = [['加工条件','生産割合(%)','人件費(円)','光熱費(円)','加工費合計(円)']];
+  masterData.processingCosts.forEach(function(m){
+    var labor = m.laborCost||0, util = m.utilityCost||0;
+    rows.push([m.condition||m.productName||'', m.productionRatio||100, labor, util, labor+util]);
+  });
   downloadCSV('加工費マスター.csv', rows);
 }
 function importProcCSV(input) {
@@ -2059,14 +2078,22 @@ function importProcCSV(input) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var rows = parseCSV(e.target.result);
+    var imported = 0;
     rows.forEach(function(r, i) {
       if (i===0 || r.length < 2) return;
-      var name = r[0].trim(); if(!name) return;
-      var ex = masterData.processingCosts.find(function(m){return m.productName===name;});
-      if (ex) { ex.laborCost=+r[1]||0; ex.utilityCost=+r[2]||0; }
-      else masterData.processingCosts.push({productName:name, laborCost:+r[1]||0, utilityCost:+r[2]||0});
+      var cond = r[0].trim(); if(!cond) return;
+      var ex = masterData.processingCosts.find(function(m){ return (m.condition||m.productName||'')===cond; });
+      if (ex) {
+        ex.condition = cond;
+        if (r[1] !== undefined) ex.productionRatio = +r[1]||100;
+        if (r[2] !== undefined) ex.laborCost   = +r[2]||0;
+        if (r[3] !== undefined) ex.utilityCost = +r[3]||0;
+      } else {
+        masterData.processingCosts.push({condition:cond, productionRatio:+r[1]||100, laborCost:+r[2]||0, utilityCost:+r[3]||0});
+      }
+      imported++;
     });
-    renderProcTable(); updateAccordionTitles(); toast('加工費マスターを取込みました ✓'); input.value='';
+    renderProcTable(); updateAccordionTitles(); toast(imported+'件の加工費マスターを取込みました ✓'); input.value='';
   };
   reader.readAsText(file, 'UTF-8');
 }
