@@ -894,6 +894,46 @@ function renderEditor() {
   }
 }
 
+// ---- ロット別加工費 選択UI生成 ----
+function buildLotSelector() {
+  if (!masterData.processingCosts.length) {
+    return '<span style="font-size:11px;color:#e67e22">⑦マスター登録→B.ロット別加工費マスターで加工条件を登録してください</span>';
+  }
+  var opts = '<option value="">加工条件を選択して追加...</option>';
+  masterData.processingCosts.forEach(function(m, i) {
+    var total = (m.laborCost||0) + (m.utilityCost||0);
+    var label = (m.condition||m.productName||'加工条件'+(i+1))
+      + (m.productionRatio ? ' ('+m.productionRatio+'%)' : '')
+      + ' — ' + total.toLocaleString() + '円';
+    opts += '<option value="'+i+'">' + h(label) + '</option>';
+  });
+  return '<select id="lot-proc-sel" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #b0bec5;border-radius:5px"'
+    + ' onchange="addLotFromProcMasterByIndex(this.value)">'
+    + opts
+    + '</select>';
+}
+
+// ロット別加工費マスターのindex指定で追加
+function addLotFromProcMasterByIndex(idx) {
+  if (idx === '' || idx === null) return;
+  var m = masterData.processingCosts[+idx];
+  if (!m) return;
+  if (!currentSpec.cost) currentSpec.cost = {};
+  if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
+  var total = (m.laborCost||0) + (m.utilityCost||0);
+  currentSpec.cost.lotCosts.push({
+    label: m.condition || m.productName || ('加工条件'+(+idx+1)),
+    cost:  total,
+    bags:  1
+  });
+  renderLotCostList();
+  recalcCost();
+  toast('「'+(m.condition||m.productName||'')+'」をロット加工費に追加しました ✓');
+  // セレクトをリセット
+  var sel = document.getElementById('lot-proc-sel');
+  if (sel) sel.value = '';
+}
+
 // ---- 送料セレクター生成 ----
 function buildShipSelector(co) {
   var ships = masterData.shippingCosts;
@@ -1401,12 +1441,20 @@ function autoLabelText() {
   if (basicCountry) {
     countryText = '（原産国：' + basicCountry + '）';
   }
-  var names = sorted.map(function(i){ return i.name; }).filter(Boolean).join('、');
+  // 「原材料名（産地）」形式で生成
+  var nameList = sorted.map(function(ing) {
+    if (!ing.name) return '';
+    // 産地はマスターのoriginまたはing.countryを使用
+    var origin = '';
+    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    if (mat && mat.origin) origin = mat.origin;
+    else if (ing.country) origin = ing.country;
+    return ing.name + (origin ? '（'+origin+'）' : '');
+  }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '（一部に'+checked.join('・')+'を含む）' : '';
-  // 原産国を先頭に配置
-  el.value = countryText + names + allergenText;
+  var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
+  el.value = countryText + nameList + allergenText;
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
@@ -2185,7 +2233,7 @@ function renderMasterPanel() {
     + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importProcCSV(this)"></label>'
     + '<button class="btn btn-sm" onclick="addProcRow()">＋ 行追加</button>'
     + '</div>'
-    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 加工条件,生産割合(%),人件費(円),光熱費(円)</p>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 加工条件（ロット名）,生産割合(%),人件費(円),光熱費(円)</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
     + '<colgroup><col style="width:160px"><col style="width:80px"><col style="width:90px"><col style="width:90px"><col style="width:80px"><col style="width:30px"></colgroup>'
     + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
@@ -2196,7 +2244,7 @@ function renderMasterPanel() {
     + '<th style="padding:5px 6px;text-align:center;background:#1a4a6e">加工費合計</th>'
     + '<th></th></tr></thead>'
     + '<tbody id="master-proc-tbody"></tbody></table></div>';
-  html += accordionCard('B. 加工費マスター（' + masterData.processingCosts.length + '件）', 'acc-proc', procInner);
+  html += accordionCard('B. ロット別加工費マスター（' + masterData.processingCosts.length + '件）', 'acc-proc', procInner);
 
   // ---- C. 包材費マスター ----
   var pkgInner = ''
