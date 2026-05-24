@@ -706,11 +706,10 @@ function renderEditor() {
     +     '<select id="pk-puMaster" style="font-size:12px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;min-width:160px" onchange="applyPackagingMaster(\'unit\',this.value)">'+unitOpts+'</select>'
     +   '</div>'
     + '</div>'
-    + '<div class="g4">'
+    + '<div class="g3">'
     +   fld('縦/奥行(mm)','text','pk-puD', h(pk.puD),'oninput="currentSpec.pkg.puD=this.value"')
     +   fld('横/幅(mm)',  'text','pk-puW', h(pk.puW),'oninput="currentSpec.pkg.puW=this.value"')
     +   fld('高さ(mm)',   'text','pk-puH', h(pk.puH),'oninput="currentSpec.pkg.puH=this.value"')
-    +   fld('入数',       'text','pk-puN', h(pk.puN),'oninput="currentSpec.pkg.puN=this.value"')
     + '</div><div class="g3">'
     +   fld('重量(g)',   'text','pk-puWt',  h(pk.puWt),  'oninput="currentSpec.pkg.puWt=this.value"')
     +   fld('包材材質', 'text','pk-puMat',  h(pk.puMat), 'oninput="currentSpec.pkg.puMat=this.value"')
@@ -1976,11 +1975,26 @@ function renderMasterPanel() {
     + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importPkgCSV(this)"></label>'
     + '<button class="btn btn-sm" onclick="addPkgRow()">＋ 行追加</button>'
     + '</div>'
-    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 商品名,包材費(円),メモ</p>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 商品名,縦(mm),横(mm),高さ(mm),包材材質,重量(g),包材費(円),メモ</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
-    + '<colgroup><col style="width:180px"><col style="width:110px"><col style="width:200px"><col style="width:30px"></colgroup>'
+    + '<colgroup>'
+    + '<col style="width:140px">'
+    + '<col style="width:65px">'
+    + '<col style="width:65px">'
+    + '<col style="width:65px">'
+    + '<col style="width:90px">'
+    + '<col style="width:65px">'
+    + '<col style="width:85px">'
+    + '<col style="width:120px">'
+    + '<col style="width:30px">'
+    + '</colgroup>'
     + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
     + '<th style="padding:5px 6px;text-align:left">商品名</th>'
+    + '<th style="padding:5px 6px;text-align:center">縦(mm)</th>'
+    + '<th style="padding:5px 6px;text-align:center">横(mm)</th>'
+    + '<th style="padding:5px 6px;text-align:center">高さ(mm)</th>'
+    + '<th style="padding:5px 6px;text-align:center">包材材質</th>'
+    + '<th style="padding:5px 6px;text-align:center">重量(g)</th>'
     + '<th style="padding:5px 6px;text-align:center">包材費(円)</th>'
     + '<th style="padding:5px 6px;text-align:left">メモ</th>'
     + '<th></th></tr></thead>'
@@ -2012,11 +2026,19 @@ function renderMasterPanel() {
     + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importShipCSV(this)"></label>'
     + '<button class="btn btn-sm" onclick="addShipRow()">＋ 行追加</button>'
     + '</div>'
-    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 地域,重量上限(kg),送料(円),配送業者</p>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 地域,サイズ区分,重量上限(kg),送料(円),配送業者</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
-    + '<colgroup><col style="width:120px"><col style="width:100px"><col style="width:100px"><col style="width:150px"><col style="width:30px"></colgroup>'
+    + '<colgroup>'
+    + '<col style="width:100px">'
+    + '<col style="width:110px">'
+    + '<col style="width:90px">'
+    + '<col style="width:90px">'
+    + '<col style="width:130px">'
+    + '<col style="width:30px">'
+    + '</colgroup>'
     + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
     + '<th style="padding:5px 6px;text-align:left">地域</th>'
+    + '<th style="padding:5px 6px;text-align:left">サイズ区分</th>'
     + '<th style="padding:5px 6px;text-align:center">重量上限(kg)</th>'
     + '<th style="padding:5px 6px;text-align:center">送料(円)</th>'
     + '<th style="padding:5px 6px;text-align:left">配送業者</th>'
@@ -2256,16 +2278,21 @@ function renderPkgTable() {
   masterData.packagingCosts.forEach(function(m, i) {
     var rowBg = i%2===0?'#fff':'#fafcff';
     html += '<tr style="background:' + rowBg + '">';
-    html += mkTd(m.productName, 'productName', i, 'masterData.packagingCosts');
-    html += mkTd(m.cost,        'cost',        i, 'masterData.packagingCosts', 'number');
-    html += mkTd(m.memo,        'memo',        i, 'masterData.packagingCosts');
+    html += mkTd(m.productName,   'productName', i, 'masterData.packagingCosts');
+    html += mkTd(m.height||'',    'height',      i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.width||'',     'width',       i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.depth||'',     'depth',       i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.material||'',  'material',    i, 'masterData.packagingCosts');
+    html += mkTd(m.weight||'',    'weight',      i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.cost||0,       'cost',        i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.memo||'',      'memo',        i, 'masterData.packagingCosts');
     html += mkDelBtn('masterData.packagingCosts', i, 'renderPkgTable');
     html += '</tr>';
   });
   tbody.innerHTML = html;
 }
 function addPkgRow() {
-  masterData.packagingCosts.push({productName:'', cost:0, memo:''});
+  masterData.packagingCosts.push({productName:'', height:'', width:'', depth:'', material:'', weight:'', cost:0, memo:''});
   renderPkgTable();
   updateAccordionTitles();
 }
@@ -2296,17 +2323,18 @@ function renderShipTable() {
   masterData.shippingCosts.forEach(function(m, i) {
     var rowBg = i%2===0?'#fff':'#fafcff';
     html += '<tr style="background:' + rowBg + '">';
-    html += mkTd(m.region,      'region',      i, 'masterData.shippingCosts');
-    html += mkTd(m.weightLimit, 'weightLimit', i, 'masterData.shippingCosts', 'number');
-    html += mkTd(m.cost,        'cost',        i, 'masterData.shippingCosts', 'number');
-    html += mkTd(m.carrier,     'carrier',     i, 'masterData.shippingCosts');
+    html += mkTd(m.region,         'region',        i, 'masterData.shippingCosts');
+    html += mkTd(m.sizeCategory||'','sizeCategory', i, 'masterData.shippingCosts');
+    html += mkTd(m.weightLimit||0,  'weightLimit',  i, 'masterData.shippingCosts', 'number');
+    html += mkTd(m.cost||0,         'cost',         i, 'masterData.shippingCosts', 'number');
+    html += mkTd(m.carrier||'',     'carrier',      i, 'masterData.shippingCosts');
     html += mkDelBtn('masterData.shippingCosts', i, 'renderShipTable');
     html += '</tr>';
   });
   tbody.innerHTML = html;
 }
 function addShipRow() {
-  masterData.shippingCosts.push({region:'', weightLimit:0, cost:0, carrier:''});
+  masterData.shippingCosts.push({region:'', sizeCategory:'', weightLimit:0, cost:0, carrier:''});
   renderShipTable();
   updateAccordionTitles();
 }
@@ -2420,8 +2448,10 @@ function importProcCSV(input) {
 }
 
 function exportPkgCSV() {
-  var rows = [['商品名','包材費(円)','メモ']];
-  masterData.packagingCosts.forEach(function(m){ rows.push([m.productName, m.cost, m.memo||'']); });
+  var rows = [['商品名','縦(mm)','横(mm)','高さ(mm)','包材材質','重量(g)','包材費(円)','メモ']];
+  masterData.packagingCosts.forEach(function(m){
+    rows.push([m.productName, m.height||'', m.width||'', m.depth||'', m.material||'', m.weight||'', m.cost||0, m.memo||'']);
+  });
   downloadCSV('包材費マスター.csv', rows);
 }
 function importPkgCSV(input) {
@@ -2429,14 +2459,24 @@ function importPkgCSV(input) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var rows = parseCSV(e.target.result);
+    var imported = 0;
     rows.forEach(function(r, i) {
       if (i===0 || r.length < 2) return;
       var name = r[0].trim(); if(!name) return;
+      // 新形式: 商品名,縦,横,高さ,材質,重量,包材費,メモ
+      // 旧形式: 商品名,包材費,メモ
+      var isNew = r.length >= 7;
       var ex = masterData.packagingCosts.find(function(m){return m.productName===name;});
-      if (ex) { ex.cost=+r[1]||0; ex.memo=r[2]||''; }
-      else masterData.packagingCosts.push({productName:name, cost:+r[1]||0, memo:r[2]||''});
+      if (isNew) {
+        var obj = {productName:name, height:r[1]||'', width:r[2]||'', depth:r[3]||'', material:r[4]||'', weight:r[5]||'', cost:+r[6]||0, memo:r[7]||''};
+        if (ex) Object.assign(ex, obj); else masterData.packagingCosts.push(obj);
+      } else {
+        if (ex) { ex.cost=+r[1]||0; ex.memo=r[2]||''; }
+        else masterData.packagingCosts.push({productName:name, height:'', width:'', depth:'', material:'', weight:'', cost:+r[1]||0, memo:r[2]||''});
+      }
+      imported++;
     });
-    renderPkgTable(); updateAccordionTitles(); toast('包材費マスターを取込みました ✓'); input.value='';
+    renderPkgTable(); updateAccordionTitles(); toast(imported+'件の包材費マスターを取込みました ✓'); input.value='';
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -2463,8 +2503,10 @@ function importAddCSV(input) {
 }
 
 function exportShipCSV() {
-  var rows = [['地域','重量上限(kg)','送料(円)','配送業者']];
-  masterData.shippingCosts.forEach(function(m){ rows.push([m.region, m.weightLimit, m.cost, m.carrier||'']); });
+  var rows = [['地域','サイズ区分','重量上限(kg)','送料(円)','配送業者']];
+  masterData.shippingCosts.forEach(function(m){
+    rows.push([m.region, m.sizeCategory||'', m.weightLimit||0, m.cost||0, m.carrier||'']);
+  });
   downloadCSV('送料マスター.csv', rows);
 }
 function importShipCSV(input) {
@@ -2474,8 +2516,16 @@ function importShipCSV(input) {
     var rows = parseCSV(e.target.result);
     var imported = 0;
     rows.forEach(function(r, i) {
-      if (i===0 || r.length < 3) return;
-      masterData.shippingCosts.push({region:r[0].trim(), weightLimit:+r[1]||0, cost:+r[2]||0, carrier:r[3]||''});
+      if (i===0 || r.length < 2) return;
+      // 新形式: 地域,サイズ区分,重量上限,送料,配送業者
+      // 旧形式: 地域,重量上限,送料,配送業者
+      var region, sizeCategory, weightLimit, cost, carrier;
+      if (r.length >= 5) {
+        region=r[0].trim(); sizeCategory=r[1].trim(); weightLimit=+r[2]||0; cost=+r[3]||0; carrier=r[4]||'';
+      } else {
+        region=r[0].trim(); sizeCategory=''; weightLimit=+r[1]||0; cost=+r[2]||0; carrier=r[3]||'';
+      }
+      masterData.shippingCosts.push({region:region, sizeCategory:sizeCategory, weightLimit:weightLimit, cost:cost, carrier:carrier});
       imported++;
     });
     renderShipTable(); updateAccordionTitles(); toast(imported + '件の送料を取込みました ✓'); input.value='';
