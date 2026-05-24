@@ -1697,7 +1697,7 @@ window.addEventListener('load', function() {
 // Firestore collection: 'masters' / doc: 'material_prices', 'processing_costs', 'packaging_costs', 'shipping', 'additional_costs'
 
 var masterData = {
-  materialPrices:   [],  // 原材料価格マスター [{name, unitPrice, isOrganic, limitedTo}]
+  materialPrices:   [],  // 原材料マスター [{name, isOrganic, isLimited, limitedTo, unitPrice, origin, allergens, gmoCheck, e, p, f, c, s}]
   processingCosts:  [],  // 加工費マスター [{condition, productionRatio, laborCost, utilityCost}]
   packagingMaster:  [],  // 包材品目マスター [{name, type, width, height, depth, unitPrice, memo}]
   packagingCosts:   [],  // 商品別包材費 [{productName, cost, memo}]
@@ -1838,22 +1838,49 @@ function renderMasterPanel() {
     + '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importMaterialCSV(this)"></label>'
     + '<button class="btn btn-sm" onclick="addMaterialRow()">＋ 行追加</button>'
     + '</div>'
-    + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 原材料名,単価(円/kg),有機(1=有機),限定商品名,kcal,たんぱく質,脂質,炭水化物,食塩</p>'
+    + '<p style="font-size:11px;color:#888;margin-bottom:4px">CSV: 有機,限定,原材料名,単価(円/kg),産地,アレルゲン,遺伝子組換え確認,kcal,たんぱく質,脂質,炭水化物,食塩</p>'
+    + '<p style="font-size:11px;color:#c62828;margin-bottom:6px">★遺伝子組換え確認対象：大豆・とうもろこし・ばれいしょ・なたね・綿実・アルファルファ・てん菜・パパイヤ・からしな</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
-    + '<colgroup><col style="width:140px"><col style="width:90px"><col style="width:45px"><col style="width:110px"><col style="width:55px"><col style="width:75px"><col style="width:55px"><col style="width:70px"><col style="width:55px"><col style="width:30px"></colgroup>'
-    + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:11px">'
-    + '<th style="padding:5px 6px;text-align:left">原材料名</th>'
-    + '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>'
-    + '<th style="padding:5px 6px;text-align:center">有機</th>'
-    + '<th style="padding:5px 6px;text-align:left">限定商品名</th>'
-    + '<th style="padding:5px 6px;text-align:center">kcal</th>'
-    + '<th style="padding:5px 6px;text-align:center">たんぱく質g</th>'
-    + '<th style="padding:5px 6px;text-align:center">脂質g</th>'
-    + '<th style="padding:5px 6px;text-align:center">炭水化物g</th>'
-    + '<th style="padding:5px 6px;text-align:center">食塩g</th>'
-    + '<th></th></tr></thead>'
+    + '<colgroup>'
+    + '<col style="width:36px">'   // 有機
+    + '<col style="width:36px">'   // 限定
+    + '<col style="width:140px">'  // 原材料名
+    + '<col style="width:85px">'   // 単価
+    + '<col style="width:80px">'   // 産地
+    + '<col style="width:100px">'  // アレルゲン
+    + '<col style="width:95px">'   // GMO確認
+    + '<col style="width:48px">'   // kcal
+    + '<col style="width:52px">'   // たんぱく質
+    + '<col style="width:45px">'   // 脂質
+    + '<col style="width:52px">'   // 炭水化物
+    + '<col style="width:45px">'   // 食塩
+    + '<col style="width:30px">'   // 削除
+    + '</colgroup>'
+    + '<thead>'
+    + '<tr style="background:#1a3a5c;color:#fff;font-size:10px">'
+    + '<th colspan="2" style="padding:4px;text-align:center;background:#155a32">フラグ</th>'
+    + '<th style="padding:4px 6px;text-align:left">原材料名</th>'
+    + '<th style="padding:4px 6px;text-align:center">単価(円/kg)</th>'
+    + '<th style="padding:4px 6px;text-align:center">産地</th>'
+    + '<th style="padding:4px 6px;text-align:center">アレルゲン</th>'
+    + '<th style="padding:4px 6px;text-align:center;background:#6b2020">遺伝子組換確認</th>'
+    + '<th style="padding:4px 6px;text-align:center">kcal</th>'
+    + '<th style="padding:4px 6px;text-align:center">蛋白g</th>'
+    + '<th style="padding:4px 6px;text-align:center">脂g</th>'
+    + '<th style="padding:4px 6px;text-align:center">糖g</th>'
+    + '<th style="padding:4px 6px;text-align:center">塩g</th>'
+    + '<th></th>'
+    + '</tr>'
+    + '<tr style="background:#2c4a6e;color:#fff;font-size:10px">'
+    + '<th style="padding:3px 2px;text-align:center;background:#155a32">有機</th>'
+    + '<th style="padding:3px 2px;text-align:center;background:#155a32">限定</th>'
+    + '<th colspan="5" style="padding:3px 6px;font-size:9px;color:#aad4ff">原材料名・単価・産地・アレルゲン・GMO確認を入力</th>'
+    + '<th colspan="5" style="padding:3px 6px;font-size:9px;color:#aad4ff">栄養素（100gあたり）</th>'
+    + '<th></th>'
+    + '</tr>'
+    + '</thead>'
     + '<tbody id="master-mat-tbody"></tbody></table></div>';
-  html += accordionCard('A. 原材料価格マスター（' + masterData.materialPrices.length + '件）', 'acc-mat', matInner);
+  html += accordionCard('A. 原材料マスター（' + masterData.materialPrices.length + '件）', 'acc-mat', matInner);
 
   // ---- B. 商品別加工費マスター ----
   var procInner = ''
@@ -1961,7 +1988,7 @@ function renderMasterPanel() {
 // ===== マスターテーブル描画 =====
 function updateAccordionTitles() {
   var titles = {
-    'acc-mat':  'A. 原材料価格マスター（' + masterData.materialPrices.length + '件）',
+    'acc-mat':  'A. 原材料マスター（' + masterData.materialPrices.length + '件）',
     'acc-proc': 'B. 商品別加工費マスター（' + masterData.processingCosts.length + '件）',
     'acc-pkg':  'C. 包材費マスター（' + masterData.packagingCosts.length + '件）',
     'acc-add':  'D. 商品別追加コスト（' + masterData.additionalCosts.length + '件）',
@@ -2082,7 +2109,7 @@ function renderMatTable() {
   tbody.innerHTML = html;
 }
 function addMaterialRow() {
-  masterData.materialPrices.push({name:'', unitPrice:0, isOrganic:false, limitedTo:'', e:0, p:0, f:0, c:0, s:0});
+  masterData.materialPrices.push({name:'', isOrganic:false, isLimited:false, limitedTo:'', unitPrice:0, origin:'', allergens:'', gmoCheck:'', e:0, p:0, f:0, c:0, s:0});
   renderMatTable();
   updateAccordionTitles();
 }
@@ -2205,11 +2232,15 @@ function parseCSV(text) {
 }
 
 function exportMaterialCSV() {
-  var rows = [['原材料名','単価(円/kg)','有機(1=有機)','限定商品名','エネルギー(kcal/100g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)']];
+  var rows = [['有機(1)','限定(1)','原材料名','単価(円/kg)','産地','アレルゲン','遺伝子組換え確認','エネルギー(kcal/100g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)','限定商品名']];
   masterData.materialPrices.forEach(function(m){
-    rows.push([m.name, m.unitPrice, m.isOrganic?1:0, m.limitedTo||'', m.e||0, m.p||0, m.f||0, m.c||0, m.s||0]);
+    rows.push([
+      m.isOrganic?1:0, m.isLimited?1:0, m.name, m.unitPrice||0,
+      m.origin||'', m.allergens||'', m.gmoCheck||'',
+      m.e||0, m.p||0, m.f||0, m.c||0, m.s||0, m.limitedTo||''
+    ]);
   });
-  downloadCSV('原材料価格マスター.csv', rows);
+  downloadCSV('原材料マスター.csv', rows);
 }
 function importMaterialCSV(input) {
   var file = input.files[0]; if(!file) return;
@@ -2239,7 +2270,7 @@ function importMaterialCSV(input) {
     });
     renderMatTable();
     updateAccordionTitles();
-    toast(imported + '件の原材料価格を取込みました ✓');
+    toast(imported + '件の原材料マスターを取込みました ✓');
     input.value = '';
   };
   reader.readAsText(file, 'UTF-8');
