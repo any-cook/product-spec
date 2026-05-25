@@ -2593,11 +2593,11 @@ function renderMatTable() {
       + '</select></td>';
     // 栄養素
     html += mkTd(m.e||0, 'e', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.w||0, 'w', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.p||0, 'p', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.f||0, 'f', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.c||0, 'c', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.s||0, 's', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.w||0, 'w', i, 'masterData.materialPrices', 'number');
     html += mkDelBtn('masterData.materialPrices', i, 'renderMatTable');
     html += '</tr>';
     // 限定商品名入力行
