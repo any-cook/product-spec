@@ -448,6 +448,9 @@ function collectForm() {
 
 // ===== タブ切替 =====
 function swTab(name) {
+  // タブ切替前に現在の入力値を保存
+  if (currentSpec) collectForm();
+
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
 
@@ -676,17 +679,19 @@ function renderEditor() {
     +   fld('脂質 (g)',         'number','n-f', n.f, 'step="0.1"')
     +   fld('炭水化物 (g)',     'number','n-c', n.c, 'step="0.1"')
     + '</div>'
-    + '<div class="g3" style="margin-bottom:8px">'
+    + '<div class="g2" style="margin-bottom:8px">'
     +   fld('灰分 (g)（任意）',  'number','n-ash', n.ash||0, 'step="0.01"')
     +   fld('食塩相当量 (g)',    'number','n-s',   n.s,      'step="0.01"')
+    + '</div>'
+    + '<div class="g2" style="margin-bottom:8px">'
     +   fld('飽和脂肪酸 (g)（任意）', 'number','n-sf', n.sf, 'step="0.1"')
+    +   fld('表示単位','text','n-unit', h(n.unit), '')
     + '</div>'
     + '<div class="g2" style="margin-bottom:8px">'
     +   fld('糖質 (g)（任意）',     'number','n-su',    n.su,       'step="0.1"')
     +   fld('食物繊維 (g)（任意）', 'number','n-fiber', n.fiber||0, 'step="0.1"')
     + '</div>'
-    + '<div class="g2">'
-    +   fld('表示単位','text','n-unit', h(n.unit), '')
+    + '<div class="field">'
     +   fld('備考',    'text','n-note', h(n.note), '')
     + '</div>'
 
