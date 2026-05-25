@@ -426,7 +426,7 @@ function collectForm() {
     var el = document.getElementById('f-'+k); if(el) b[k] = el.value;
   });
   var n = currentSpec.nutrition;
-  ['e','p','f','c','s','w','sf','su','unit','note'].forEach(function(k){
+  ['e','p','f','c','s','w','sf','su','fiber','unit','note'].forEach(function(k){
     var el = document.getElementById('n-'+k); if(el) n[k] = el.value;
   });
   var pk = currentSpec.pkg;
@@ -663,25 +663,28 @@ function renderEditor() {
   // ---- ③ 栄養成分 ----
   var nutHtml = '<div id="panel-nutrition" class="panel"><div class="card"><h3>栄養成分情報</h3>'
     + '<p style="font-size:12px;color:#888;margin-bottom:10px">1袋あたりの推定値。「🧮 再計算」で使用量から自動計算も可能です。</p>'
-    + '<div class="g3">'
+    + '<div class="g2" style="margin-bottom:8px">'
     +   fld('エネルギー (kcal)','number','n-e', n.e, 'step="1"')
-    +   fld('たんぱく質 (g)',   'number','n-p', n.p, 'step="0.1"')
-    +   fld('脂質 (g)',        'number','n-f', n.f, 'step="0.1"')
+    +   fld('水分 (g)',         'number','n-w', n.w,  'step="0.1"')
     + '</div>'
-    + '<div class="g3">'
-    +   fld('炭水化物 (g)',    'number','n-c', n.c,  'step="0.1"')
-    +   fld('食塩相当量 (g)', 'number','n-s', n.s,  'step="0.01"')
-    +   fld('水分 (g)',       'number','n-w', n.w,  'step="0.1"')
+    + '<div class="g3" style="margin-bottom:8px">'
+    +   fld('たんぱく質 (g)',   'number','n-p', n.p, 'step="0.1"')
+    +   fld('脂質 (g)',         'number','n-f', n.f, 'step="0.1"')
+    +   fld('炭水化物 (g)',     'number','n-c', n.c, 'step="0.1"')
+    + '</div>'
+    + '<div class="g3" style="margin-bottom:8px">'
+    +   fld('糖質 (g)（任意）',        'number','n-su', n.su, 'step="0.1"')
+    +   fld('食物繊維 (g)（任意）',    'number','n-fiber', n.fiber||0, 'step="0.1"')
+    +   fld('食塩相当量 (g)',           'number','n-s', n.s, 'step="0.01"')
     + '</div>'
     + '<div class="g2">'
     +   fld('飽和脂肪酸 (g)（任意）','number','n-sf', n.sf, 'step="0.1"')
-    +   fld('糖質 (g)（任意）',      'number','n-su', n.su, 'step="0.1"')
-    + '</div>'
-    + '<div class="g2">'
     +   fld('表示単位','text','n-unit', h(n.unit), '')
-    +   fld('備考',    'text','n-note', h(n.note), '')
     + '</div>'
-    + '<button class="btn btn-sm" onclick="calcNutrition()" style="margin-top:4px">🧮 原材料から再計算</button>'
+    + '<div class="field">'
+    +   fld('備考','text','n-note', h(n.note), '')
+    + '</div>'
+    + '<button class="btn btn-sm" onclick="calcNutrition()" style="margin-top:8px">🧮 原材料から再計算</button>'
     + '</div></div>';
 
   // ---- ④ 荷姿・製造 ----
@@ -1178,6 +1181,7 @@ function renderIngTbody() {
     var nutF = ((ing.f||0) * r).toFixed(1);
     var nutC = ((ing.c||0) * r).toFixed(1);
     var nutS = ((ing.s||0) * r).toFixed(2);
+    var nutW = ((ing.w||0) * r).toFixed(1);
     var hasNut = (ing.e||0) > 0;
     var nutStyle = 'text-align:right;padding:0 5px;font-size:11px;background:#f8f4ff;color:' + (hasNut ? '#5b3a8c' : '#ccc');
 
@@ -2216,10 +2220,10 @@ function renderMasterPanel() {
     + '<tr style="background:#1a3a5c;color:#fff;font-size:12px">'
     + '<th style="padding:5px 3px;text-align:center;background:#155a32">有機</th>'
     + '<th style="padding:5px 3px;text-align:center;background:#155a32">限定</th>'
-    + '<th style="padding:5px 6px;text-align:left">原材料名</th>'
-    + '<th style="padding:5px 6px;text-align:center">単価(円/kg)</th>'
-    + '<th style="padding:5px 6px;text-align:center">産地</th>'
-    + '<th style="padding:5px 6px;text-align:center">アレルゲン</th>'
+    + '<th style="padding:5px 6px;text-align:left;background:#1e4d7a">原材料名</th>'
+    + '<th style="padding:5px 6px;text-align:center;background:#1e4d7a">単価(円/kg)</th>'
+    + '<th style="padding:5px 6px;text-align:center;background:#1e4d7a">産地</th>'
+    + '<th style="padding:5px 6px;text-align:center;background:#1e4d7a">アレルゲン</th>'
     + '<th style="padding:5px 6px;text-align:center;background:#6b2020">GMO確認</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">kcal<br>/100g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">蛋白質<br>g</th>'
@@ -2528,6 +2532,14 @@ function importPkgMasterCSV(input) {
   reader.readAsText(file, 'UTF-8');
 }
 
+function mkTdBg(val, field, idx, arr, type, bg) {
+  type = type || 'text';
+  bg = bg || '#fff';
+  return '<td style="padding:2px 3px;background:'+bg+'"><input type="' + type + '" value="' + h(val||'') + '"'
+    + ' style="width:100%;font-size:13px;padding:5px 7px;border:1.5px solid #8caccc;border-radius:4px;background:'+bg+';color:#111;font-weight:600;box-sizing:border-box"'
+    + ' onchange="' + arr + '[' + idx + ']["' + field + '"]=' + (type==='number'?'+':'') + 'this.value"></td>';
+}
+
 function mkTd(val, field, idx, arr, type) {
   type = type || 'text';
   return '<td><input type="' + type + '" value="' + h(val||'') + '" style="width:100%;font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px" '
@@ -2560,13 +2572,13 @@ function renderMatTable() {
       + ' onchange="masterData.materialPrices['+i+'].isLimited=this.checked;renderMatTable()">'
       + '</td>';
     // 原材料名
-    html += mkTd(m.name||'',       'name',      i, 'masterData.materialPrices');
+    html += mkTdBg(m.name||'',       'name',      i, 'masterData.materialPrices', 'text',   '#f0f4ff');
     // 単価
-    html += mkTd(m.unitPrice||0,   'unitPrice', i, 'masterData.materialPrices', 'number');
+    html += mkTdBg(m.unitPrice||0,   'unitPrice', i, 'masterData.materialPrices', 'number', '#f0f4ff');
     // 産地
-    html += mkTd(m.origin||'',     'origin',    i, 'masterData.materialPrices');
+    html += mkTdBg(m.origin||'',     'origin',    i, 'masterData.materialPrices', 'text',   '#f0f4ff');
     // アレルゲン
-    html += mkTd(m.allergens||'',  'allergens', i, 'masterData.materialPrices');
+    html += mkTdBg(m.allergens||'',  'allergens', i, 'masterData.materialPrices', 'text',   '#fff0f0');
     // GMO確認（対象品目は赤/緑背景、それ以外は灰色背景）
     var gmoBg2 = needsGmo ? (gmoVal ? '#e8f5e9' : '#fff0f0') : '#f5f5f5';
     var gmoTip = needsGmo ? '' : ' title="確認不要品目"';
