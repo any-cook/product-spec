@@ -841,15 +841,19 @@ function renderEditor() {
     + '</div>'
     // ② ロット別加工費
     + '<div class="card"><h3>② ロット別加工費</h3>'
-    + '<p style="font-size:12px;color:#888;margin-bottom:8px">1ロット（釜・バッチ）あたりの加工費と生産袋数を登録すると、1袋あたり加工費を自動計算します。</p>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:8px">ロット別加工費マスターから加工条件を選択して追加するか、手動で追加してください。</p>'
+    + '<div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">'
+    +   '<label style="font-size:12px;color:#1a3a5c;font-weight:700;white-space:nowrap">加工条件を選択：</label>'
+    +   buildLotSelector()
+    + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 100px 90px auto;gap:6px;margin-bottom:4px;font-size:11px;color:#888;font-weight:700">'
-    +   '<span>ロット名・説明</span><span style="text-align:center">加工費(円)</span><span style="text-align:center">生産袋数</span><span></span>'
+    +   '<span>加工条件・説明</span><span style="text-align:center">加工費(円)</span><span style="text-align:center">生産袋数</span><span></span>'
     + '</div>'
     + '<div id="lot-cost-list"></div>'
     + '<div style="display:flex;gap:6px;margin-top:8px">'
-    +   '<button class="btn btn-sm" onclick="addLotCost()">＋ ロット追加</button>'
+    +   '<button class="btn btn-sm" onclick="addLotCost()">＋ 手動追加</button>'
     + '</div>'
-    + '<div id="lot-cost-summary" style="margin-top:10px;padding:8px;background:#e8f5e9;border-radius:6px;font-size:13px;display:none">1袋あたり加工費: <strong id="lot-per-bag">0</strong> 円</div>'
+    + '<div id="lot-cost-summary" style="margin-top:10px;padding:8px;background:#e8f5e9;border-radius:6px;font-size:13px;display:none">1袋あたり加工費合計: <strong id="lot-per-bag">0</strong> 円</div>'
     + '</div>'
     // ③ 商品別追加コスト（マスターから自動反映）
     + '<div class="card"><h3>③ 商品別追加コスト</h3>'
