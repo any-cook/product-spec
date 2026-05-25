@@ -567,7 +567,7 @@ function renderEditor() {
     + '<div class="card"><h3>原材料・添加物 入力</h3>'
     + '<div style="display:flex;gap:8px;margin-bottom:10px">'
     +   '<div class="search-box" style="flex:1">'
-    +     '<input type="text" id="isearch" placeholder="食材名で検索して追加（例：にんじん、有機醤油...）" oninput="searchFood()" onfocus="showFoodResults()" onblur="hideFoodResults()">'
+    +     '<input type="text" id="isearch" placeholder="食材名で検索して追加（例：にんじん、有機醤油...）" oninput="searchFood()" onfocus="showFoodResults()" onblur="hideFoodResults()" lang="ja" autocomplete="off">'
     +     '<div class="search-results" id="food-results"></div>'
     +   '</div>'
     +   '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button>'
@@ -659,7 +659,7 @@ function renderEditor() {
     + '<div style="margin-top:10px">'
     +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
     +     '<label class="fl" style="margin:0">一括表示用 原材料名（重量多い順・自動生成）</label>'
-    +     '<button class="btn btn-sm" style="font-size:11px;padding:2px 8px" onclick="autoLabelText()">↻ 重量順に並び替え</button>'
+    +     '<button class="btn btn-sm" style="font-size:11px;padding:2px 8px" onclick="rebuildLabelText()">↻ 重量順に再生成</button>'
     +   '</div>'
     +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value" placeholder="自動生成されます。直接編集も可能です。"></textarea>'
     + '</div>'
@@ -1452,6 +1452,33 @@ function addCustIng() {
 }
 
 // ===== 一括表示テキスト自動生成 =====
+function rebuildLabelText() {
+  // ボタンクリック時は完全再生成（手動編集上書き）
+  var el = document.getElementById('label-text');
+  if (!el) return;
+  var sorted = currentSpec.ings.slice().sort(function(a, b) {
+    var wa = a.amount||0, wb = b.amount||0;
+    if (wa===0&&wb===0) return 0; if (wa===0) return 1; if (wb===0) return -1;
+    return wb - wa;
+  });
+  var countryText = '';
+  var basicCountry = currentSpec.basic && currentSpec.basic.country ? currentSpec.basic.country : '';
+  if (basicCountry) countryText = '（原産国：' + basicCountry + '）';
+  var nameList = sorted.map(function(ing) {
+    if (!ing.name) return '';
+    var origin = '';
+    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    if (mat && mat.origin) origin = mat.origin;
+    else if (ing.country) origin = ing.country;
+    return ing.name + (origin ? '（'+origin+'）' : '');
+  }).filter(Boolean).join('、');
+  var checked = [];
+  document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
+  var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
+  el.value = countryText + nameList + allergenText;
+  if (currentSpec) currentSpec.labelText = el.value;
+}
+
 function autoLabelText() {
   var el = document.getElementById('label-text');
   if (!el) return;
@@ -1482,7 +1509,18 @@ function autoLabelText() {
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
-  el.value = countryText + nameList + allergenText;
+  // 自動生成は初回のみ（currentSpec.labelTextが空の場合）
+  // アレルゲン変更時は既存テキストのアレルゲン部分だけ更新
+  var currentVal = el.value || '';
+  var alPattern = /、（一部に[^）]+を含む）$/;
+  if (currentVal === '' || !currentSpec.labelText) {
+    // 初回生成
+    el.value = countryText + nameList + allergenText;
+  } else {
+    // 既存テキストのアレルゲン部分だけ更新（手動編集を保持）
+    var baseText = currentVal.replace(alPattern, '');
+    el.value = baseText + allergenText;
+  }
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
@@ -2140,6 +2178,7 @@ function applyMasterToSpec() {
       if (mat.isOrganic && !ing.feature) ing.feature = '有機';
       // GMO確認結果をマスターから反映
       if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
+      if (mat.allergens && !ing.allergens) ing.allergens = mat.allergens;
       applied++;
     }
   });
