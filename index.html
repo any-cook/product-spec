@@ -676,14 +676,14 @@ function renderEditor() {
     +   fld('脂質 (g)',         'number','n-f', n.f, 'step="0.1"')
     +   fld('炭水化物 (g)',     'number','n-c', n.c, 'step="0.1"')
     + '</div>'
-    + '<div class="g2" style="margin-bottom:8px">'
-    +   fld('灰分 (g)（任意）',         'number','n-ash', n.ash||0, 'step="0.01"')
-    +   fld('食塩相当量 (g)',            'number','n-s',   n.s,      'step="0.01"')
-    + '</div>'
     + '<div class="g3" style="margin-bottom:8px">'
-    +   fld('糖質 (g)（任意）',          'number','n-su',    n.su,       'step="0.1"')
-    +   fld('食物繊維 (g)（任意）',      'number','n-fiber', n.fiber||0, 'step="0.1"')
-    +   fld('飽和脂肪酸 (g)（任意）',   'number','n-sf',    n.sf,       'step="0.1"')
+    +   fld('灰分 (g)（任意）',  'number','n-ash', n.ash||0, 'step="0.01"')
+    +   fld('食塩相当量 (g)',    'number','n-s',   n.s,      'step="0.01"')
+    +   fld('飽和脂肪酸 (g)（任意）', 'number','n-sf', n.sf, 'step="0.1"')
+    + '</div>'
+    + '<div class="g2" style="margin-bottom:8px">'
+    +   fld('糖質 (g)（任意）',     'number','n-su',    n.su,       'step="0.1"')
+    +   fld('食物繊維 (g)（任意）', 'number','n-fiber', n.fiber||0, 'step="0.1"')
     + '</div>'
     + '<div class="g2">'
     +   fld('表示単位','text','n-unit', h(n.unit), '')
