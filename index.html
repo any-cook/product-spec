@@ -633,8 +633,8 @@ function renderEditor() {
     +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">蛋白質<br>g</th>'
     +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">脂質<br>g</th>'
     +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">炭水化物<br>g</th>'
-    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">食塩<br>g</th>'
     +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">灰分<br>g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">食塩<br>g</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">特色</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">添加物</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">GMO</th>'
@@ -676,14 +676,14 @@ function renderEditor() {
     +   fld('脂質 (g)',         'number','n-f', n.f, 'step="0.1"')
     +   fld('炭水化物 (g)',     'number','n-c', n.c, 'step="0.1"')
     + '</div>'
-    + '<div class="g3" style="margin-bottom:8px">'
-    +   fld('糖質 (g)（任意）',        'number','n-su', n.su, 'step="0.1"')
-    +   fld('食物繊維 (g)（任意）',    'number','n-fiber', n.fiber||0, 'step="0.1"')
-    +   fld('食塩相当量 (g)',           'number','n-s', n.s, 'step="0.01"')
-    + '</div>'
     + '<div class="g2" style="margin-bottom:8px">'
     +   fld('灰分 (g)（任意）',         'number','n-ash', n.ash||0, 'step="0.01"')
-    +   fld('飽和脂肪酸 (g)（任意）',  'number','n-sf',  n.sf,     'step="0.1"')
+    +   fld('食塩相当量 (g)',            'number','n-s',   n.s,      'step="0.01"')
+    + '</div>'
+    + '<div class="g3" style="margin-bottom:8px">'
+    +   fld('糖質 (g)（任意）',          'number','n-su',    n.su,       'step="0.1"')
+    +   fld('食物繊維 (g)（任意）',      'number','n-fiber', n.fiber||0, 'step="0.1"')
+    +   fld('飽和脂肪酸 (g)（任意）',   'number','n-sf',    n.sf,       'step="0.1"')
     + '</div>'
     + '<div class="g2">'
     +   fld('表示単位','text','n-unit', h(n.unit), '')
@@ -1143,8 +1143,8 @@ function updateIngSummary() {
       ['nut-p-'+i, hasNut||r2>0 ? ((ing.p||0)*r2).toFixed(1) : dash],
       ['nut-f-'+i, hasNut||r2>0 ? ((ing.f||0)*r2).toFixed(1) : dash],
       ['nut-c-'+i, hasNut||r2>0 ? ((ing.c||0)*r2).toFixed(1) : dash],
-      ['nut-s-'+i,   hasNut||r2>0 ? ((ing.s||0)  *r2).toFixed(2) : dash],
-      ['nut-ash-'+i, hasNut||r2>0 ? ((ing.ash||0)*r2).toFixed(2) : dash]
+      ['nut-ash-'+i, hasNut||r2>0 ? ((ing.ash||0)*r2).toFixed(2) : dash],
+      ['nut-s-'+i,   hasNut||r2>0 ? ((ing.s||0)  *r2).toFixed(2) : dash]
     ];
     nutData.forEach(function(nd) {
       var el = document.getElementById(nd[0]);
@@ -1227,8 +1227,8 @@ function renderIngTbody() {
     html += '<td id="nut-p-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutP : '—')+'</td>';
     html += '<td id="nut-f-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutF : '—')+'</td>';
     html += '<td id="nut-c-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutC : '—')+'</td>';
-    html += '<td id="nut-s-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutS : '—')+'</td>';
     html += '<td id="nut-ash-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutAsh : '—')+'</td>';
+    html += '<td id="nut-s-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutS : '—')+'</td>';
     // 特色原材料
     html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
     // 添加物用途
@@ -2094,7 +2094,7 @@ async function saveMasterToFirestore() {
   try {
     await db.collection('masters').doc('all').set(masterData);
     toast('マスターを保存しました ✓');
-    renderMasterTables(); // 件数を更新
+    updateAccordionTitles(); // 件数のみ更新（テーブル再描画しない）
   } catch(e) { toast('マスター保存失敗: ' + e.message, true); }
 }
 
@@ -2244,8 +2244,8 @@ function renderMasterPanel() {
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">蛋白質<br>g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">脂質<br>g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">炭水化物<br>g</th>'
-    + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">食塩<br>g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">灰分<br>g</th>'
+    + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">食塩<br>g</th>'
     + '<th></th>'
     + '</tr>'
     + '</thead>'
@@ -2551,9 +2551,11 @@ function importPkgMasterCSV(input) {
 function mkTdBg(val, field, idx, arr, type, bg) {
   type = type || 'text';
   bg = bg || '#fff';
-  return '<td style="padding:2px 3px;background:'+bg+'"><input type="' + type + '" value="' + h(val||'') + '"'
-    + ' style="width:100%;font-size:13px;padding:5px 7px;border:1.5px solid #8caccc;border-radius:4px;background:'+bg+';color:#111;font-weight:600;box-sizing:border-box"'
-    + ' onchange="' + arr + '[' + idx + ']["' + field + '"]=' + (type==='number'?'+':'') + 'this.value"></td>';
+  var base = mkTd(val, field, idx, arr, type);
+  return base.replace('<td>', '<td style="background:'+bg+'">').replace(
+    'font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px',
+    'font-size:13px;padding:5px 7px;border:1.5px solid #8caccc;border-radius:4px;background:'+bg+';color:#111;font-weight:600'
+  );
 }
 
 function mkTd(val, field, idx, arr, type) {
@@ -2613,8 +2615,8 @@ function renderMatTable() {
     html += mkTd(m.p||0, 'p', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.f||0, 'f', i, 'masterData.materialPrices', 'number');
     html += mkTd(m.c||0, 'c', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.s||0,   's',   i, 'masterData.materialPrices', 'number');
     html += mkTd(m.ash||0, 'ash', i, 'masterData.materialPrices', 'number');
+    html += mkTd(m.s||0,   's',   i, 'masterData.materialPrices', 'number');
     html += mkDelBtn('masterData.materialPrices', i, 'renderMatTable');
     html += '</tr>';
     // 限定商品名入力行
