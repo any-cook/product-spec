@@ -469,6 +469,7 @@ function swTab(name) {
 
   if (name === 'master') renderMasterTables();
   if (name === 'package') refreshPackagingSelects();
+  if (name === 'cost') refreshLotSelector();
   if (name === 'preview') genPreview();
 }
 
@@ -842,9 +843,9 @@ function renderEditor() {
     // ② ロット別加工費
     + '<div class="card"><h3>② ロット別加工費</h3>'
     + '<p style="font-size:12px;color:#888;margin-bottom:8px">ロット別加工費マスターから加工条件を選択して追加するか、手動で追加してください。</p>'
-    + '<div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">'
+    + '<div id="lot-selector-wrap" style="display:flex;gap:6px;margin-bottom:10px;align-items:center">'
     +   '<label style="font-size:12px;color:#1a3a5c;font-weight:700;white-space:nowrap">加工条件を選択：</label>'
-    +   buildLotSelector()
+    +   '<div id="lot-proc-sel-wrap" style="flex:1"></div>'
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 100px 90px auto;gap:6px;margin-bottom:4px;font-size:11px;color:#888;font-weight:700">'
     +   '<span>加工条件・説明</span><span style="text-align:center">加工費(円)</span><span style="text-align:center">生産袋数</span><span></span>'
@@ -913,6 +914,13 @@ function renderEditor() {
 }
 
 // ---- ロット別加工費 選択UI生成 ----
+// ===== ロット別加工費ドロップダウンを更新 =====
+function refreshLotSelector() {
+  var wrap = document.getElementById('lot-proc-sel-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = buildLotSelector();
+}
+
 function buildLotSelector() {
   if (!masterData.processingCosts.length) {
     return '<span style="font-size:11px;color:#e67e22">⑦マスター登録→B.ロット別加工費マスターで加工条件を登録してください</span>';
@@ -951,6 +959,7 @@ function addLotFromProcMasterByIndex(idx) {
   toast('「'+(m.condition||m.productName||'')+'」をロット加工費に追加しました ✓');
   // セレクトをリセット
   var sel = document.getElementById('lot-proc-sel');
+  if (!sel) { var wrap2=document.getElementById('lot-proc-sel-wrap'); if(wrap2) sel=wrap2.querySelector('select'); }
   if (sel) sel.value = '';
 }
 
@@ -2143,6 +2152,7 @@ async function loadMasterFromFirestore() {
       renderMasterTables();
       // 荷姿タブの包材選択ドロップダウンを更新
       refreshPackagingSelects();
+      refreshLotSelector();
       var total = masterData.materialPrices.length + masterData.processingCosts.length
                 + masterData.packagingCosts.length + masterData.shippingCosts.length
                 + masterData.additionalCosts.length;
@@ -2290,8 +2300,8 @@ function renderMasterPanel() {
     + '<col style="width:58px">'
     + '<col style="width:52px">'
     + '<col style="width:58px">'
-    + '<col style="width:60px">'
-    + '<col style="width:60px">'
+    + '<col style="width:58px">'
+    + '<col style="width:58px">'
     + '<col style="width:30px">'
     + '</colgroup>'
     + '<thead>'
