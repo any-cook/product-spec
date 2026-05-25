@@ -606,12 +606,13 @@ function renderEditor() {
     +   '<col style="width:78px">'    // 単価
     +   '<col style="width:65px">'    // 原材料費
     +   '<col style="width:52px">'    // 配合比
-    +   '<col style="width:44px">'    // kcal
-    +   '<col style="width:44px">'    // 蛋白
-    +   '<col style="width:40px">'    // 脂質
-    +   '<col style="width:44px">'    // 炭水化物
-    +   '<col style="width:40px">'    // 食塩
-    +   '<col style="width:55px">'    // 特色原材料
+    +   '<col style="width:42px">'    // kcal
+    +   '<col style="width:42px">'    // 水分
+    +   '<col style="width:42px">'    // 蛋白質
+    +   '<col style="width:38px">'    // 脂質
+    +   '<col style="width:42px">'    // 炭水化物
+    +   '<col style="width:38px">'    // 食塩
+    +   '<col style="width:52px">'    // 特色原材料
     +   '<col style="width:55px">'    // 添加物用途
     +   '<col style="width:68px">'    // 遺伝子組換え
     +   '<col style="width:30px">'    // 削除
@@ -627,10 +628,11 @@ function renderEditor() {
     +   '<th style="padding:6px 4px;text-align:center;background:#155a32">原材料費</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#155a32">配合比</th>'
     +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">kcal</th>'
-    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">蛋白g</th>'
-    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">脂g</th>'
-    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">糖g</th>'
-    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">塩g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">水分<br>g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">蛋白質<br>g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">脂質<br>g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">炭水化物<br>g</th>'
+    +   '<th style="padding:6px 3px;text-align:center;background:#4a2080;font-size:10px">食塩<br>g</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">特色</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">添加物</th>'
     +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">GMO</th>'
@@ -1212,6 +1214,7 @@ function renderIngTbody() {
     html += '<td id="ratio-cell-'+i+'" style="text-align:center;background:#e8f4fd;font-size:12px;color:#1a3a5c;font-weight:600">'+(ing.ratio||'0.0')+'%</td>';
     // 栄養素（使用量あたり計算値）
     html += '<td id="nut-e-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutE : '—')+'</td>';
+    html += '<td id="nut-w-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutW : '—')+'</td>';
     html += '<td id="nut-p-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutP : '—')+'</td>';
     html += '<td id="nut-f-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutF : '—')+'</td>';
     html += '<td id="nut-c-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutC : '—')+'</td>';
@@ -1708,11 +1711,11 @@ function calcNutritionSilent() {
     hasData = true;
     var r = amount / 100;
     e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
-    c += (ing.c||0)*r; s += (ing.s||0)*r; w += (ing.w||0)*r;
+    c += (ing.c||0)*r; s += (ing.s||0)*r; w += (ing.w||0)*r; w += (ing.w||0)*r;
   });
   if (hasData) {
     sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
-    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2)); sv('n-w', w.toFixed(1));
+    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2)); sv('n-w', w.toFixed(1)); sv('n-w', w.toFixed(1));
     if (!currentSpec.nutrition) currentSpec.nutrition = {};
     currentSpec.nutrition.e = Math.round(e);
     currentSpec.nutrition.p = +p.toFixed(1);
@@ -1729,11 +1732,11 @@ function calcNutrition() {
     if (!ing.amount) return;
     var r = ing.amount / 100;
     e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
-    c += (ing.c||0)*r; s += (ing.s||0)*r;
+    c += (ing.c||0)*r; s += (ing.s||0)*r; w += (ing.w||0)*r;
   });
   if (e > 0) {
     sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
-    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2));
+    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2)); sv('n-w', w.toFixed(1));
     toast('栄養計算しました ✓');
   } else {
     toast('使用量(g)を手動追加で入力後、再計算してください', true);
@@ -2225,7 +2228,8 @@ function renderMasterPanel() {
     + '<th style="padding:5px 6px;text-align:center;background:#1e4d7a">産地</th>'
     + '<th style="padding:5px 6px;text-align:center;background:#1e4d7a">アレルゲン</th>'
     + '<th style="padding:5px 6px;text-align:center;background:#6b2020">GMO確認</th>'
-    + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">kcal<br>/100g</th>'
+    + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">kcal</th>'
+    + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">水分<br>g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">蛋白質<br>g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">脂質<br>g</th>'
     + '<th style="padding:4px 2px;text-align:center;background:#3a2060;font-size:10px">炭水化物<br>g</th>'
