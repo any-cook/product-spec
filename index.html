@@ -1699,6 +1699,20 @@ function renderLotCostList() {
   recalcCost();
 }
 
+// 送料÷ケース入数 = 1袋あたり送料
+function calcShipPerUnit() {
+  if (!currentSpec) return;
+  var pcN    = +(document.getElementById('co-pcN-ship') ? document.getElementById('co-pcN-ship').value : currentSpec.cost && currentSpec.cost.pcN || 1) || 1;
+  var ship   = +(document.getElementById('co-shipping')  ? document.getElementById('co-shipping').value  : (currentSpec.cost && currentSpec.cost.shipping)  || 0) || 0;
+  var perUnit = ship / pcN;
+  currentSpec.cost = currentSpec.cost || {};
+  currentSpec.cost.pcN       = pcN;
+  currentSpec.cost.shipPerUnit = perUnit;
+  var el = document.getElementById('co-ship-per-unit');
+  if (el) el.value = perUnit.toFixed(2);
+  recalcCost();
+}
+
 function recalcCost() {
   if (!currentSpec) return;
   var co = currentSpec.cost || {};
@@ -1833,6 +1847,36 @@ function recalcCost() {
   var bt = document.getElementById('banner-total');
   if (bt) bt.textContent = (shippingMode === 'include' ? totalWithShip : subtotal).toFixed(1) + ' 円';
 
+  // 利益率別 販売価格シミュレーション
+  var profitEl = document.getElementById('profit-table');
+  if (profitEl) {
+    var basePrice = shippingMode === 'include' ? totalWithShip : subtotal;
+    var phtml = '<table style="width:100%;border-collapse:collapse">';
+    phtml += '<thead><tr style="background:#2a5a2e;color:#fff">';
+    phtml += '<th style="padding:6px 10px;text-align:center">利益率</th>';
+    phtml += '<th style="padding:6px 10px;text-align:right">販売価格（税抜）</th>';
+    phtml += '<th style="padding:6px 10px;text-align:right">販売価格（税込8%）</th>';
+    phtml += '<th style="padding:6px 10px;text-align:right">販売価格（税込10%）</th>';
+    phtml += '<th style="padding:6px 10px;text-align:right">利益額</th>';
+    phtml += '</tr></thead><tbody>';
+    [10,15,20,25,30,35,40].forEach(function(rate) {
+      var price    = basePrice / (1 - rate/100);
+      var price8   = price * 1.08;
+      var price10  = price * 1.10;
+      var profit   = price - basePrice;
+      var rowBg    = rate % 20 === 0 ? '#e8f5e9' : '#fff';
+      phtml += '<tr style="background:'+rowBg+'">';
+      phtml += '<td style="padding:5px 10px;text-align:center;font-weight:700;color:#2a5a2e">'+rate+'%</td>';
+      phtml += '<td style="padding:5px 10px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+Math.ceil(price).toLocaleString()+' 円</td>';
+      phtml += '<td style="padding:5px 10px;text-align:right;color:#555">'+Math.ceil(price8).toLocaleString()+' 円</td>';
+      phtml += '<td style="padding:5px 10px;text-align:right;color:#555">'+Math.ceil(price10).toLocaleString()+' 円</td>';
+      phtml += '<td style="padding:5px 10px;text-align:right;color:#c0392b">'+Math.ceil(profit).toLocaleString()+' 円</td>';
+      phtml += '</tr>';
+    });
+    phtml += '</tbody></table>';
+    profitEl.innerHTML = phtml;
+  }
+
   // 送料マスター参照
   var shipEl = document.getElementById('cost-shipping-ref');
   if (shipEl) {
@@ -1957,6 +2001,14 @@ function applyPackagingMaster(type, name) {
     if (mat.height) { currentSpec.pkg.puH = mat.height; var el=document.getElementById('pk-puH');  if(el) el.value=mat.height; }
     if (mat.material){ currentSpec.pkg.puMat = mat.material; var el=document.getElementById('pk-puMat'); if(el) el.value=mat.material; }
     if (mat.unitPrice){ currentSpec.pkg.puPrice = mat.unitPrice; var el=document.getElementById('pk-puPrice'); if(el) el.value=mat.unitPrice; }
+    // 包材費を原価計算に自動反映（個装単価 × ケース入数）
+    var pcN = currentSpec.pkg.pcN ? +currentSpec.pkg.pcN : 1;
+    var puCost = mat.cost || mat.unitPrice || 0;
+    var caseCostPerUnit = 0;
+    // ケースの包材費も合算（後で計算）
+    currentSpec.cost = currentSpec.cost || {};
+    currentSpec.cost.pkgUnitCost = puCost;
+    calcPackagingCostAuto();
     toast('個装包材「'+name+'」を反映しました ✓');
   } else {
     currentSpec.pkg.pcMasterId = name;
@@ -1965,8 +2017,31 @@ function applyPackagingMaster(type, name) {
     if (mat.height) { currentSpec.pkg.pcH = mat.height; var el=document.getElementById('pk-pcH');  if(el) el.value=mat.height; }
     if (mat.material){ currentSpec.pkg.pcMat = mat.material; var el=document.getElementById('pk-pcMat'); if(el) el.value=mat.material; }
     if (mat.unitPrice){ currentSpec.pkg.pcPrice = mat.unitPrice; var el=document.getElementById('pk-pcPrice'); if(el) el.value=mat.unitPrice; }
+    var pcCost = mat.cost || mat.unitPrice || 0;
+    currentSpec.cost = currentSpec.cost || {};
+    currentSpec.cost.pkgCaseCost = pcCost;
+    calcPackagingCostAuto();
     toast('ケース「'+name+'」を反映しました ✓');
   }
+}
+
+// 包材費自動計算（個装費 + ケース費÷入数）
+function calcPackagingCostAuto() {
+  if (!currentSpec || !currentSpec.pkg) return;
+  var pk = currentSpec.pkg;
+  var co = currentSpec.cost || {};
+  var puCost   = co.pkgUnitCost  || 0;  // 個装1枚の単価
+  var pcCost   = co.pkgCaseCost  || 0;  // ケース1箱の単価
+  var pcN      = +(pk.pcN || 1);         // ケース入数
+  // 1袋あたりの包材費 = 個装単価 + ケース単価÷入数
+  var totalPkg = puCost + (pcN > 0 ? pcCost / pcN : 0);
+  currentSpec.cost.packagingCost = Math.round(totalPkg * 100) / 100;
+  // 画面の包材費入力欄を更新
+  var el = document.getElementById('co-packagingCost');
+  if (el) el.value = currentSpec.cost.packagingCost.toFixed(2);
+  // 原価計算再実行
+  recalcCost();
+  toast('包材費を自動計算しました: ' + currentSpec.cost.packagingCost.toFixed(2) + '円/袋 ✓');
 }
 
 // ===== 注意・調理テンプレート =====
