@@ -1199,6 +1199,23 @@ function updateIngSummary() {
   var totAsh=0;
   currentSpec.ings.forEach(function(ing){ var r5=(ing.amount||0)/100; totAsh+=(ing.ash||0)*r5; });
   var fnash = document.getElementById('foot-nut-ash'); if(fnash) fnash.textContent = hasAny ? totAsh.toFixed(2) : '—';
+  // 全栄養素の合計をフッターに表示
+  var totE=0, totP=0, totF=0, totC=0, totS=0, totW2=0;
+  currentSpec.ings.forEach(function(ing){
+    var r6 = (ing.amount||0)/100;
+    totE  += (ing.e||0)*r6;
+    totW2 += (ing.w||0)*r6;
+    totP  += (ing.p||0)*r6;
+    totF  += (ing.f||0)*r6;
+    totC  += (ing.c||0)*r6;
+    totS  += (ing.s||0)*r6;
+  });
+  var fne  = document.getElementById('foot-nut-e');   if(fne)  fne.textContent  = hasAny ? Math.round(totE)    : '—';
+  var fnw2 = document.getElementById('foot-nut-w');   if(fnw2) fnw2.textContent = hasAny ? totW2.toFixed(1)    : '—';
+  var fnp  = document.getElementById('foot-nut-p');   if(fnp)  fnp.textContent  = hasAny ? totP.toFixed(1)     : '—';
+  var fnf  = document.getElementById('foot-nut-f');   if(fnf)  fnf.textContent  = hasAny ? totF.toFixed(1)     : '—';
+  var fnc  = document.getElementById('foot-nut-c');   if(fnc)  fnc.textContent  = hasAny ? totC.toFixed(1)     : '—';
+  var fns  = document.getElementById('foot-nut-s');   if(fns)  fns.textContent  = hasAny ? totS.toFixed(2)     : '—';
 }
 
 function renderIngTbody() {
