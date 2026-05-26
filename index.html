@@ -1479,21 +1479,19 @@ function addCustIng() {
 function updateLabelWithAdditive() {
   var el = document.getElementById('label-text');
   if (!el) return;
-  var additive = currentSpec.additiveText || '';
-  if (!additive.trim()) {
-    // 添加物なし → 現在のテキストから /（...）を除去
-    el.value = el.value.replace(/\/（[^）]*）$/, '').replace(/\s*\/\s*$/, '');
-  } else {
-    // 添加物あり → /（添加物）を末尾に追加（アレルゲン部分の前に）
-    var base = el.value
-      .replace(/\/（[^）]*）/, '')  // 既存の添加物部分を除去
-      .replace(/\s*\/\s*$/, '');
-    // アレルゲン部分を分離
-    var alMatch = base.match(/(、（一部に[^）]+を含む）)$/);
-    var alText = alMatch ? alMatch[1] : '';
-    var ingText = alMatch ? base.slice(0, -alText.length) : base;
-    el.value = ingText + '/（' + additive.trim() + '）' + alText;
-  }
+  var additive = (currentSpec.additiveText || '').trim();
+  var cur = el.value;
+  // アレルゲン部分を末尾から分離
+  var alMatch = cur.match(/(\/（[^）]*を含む[^）]*）|、（一部に[^）]+を含む）)$/);
+  var alText = alMatch ? alMatch[1] : '';
+  var base = alMatch ? cur.slice(0, cur.length - alText.length) : cur;
+  // 既存の添加物部分（/...）を除去
+  base = base.replace(/\/[^/（（）]+$/, '').replace(/\/+$/, '');
+  // 新しい値を組み立て
+  var newVal = base;
+  if (additive) newVal += '/' + additive;
+  newVal += alText;
+  el.value = newVal;
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
@@ -1525,11 +1523,11 @@ function rebuildLabelText() {
   }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
-  // 添加物を反映
+  var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
+  // 添加物を反映（/添加物 形式）
   var additive = currentSpec.additiveText || '';
   var labelVal = countryText + nameList;
-  if (additive.trim()) labelVal += '/（' + additive.trim() + '）';
+  if (additive.trim()) labelVal += '/' + additive.trim();
   labelVal += allergenText;
   el.value = labelVal;
   if (currentSpec) currentSpec.labelText = el.value;
@@ -1564,7 +1562,7 @@ function autoLabelText() {
   }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
+  var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
   // 自動生成は初回のみ（currentSpec.labelTextが空の場合）
   // アレルゲン変更時は既存テキストのアレルゲン部分だけ更新
   var currentVal = el.value || '';
@@ -1620,9 +1618,9 @@ function updateAllergenPartOnly() {
   if (!el) return;
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
+  var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
   var currentVal = el.value || '';
-  var baseText = currentVal.replace(/、（一部に[^）]+を含む）$/, '');
+  var baseText = currentVal.replace(/\/（一部に[^）]+を含む）$/, '').replace(/、（一部に[^）]+を含む）$/, '');
   el.value = baseText + allergenText;
   if (currentSpec) currentSpec.labelText = el.value;
 }
@@ -2287,8 +2285,10 @@ function applyMasterToSpec() {
     renderIngTbody();
     calcNutritionSilent();
   }
-  // 包材選択ドロップダウンも更新（マスター読込後に荷姿タブの選択肢を反映）
+  // 包材選択ドロップダウンも更新
   refreshPackagingSelects();
+  // 栄養成分を再計算
+  calcNutritionSilent();
   return applied;
 }
 
@@ -2632,6 +2632,14 @@ function mkTdBg(val, field, idx, arr, type, bg) {
   );
 }
 
+// 栄養素専用セル：変更時にマスター→規格書反映＋栄養再計算
+function mkTdNut(val, field, matIdx) {
+  var q = "'";
+  return '<td style="padding:1px 2px"><input type="number" value="' + (val||0) + '"'
+    + ' style="width:100%;font-size:12px;padding:2px 4px;border:1px solid #b0bec5;border-radius:3px;background:#fff;box-sizing:border-box"'
+    + ' onchange="masterData.materialPrices[' + matIdx + '][' + q + field + q + ']=+this.value;applyMasterToSpec();renderIngTbody();calcNutritionSilent()"></td>';
+}
+
 function mkTd(val, field, idx, arr, type) {
   type = type || 'text';
   return '<td><input type="' + type + '" value="' + h(val||'') + '" style="width:100%;font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px" '
@@ -2684,13 +2692,13 @@ function renderMatTable() {
       + '<option value="対象外"'+(gmoVal==='対象外'?' selected':'')+'>対象外</option>'
       + '</select></td>';
     // 栄養素
-    html += mkTd(m.e||0, 'e', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.w||0, 'w', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.p||0, 'p', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.f||0, 'f', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.c||0, 'c', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.ash||0, 'ash', i, 'masterData.materialPrices', 'number');
-    html += mkTd(m.s||0,   's',   i, 'masterData.materialPrices', 'number');
+    html += mkTdNut(m.e||0, 'e', i);
+    html += mkTdNut(m.w||0, 'w', i);
+    html += mkTdNut(m.p||0, 'p', i);
+    html += mkTdNut(m.f||0, 'f', i);
+    html += mkTdNut(m.c||0, 'c', i);
+    html += mkTdNut(m.ash||0, 'ash', i);
+    html += mkTdNut(m.s||0, 's', i);
     html += mkDelBtn('masterData.materialPrices', i, 'renderMatTable');
     html += '</tr>';
     // 限定商品名入力行
