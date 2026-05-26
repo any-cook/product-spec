@@ -1297,7 +1297,9 @@ function renderIngTbody() {
     } else if (gmoVal2 === '不分別') {
       gmoText = '不分別'; gmoBg3 = '#fff8e1'; gmoColor3 = '#b45309';
     } else {
-      gmoText = gmoVal2 || '—'; gmoBg3 = ''; gmoColor3 = '#aaa';
+      // 長い文章は「対象」と省略表示
+      var shortGmo = (gmoVal2||'').length > 5 ? '対象' : (gmoVal2 || '—');
+      gmoText = shortGmo; gmoBg3 = '#fff8e1'; gmoColor3 = '#b45309';
     }
     html += '<td style="text-align:center;font-size:11px;padding:3px 4px;background:'+gmoBg3+';color:'+gmoColor3+';font-weight:'+(gmoVal2?'700':'400')+'">'+gmoText+'</td>';
     html += '<td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')" style="padding:2px 6px">✕</button></td>';
