@@ -683,34 +683,40 @@ function renderEditor() {
     + '</div>';
 
   // ---- ③ 栄養成分 ----
-  var nutHtml = '<div id="panel-nutrition" class="panel"><div class="card"><h3>栄養成分情報</h3>'
-    + '<p style="font-size:12px;color:#888;margin-bottom:10px">1袋あたりの推定値。「🧮 再計算」で使用量から自動計算も可能です。</p>'
-    + '<div class="g2" style="margin-bottom:8px">'
-    +   fld('エネルギー (kcal)','number','n-e', n.e, 'step="1"')
-    +   fld('水分 (g)',         'number','n-w', n.w,  'step="0.1"')
+  // 栄養成分: エネルギー/たんぱく質/脂質/炭水化物/食塩相当量/飽和脂肪酸/食物繊維
+  var nutHtml = '<div id="panel-nutrition" class="panel"><div class="card">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    +   '<h3 style="margin:0">栄養成分情報</h3>'
+    +   '<button class="btn btn-sm" onclick="calcNutrition()" style="background:#e8f0ff;color:#1a3a5c">🧮 原材料から再計算</button>'
     + '</div>'
-    + '<div class="g3" style="margin-bottom:8px">'
-    +   fld('たんぱく質 (g)',   'number','n-p', n.p, 'step="0.1"')
-    +   fld('脂質 (g)',         'number','n-f', n.f, 'step="0.1"')
-    +   fld('炭水化物 (g)',     'number','n-c', n.c, 'step="0.1"')
+    + '<p style="font-size:12px;color:#888;margin-bottom:12px">1袋（'+h(b.unit||'—')+'）あたりの値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
+    + '<div class="g2" style="margin-bottom:10px">'
+    +   fld('エネルギー (kcal)', 'number','n-e', n.e||0, 'step="1"')
+    +   fld('たんぱく質 (g)',    'number','n-p', n.p||0, 'step="0.1"')
     + '</div>'
-    + '<div class="g2" style="margin-bottom:8px">'
-    +   fld('灰分 (g)（任意）',  'number','n-ash', n.ash||0, 'step="0.01"')
-    +   fld('食塩相当量 (g)',    'number','n-s',   n.s,      'step="0.01"')
+    + '<div class="g2" style="margin-bottom:10px">'
+    +   fld('脂質 (g)',         'number','n-f', n.f||0, 'step="0.1"')
+    +   fld('炭水化物 (g)',     'number','n-c', n.c||0, 'step="0.1"')
     + '</div>'
-    + '<div class="g2" style="margin-bottom:8px">'
-    +   fld('飽和脂肪酸 (g)（任意）', 'number','n-sf', n.sf, 'step="0.1"')
-    +   fld('表示単位','text','n-unit', h(n.unit), '')
+    + '<div class="g2" style="margin-bottom:10px">'
+    +   fld('食塩相当量 (g)',   'number','n-s',  n.s||0,     'step="0.01"')
+    +   fld('飽和脂肪酸 (g)',   'number','n-sf', n.sf||0,    'step="0.1"')
     + '</div>'
-    + '<div class="g2" style="margin-bottom:8px">'
-    +   fld('糖質 (g)（任意）',     'number','n-su',    n.su,       'step="0.1"')
-    +   fld('食物繊維 (g)（任意）', 'number','n-fiber', n.fiber||0, 'step="0.1"')
+    + '<div class="g2" style="margin-bottom:10px">'
+    +   fld('食物繊維 (g)',     'number','n-fiber', n.fiber||0, 'step="0.1"')
+    +   fld('表示単位（例：1袋180g）','text','n-unit', h(n.unit||''), '')
     + '</div>'
-    + '<div class="field">'
-    +   fld('備考',    'text','n-note', h(n.note), '')
+    + '<div style="background:#f0f4ff;border-radius:8px;padding:12px 16px;margin-top:4px">'
+    +   '<p style="font-size:11px;color:#888;margin:0 0 6px">参考値（任意）</p>'
+    +   '<div class="g3">'
+    +     fld('水分 (g)',    'number','n-w',   n.w||0,   'step="0.1"')
+    +     fld('灰分 (g)',    'number','n-ash',  n.ash||0, 'step="0.01"')
+    +     fld('糖質 (g)',    'number','n-su',   n.su||0,  'step="0.1"')
+    +   '</div>'
     + '</div>'
-
-    + '<button class="btn btn-sm" onclick="calcNutrition()" style="margin-top:8px">🧮 原材料から再計算</button>'
+    + '<div class="field" style="margin-top:10px">'
+    +   fld('備考','text','n-note', h(n.note||''), '')
+    + '</div>'
     + '</div></div>';
 
   // ---- ④ 荷姿・製造 ----
