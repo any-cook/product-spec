@@ -664,6 +664,13 @@ function renderEditor() {
     +   '</div>'
     +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value" placeholder="自動生成されます。直接編集も可能です。"></textarea>'
     + '</div>'
+    + '<div style="margin-top:8px">'
+    +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+    +     '<label class="fl" style="margin:0;color:#555">添加物（／の後に表示）</label>'
+    +     '<span style="font-size:11px;color:#888">例：加工でん粉、調味料（アミノ酸等）</span>'
+    +   '</div>'
+    +   '<textarea id="additive-text" rows="2" style="width:100%;border:1.5px solid #e0a030;border-radius:5px;padding:5px 8px;font-size:13px" oninput="if(currentSpec)currentSpec.additiveText=this.value;updateLabelWithAdditive()" placeholder="添加物を入力（省略可）">'+h(currentSpec.additiveText||'')+'</textarea>'
+    + '</div>'
     + '</div>'
     + '<div class="card"><h3>アレルゲン確認（28品目）</h3><div id="allergen-grid"></div></div>'
     + '</div>';
@@ -1468,6 +1475,28 @@ function addCustIng() {
 }
 
 // ===== 一括表示テキスト自動生成 =====
+// ===== 添加物を一括表示に反映 =====
+function updateLabelWithAdditive() {
+  var el = document.getElementById('label-text');
+  if (!el) return;
+  var additive = currentSpec.additiveText || '';
+  if (!additive.trim()) {
+    // 添加物なし → 現在のテキストから /（...）を除去
+    el.value = el.value.replace(/\/（[^）]*）$/, '').replace(/\s*\/\s*$/, '');
+  } else {
+    // 添加物あり → /（添加物）を末尾に追加（アレルゲン部分の前に）
+    var base = el.value
+      .replace(/\/（[^）]*）/, '')  // 既存の添加物部分を除去
+      .replace(/\s*\/\s*$/, '');
+    // アレルゲン部分を分離
+    var alMatch = base.match(/(、（一部に[^）]+を含む）)$/);
+    var alText = alMatch ? alMatch[1] : '';
+    var ingText = alMatch ? base.slice(0, -alText.length) : base;
+    el.value = ingText + '/（' + additive.trim() + '）' + alText;
+  }
+  if (currentSpec) currentSpec.labelText = el.value;
+}
+
 function rebuildLabelText() {
   // ボタンクリック時は完全再生成（手動編集上書き）
   var el = document.getElementById('label-text');
@@ -1480,18 +1509,29 @@ function rebuildLabelText() {
   var countryText = '';
   var basicCountry = currentSpec.basic && currentSpec.basic.country ? currentSpec.basic.country : '';
   if (basicCountry) countryText = '（原産国：' + basicCountry + '）';
-  var nameList = sorted.map(function(ing) {
+  // 重量1位のみ産地を表示
+  var maxAmount = 0;
+  sorted.forEach(function(ing){ if ((ing.amount||0) > maxAmount) maxAmount = ing.amount||0; });
+  var nameList = sorted.map(function(ing, idx) {
     if (!ing.name) return '';
     var origin = '';
-    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
-    if (mat && mat.origin) origin = mat.origin;
-    else if (ing.country) origin = ing.country;
+    // 重量が最大のもの（1位）のみ産地を付ける
+    if ((ing.amount||0) === maxAmount && maxAmount > 0) {
+      var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+      if (mat && mat.origin) origin = mat.origin;
+      else if (ing.country) origin = ing.country;
+    }
     return ing.name + (origin ? '（'+origin+'）' : '');
   }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   var allergenText = checked.length ? '、（一部に'+checked.join('・')+'を含む）' : '';
-  el.value = countryText + nameList + allergenText;
+  // 添加物を反映
+  var additive = currentSpec.additiveText || '';
+  var labelVal = countryText + nameList;
+  if (additive.trim()) labelVal += '/（' + additive.trim() + '）';
+  labelVal += allergenText;
+  el.value = labelVal;
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
@@ -1556,10 +1596,20 @@ function renderAllergenGrid() {
 function syncAllergens() {
   var detected = new Set();
   currentSpec.ings.forEach(function(ing){
+    // 規格書の原材料アレルゲン
     if (ing.allergens) ing.allergens.split(/[・、,\s]+/).filter(Boolean).forEach(function(a){ detected.add(a); });
+    // マスターのアレルゲン列も参照
+    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    if (mat && mat.allergens) mat.allergens.split(/[・、,\s]+/).filter(Boolean).forEach(function(a){ detected.add(a); });
   });
+  // 28品目アレルゲングリッドと照合（部分一致）
   document.querySelectorAll('#allergen-grid input').forEach(function(cb){
-    if (detected.has(cb.value)) cb.checked = true;
+    var val = cb.value;
+    var hit = false;
+    detected.forEach(function(a){
+      if (a.indexOf(val) >= 0 || val.indexOf(a) >= 0) hit = true;
+    });
+    if (hit) cb.checked = true;
   });
   // アレルゲン部分のみ更新（手動編集を保持）
   updateAllergenPartOnly();
