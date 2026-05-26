@@ -2844,30 +2844,53 @@ function importMaterialCSV(input) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var rows = parseCSV(e.target.result);
+    if (rows.length < 2) { toast('データがありません', true); return; }
     var imported = 0;
+    // ヘッダー行を解析して列インデックスを特定
+    var header = rows[0].map(function(h){ return (h||'').trim().toLowerCase(); });
+    var ci = {
+      organic:   header.findIndex(function(h){ return h.indexOf('有機')>=0; }),
+      limited:   header.findIndex(function(h){ return h.indexOf('限定')>=0 && h.indexOf('商品')<0; }),
+      name:      header.findIndex(function(h){ return h.indexOf('原材料名')>=0 || h.indexOf('name')>=0; }),
+      price:     header.findIndex(function(h){ return h.indexOf('単価')>=0 || h.indexOf('price')>=0; }),
+      origin:    header.findIndex(function(h){ return h.indexOf('産地')>=0 || h.indexOf('origin')>=0; }),
+      allergens: header.findIndex(function(h){ return h.indexOf('アレルゲン')>=0 || h.indexOf('allergen')>=0; }),
+      gmo:       header.findIndex(function(h){ return h.indexOf('組換')>=0 || h.indexOf('gmo')>=0; }),
+      e:         header.findIndex(function(h){ return h.indexOf('エネルギー')>=0 || h.indexOf('kcal')>=0; }),
+      w:         header.findIndex(function(h){ return h.indexOf('水分')>=0; }),
+      p:         header.findIndex(function(h){ return h.indexOf('たんぱく質')>=0 || h.indexOf('蛋白')>=0 || h.indexOf('protein')>=0; }),
+      f:         header.findIndex(function(h){ return h.indexOf('脂質')>=0 || h.indexOf('fat')>=0; }),
+      c:         header.findIndex(function(h){ return h.indexOf('炭水化物')>=0 || h.indexOf('carb')>=0; }),
+      ash:       header.findIndex(function(h){ return h.indexOf('灰分')>=0 || h.indexOf('ash')>=0; }),
+      s:         header.findIndex(function(h){ return h.indexOf('食塩')>=0 || h.indexOf('塩分')>=0 || h.indexOf('salt')>=0; }),
+      limitedTo: header.findIndex(function(h){ return h.indexOf('限定商品')>=0; }),
+    };
+    // ヘッダーが見つからない場合は固定列順で処理
+    var hasHeader = ci.name >= 0;
+    var g = function(r, idx, def) { return idx >= 0 && idx < r.length ? r[idx] : (def||''); };
     rows.forEach(function(r, i) {
-      if (i===0 || r.length < 2) return;
-      // 現在の形式: 有機,限定,原材料名,単価,産地,アレルゲン,GMO,kcal,水分,蛋白質,脂質,炭水化物,灰分,食塩,限定商品名
-      // 旧形式A: 原材料名,単価,有機,限定商品名,kcal,蛋白,脂,炭水,食塩,...
-      // 旧形式B: 有機,限定,原材料名,単価,産地,アレルゲン,GMO,kcal,蛋白,脂,炭水,食塩(水分・灰分なし)
+      if (i === 0) return; // ヘッダースキップ
+      if (r.length < 2) return;
       var name, unitPrice, isOrganic, isLimited, limitedTo, origin, allergens, gmoCheck, e, p, f, c, s, w, ash;
-      var firstIsNum = !isNaN(r[0]) || r[0]==='0' || r[0]==='1';
-      if (firstIsNum && r.length >= 14) {
-        // 現在の形式（水分・灰分あり 15列）
-        isOrganic=r[0]==='1'; isLimited=r[1]==='1';
-        name=(r[2]||'').trim(); unitPrice=+r[3]||0;
-        origin=r[4]||''; allergens=r[5]||''; gmoCheck=r[6]||'';
-        e=+r[7]||0; w=+r[8]||0; p=+r[9]||0; f=+r[10]||0; c=+r[11]||0; ash=+r[12]||0; s=+r[13]||0;
-        limitedTo=r[14]||'';
-      } else if (firstIsNum && r.length >= 12) {
-        // 旧形式B（水分・灰分なし）
-        isOrganic=r[0]==='1'; isLimited=r[1]==='1';
-        name=(r[2]||'').trim(); unitPrice=+r[3]||0;
-        origin=r[4]||''; allergens=r[5]||''; gmoCheck=r[6]||'';
-        e=+r[7]||0; p=+r[8]||0; f=+r[9]||0; c=+r[10]||0; s=+r[11]||0; w=0; ash=0;
-        limitedTo=r[12]||'';
+      if (hasHeader) {
+        // ヘッダー解析成功 → 列番号マッピングで取得
+        name      = (g(r, ci.name,      '')).trim();
+        unitPrice = +g(r, ci.price,     0)||0;
+        isOrganic = g(r, ci.organic,    '0')==='1';
+        isLimited = g(r, ci.limited,    '0')==='1';
+        limitedTo = g(r, ci.limitedTo,  '');
+        origin    = g(r, ci.origin,     '');
+        allergens = g(r, ci.allergens,  '');
+        gmoCheck  = g(r, ci.gmo,        '');
+        e   = +g(r, ci.e,   0)||0;
+        w   = +g(r, ci.w,   0)||0;
+        p   = +g(r, ci.p,   0)||0;
+        f   = +g(r, ci.f,   0)||0;
+        c   = +g(r, ci.c,   0)||0;
+        ash = +g(r, ci.ash, 0)||0;
+        s   = +g(r, ci.s,   0)||0;
       } else {
-        // 旧形式A（原材料名から始まる）
+        // ヘッダーなし → 旧形式A（原材料名から始まる）
         name=(r[0]||'').trim(); unitPrice=+r[1]||0;
         isOrganic=r[2]==='1'; limitedTo=r[3]||''; isLimited=!!limitedTo;
         origin=''; allergens=''; gmoCheck='';
