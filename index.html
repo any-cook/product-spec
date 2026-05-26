@@ -2829,12 +2829,12 @@ function parseCSV(text) {
 }
 
 function exportMaterialCSV() {
-  var rows = [['有機(1)','限定(1)','原材料名','単価(円/kg)','産地','アレルゲン','遺伝子組換え確認','エネルギー(kcal/100g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)','水分(g)','灰分(g)','限定商品名']];
+  var rows = [['有機(1)','限定(1)','原材料名','単価(円/kg)','産地','アレルゲン','遺伝子組換え確認','エネルギー(kcal)','水分(g)','たんぱく質(g)','脂質(g)','炭水化物(g)','灰分(g)','食塩相当量(g)','限定商品名']];
   masterData.materialPrices.forEach(function(m){
     rows.push([
       m.isOrganic?1:0, m.isLimited?1:0, m.name, m.unitPrice||0,
       m.origin||'', m.allergens||'', m.gmoCheck||'',
-      m.e||0, m.p||0, m.f||0, m.c||0, m.s||0, m.w||0, m.ash||0, m.limitedTo||''
+      m.e||0, m.w||0, m.p||0, m.f||0, m.c||0, m.ash||0, m.s||0, m.limitedTo||''
     ]);
   });
   downloadCSV('原材料マスター.csv', rows);
@@ -2847,43 +2847,43 @@ function importMaterialCSV(input) {
     var imported = 0;
     rows.forEach(function(r, i) {
       if (i===0 || r.length < 2) return;
-      // 新形式: 有機,限定,原材料名,単価,産地,アレルゲン,GMO,kcal,蛋白,脂,糖,塩,水分,限定商品名
-      // 旧形式A: 原材料名,単価,有機,限定商品名,kcal,...
-      // 旧形式B: 有機,限定,原材料名,単価,...,食塩(水分なし)
-      var name, unitPrice, isOrganic, isLimited, limitedTo, origin, allergens, gmoCheck, e, p, f, c, s, w;
+      // 現在の形式: 有機,限定,原材料名,単価,産地,アレルゲン,GMO,kcal,水分,蛋白質,脂質,炭水化物,灰分,食塩,限定商品名
+      // 旧形式A: 原材料名,単価,有機,限定商品名,kcal,蛋白,脂,炭水,食塩,...
+      // 旧形式B: 有機,限定,原材料名,単価,産地,アレルゲン,GMO,kcal,蛋白,脂,炭水,食塩(水分・灰分なし)
+      var name, unitPrice, isOrganic, isLimited, limitedTo, origin, allergens, gmoCheck, e, p, f, c, s, w, ash;
       var firstIsNum = !isNaN(r[0]) || r[0]==='0' || r[0]==='1';
-      if (firstIsNum && r.length >= 13) {
-        // 新形式（水分あり）
+      if (firstIsNum && r.length >= 14) {
+        // 現在の形式（水分・灰分あり 15列）
         isOrganic=r[0]==='1'; isLimited=r[1]==='1';
         name=(r[2]||'').trim(); unitPrice=+r[3]||0;
         origin=r[4]||''; allergens=r[5]||''; gmoCheck=r[6]||'';
-        e=+r[7]||0; p=+r[8]||0; f=+r[9]||0; c=+r[10]||0; s=+r[11]||0; w=+r[12]||0;
-        limitedTo=r[13]||'';
-      } else if (firstIsNum) {
-        // 旧形式B（水分なし）
+        e=+r[7]||0; w=+r[8]||0; p=+r[9]||0; f=+r[10]||0; c=+r[11]||0; ash=+r[12]||0; s=+r[13]||0;
+        limitedTo=r[14]||'';
+      } else if (firstIsNum && r.length >= 12) {
+        // 旧形式B（水分・灰分なし）
         isOrganic=r[0]==='1'; isLimited=r[1]==='1';
         name=(r[2]||'').trim(); unitPrice=+r[3]||0;
         origin=r[4]||''; allergens=r[5]||''; gmoCheck=r[6]||'';
-        e=+r[7]||0; p=+r[8]||0; f=+r[9]||0; c=+r[10]||0; s=+r[11]||0; w=0;
+        e=+r[7]||0; p=+r[8]||0; f=+r[9]||0; c=+r[10]||0; s=+r[11]||0; w=0; ash=0;
         limitedTo=r[12]||'';
       } else {
         // 旧形式A（原材料名から始まる）
         name=(r[0]||'').trim(); unitPrice=+r[1]||0;
         isOrganic=r[2]==='1'; limitedTo=r[3]||''; isLimited=!!limitedTo;
         origin=''; allergens=''; gmoCheck='';
-        e=+r[4]||0; p=+r[5]||0; f=+r[6]||0; c=+r[7]||0; s=+r[8]||0; w=+r[9]||0;
+        e=+r[4]||0; p=+r[5]||0; f=+r[6]||0; c=+r[7]||0; s=+r[8]||0; w=0; ash=0;
       }
       if (!name) return;
       var ex = masterData.materialPrices.find(function(m){ return m.name===name; });
       if (ex) {
         ex.isOrganic=isOrganic; ex.isLimited=isLimited; ex.limitedTo=limitedTo;
         ex.unitPrice=unitPrice; ex.origin=origin; ex.allergens=allergens; ex.gmoCheck=gmoCheck;
-        ex.e=e; ex.p=p; ex.f=f; ex.c=c; ex.s=s; ex.w=w;
+        ex.e=e; ex.w=w; ex.p=p; ex.f=f; ex.c=c; ex.ash=ash; ex.s=s;
       } else {
-        masterData.materialPrices.push({
+        masterData.materialPrices.unshift({
           name:name, isOrganic:isOrganic, isLimited:isLimited, limitedTo:limitedTo,
           unitPrice:unitPrice, origin:origin, allergens:allergens, gmoCheck:gmoCheck,
-          e:e, p:p, f:f, c:c, s:s, w:w
+          e:e, w:w, p:p, f:f, c:c, ash:ash, s:s
         });
       }
       imported++;
