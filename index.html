@@ -649,18 +649,17 @@ function renderEditor() {
     + '<tfoot>'
     + '<tr style="background:#f0f4f8;font-weight:700;font-size:12px">'
     +   '<td colspan="4" style="padding:5px 8px;text-align:right;border-top:2px solid #2c4a6e;color:#555">合　計</td>'
-    +   '<td id="foot-weight" style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#0f5132">0.0g</td>'
+    +   '<td id="foot-weight" style="padding:5px 4px;text-align:right;border-top:2px solid #2c4a6e;font-size:12px;color:#0f5132;background:#c8ebd8">0.0g</td>'
     +   '<td style="border-top:2px solid #2c4a6e;background:#c8ebd8"></td>'
-    +   '<td id="foot-cost"   style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#0f5132">—</td>'
-    +   '<td style="padding:5px 6px;text-align:center;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#1a3a5c">100%</td>'
-    +   '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>'
-    +   '<td id="foot-nut-e"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
-    +   '<td id="foot-nut-w"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
-    +   '<td id="foot-nut-p"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
-    +   '<td id="foot-nut-f"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
-    +   '<td id="foot-nut-c"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
-    +   '<td id="foot-nut-ash" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
-    +   '<td id="foot-nut-s"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-cost" style="padding:5px 4px;text-align:right;border-top:2px solid #2c4a6e;font-size:12px;color:#0f5132;background:#c8ebd8">—</td>'
+    +   '<td style="padding:5px 4px;text-align:center;border-top:2px solid #2c4a6e;font-size:12px;color:#0f5132;background:#c8ebd8;color:#1a3a5c">100%</td>'
+    +   '<td id="foot-nut-e" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-w" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-p" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-f" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-c" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-ash" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-s" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
     +   '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>'
     + '</tr>'
     + '</tfoot>'
@@ -1286,11 +1285,21 @@ function renderIngTbody() {
     html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
     // 添加物用途
     html += '<td><input type="text" value="'+h(ing.addUse)+'" oninput="updateIngField('+i+',\'addUse\',this.value)"></td>';
-    // 遺伝子組換え（マスターから自動反映・表示のみ）
-    var gmoDispBg = ing.gmo === '非組換え' ? '#e8f5e9' : ing.gmo === '組換え' ? '#fff0f0' : ing.gmo === '不分別' ? '#fff8e1' : ing.gmo === '対象外' ? '#f5f5f5' : '';
-    var gmoDispColor = ing.gmo === '非組換え' ? '#155a32' : ing.gmo === '組換え' ? '#c62828' : '#555';
-    var gmoDisp = ing.gmo || '—';
-    html += '<td style="text-align:center;font-size:11px;padding:3px 4px;background:'+gmoDispBg+';color:'+gmoDispColor+';font-weight:'+(ing.gmo?'700':'400')+'">'+h(gmoDisp)+'</td>';
+    // 遺伝子組換え（マスターから自動反映・対象外はテキストのみ）
+    var gmoVal2 = ing.gmo || '';
+    var gmoText, gmoBg3, gmoColor3;
+    if (gmoVal2 === '対象外') {
+      gmoText = '対象外'; gmoBg3 = '#f5f5f5'; gmoColor3 = '#888';
+    } else if (gmoVal2 === '非組換え') {
+      gmoText = '非組換え'; gmoBg3 = '#e8f5e9'; gmoColor3 = '#155a32';
+    } else if (gmoVal2 === '組換え') {
+      gmoText = '組換え'; gmoBg3 = '#fff0f0'; gmoColor3 = '#c62828';
+    } else if (gmoVal2 === '不分別') {
+      gmoText = '不分別'; gmoBg3 = '#fff8e1'; gmoColor3 = '#b45309';
+    } else {
+      gmoText = gmoVal2 || '—'; gmoBg3 = ''; gmoColor3 = '#aaa';
+    }
+    html += '<td style="text-align:center;font-size:11px;padding:3px 4px;background:'+gmoBg3+';color:'+gmoColor3+';font-weight:'+(gmoVal2?'700':'400')+'">'+gmoText+'</td>';
     html += '<td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="removeIng('+i+')" style="padding:2px 6px">✕</button></td>';
     html += '</tr>';
   });
