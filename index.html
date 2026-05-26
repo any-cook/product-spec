@@ -654,6 +654,14 @@ function renderEditor() {
     +   '<td id="foot-cost"   style="padding:5px 6px;text-align:right;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#0f5132">—</td>'
     +   '<td style="padding:5px 6px;text-align:center;border-top:2px solid #2c4a6e;background:#c8ebd8;color:#1a3a5c">100%</td>'
     +   '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>'
+    +   '<td id="foot-nut-e"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-nut-w"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-nut-p"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-nut-f"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-nut-c"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-nut-ash" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td id="foot-nut-s"   style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;background:#f0ebff;font-size:11px;color:#5b3a8c">—</td>'
+    +   '<td colspan="4" style="border-top:2px solid #2c4a6e"></td>'
     + '</tr>'
     + '</tfoot>'
     + '</table></div>'
@@ -1163,7 +1171,7 @@ function updateIngSummary() {
     }
     // 栄養素セル更新
     var r2 = (ing.amount||0) / 100;
-    var hasNut = (ing.e||0) > 0;
+    var hasNut = (ing.e||0)>0 || (ing.w||0)>0 || (ing.p||0)>0 || (ing.f||0)>0 || (ing.c||0)>0 || (ing.ash||0)>0 || (ing.s||0)>0;
     var nutColor = hasNut ? '#5b3a8c' : '#ccc';
     var dash = '—';
     var nutData = [
@@ -1238,7 +1246,7 @@ function renderIngTbody() {
     var nutS = ((ing.s||0) * r).toFixed(2);
     var nutW   = ((ing.w||0)   * r).toFixed(1);
     var nutAsh = ((ing.ash||0) * r).toFixed(2);
-    var hasNut = (ing.e||0) > 0;
+    var hasNut = (ing.e||0)>0 || (ing.w||0)>0 || (ing.p||0)>0 || (ing.f||0)>0 || (ing.c||0)>0 || (ing.ash||0)>0 || (ing.s||0)>0;
     var nutStyle = 'text-align:right;padding:0 5px;font-size:11px;background:#f8f4ff;color:' + (hasNut ? '#5b3a8c' : '#ccc');
 
     html += '<tr style="background:'+rowBg+'">';
