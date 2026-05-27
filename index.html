@@ -469,7 +469,7 @@ function swTab(name) {
 
   if (name === 'master') renderMasterTables();
   if (name === 'package') refreshPackagingSelects();
-  if (name === 'cost') refreshLotSelector();
+  if (name === 'cost') { refreshLotSelector(); renderLotCostList(); }
   if (name === 'preview') genPreview();
 }
 
