@@ -2556,28 +2556,30 @@ function renderMasterPanel() {
     + '<p style="font-size:11px;color:#888;margin-bottom:6px">CSV: 種別(unit/case),包材名,縦(mm),横(mm),高さ(mm),材質,重量(g),単価(円),メモ</p>'
     + '<div style="overflow-x:auto"><table class="ing-table" style="table-layout:fixed;width:100%">'
     + '<colgroup>'
+    + '<col style="width:60px">'
+    + '<col style="width:150px">'
     + '<col style="width:65px">'
-    + '<col style="width:160px">'
-    + '<col style="width:70px">'
-    + '<col style="width:70px">'
-    + '<col style="width:70px">'
-    + '<col style="width:90px">'
-    + '<col style="width:70px">'
-    + '<col style="width:80px">'
-    + '<col style="width:120px">'
-    + '<col style="width:34px">'
+    + '<col style="width:58px">'
+    + '<col style="width:58px">'
+    + '<col style="width:58px">'
+    + '<col style="width:75px">'
+    + '<col style="width:58px">'
+    + '<col style="width:72px">'
+    + '<col style="width:100px">'
+    + '<col style="width:30px">'
     + '</colgroup>'
     + '<thead><tr style="background:#2c4a6e;color:#fff;font-size:12px">'
-    + '<th style="padding:4px 5px;text-align:center">種別</th>'
-    + '<th style="padding:4px 6px;text-align:left">包材名／商品名</th>'
-    + '<th style="padding:4px 5px;text-align:center">縦(mm)</th>'
-    + '<th style="padding:4px 5px;text-align:center">横(mm)</th>'
-    + '<th style="padding:4px 5px;text-align:center">高さ(mm)</th>'
-    + '<th style="padding:4px 5px;text-align:center">材質</th>'
-    + '<th style="padding:4px 5px;text-align:center">重量(g)</th>'
-    + '<th style="padding:4px 5px;text-align:center">単価(円)</th>'
-    + '<th style="padding:4px 6px;text-align:left">メモ</th>'
-    + '<th></th></tr></thead>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">種別</th>'
+    + '<th style="padding:5px 6px;text-align:left;border-bottom:2px solid #4a7aae">包材名／商品名</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae;background:#1a5a3a">内容量</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">横(mm)</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">縦(mm)</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">高さ(mm)</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">材質</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">重量(g)</th>'
+    + '<th style="padding:5px 4px;text-align:center;border-bottom:2px solid #4a7aae">単価(円)</th>'
+    + '<th style="padding:5px 6px;text-align:left;border-bottom:2px solid #4a7aae">メモ</th>'
+    + '<th style="border-bottom:2px solid #4a7aae"></th></tr></thead>'
     + '<tbody id="master-pkg-tbody"></tbody></table></div>';
   html += accordionCard('C. 包材費マスター（' + masterData.packagingCosts.length + '件）', 'acc-pkg', pkgInner);
 
@@ -2996,8 +2998,9 @@ function renderPkgTable() {
     var nameVal = m.name || m.productName || '';
     html += '<td><input type="text" value="'+h(nameVal)+'" style="width:100%;font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px" '
       + 'onchange="masterData.packagingCosts['+i+'].name=this.value;masterData.packagingCosts['+i+'].productName=this.value;refreshPackagingSelects()"></td>';
-    html += mkTd(m.height||'',   'height',   i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.capacity||'', 'capacity', i, 'masterData.packagingCosts');
     html += mkTd(m.width||'',    'width',    i, 'masterData.packagingCosts', 'number');
+    html += mkTd(m.height||'',   'height',   i, 'masterData.packagingCosts', 'number');
     html += mkTd(m.depth||'',    'depth',    i, 'masterData.packagingCosts', 'number');
     html += mkTd(m.material||'', 'material', i, 'masterData.packagingCosts');
     html += mkTd(m.weight||'',   'weight',   i, 'masterData.packagingCosts', 'number');
@@ -3010,7 +3013,7 @@ function renderPkgTable() {
 }
 function addPkgRow(type) {
   type = type || 'unit';
-  masterData.packagingCosts.unshift({name:'', productName:'', type:type, height:'', width:'', depth:'', material:'', weight:'', cost:0, unitPrice:0, memo:''});
+  masterData.packagingCosts.unshift({name:'', productName:'', type:type, capacity:'', height:'', width:'', depth:'', material:'', weight:'', cost:0, unitPrice:0, memo:''});
   renderPkgTable();
   updateAccordionTitles();
 }
