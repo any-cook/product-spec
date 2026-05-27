@@ -1785,8 +1785,12 @@ function recalcCost() {
   var packaging= +(document.getElementById('co-packagingCost')? document.getElementById('co-packagingCost').value: co.packagingCost)|| 0;
   var other    = +(document.getElementById('co-otherCost')    ? document.getElementById('co-otherCost').value    : co.otherCost)    || 0;
 
-  // ④ 送料
-  var shipping     = +(document.getElementById('co-shipping')      ? document.getElementById('co-shipping').value      : co.shipping)      || 0;
+  // ④ 送料 → 1袋あたり送料（送料÷入数）を使用
+  var shipingBox   = +(document.getElementById('co-shipping') ? document.getElementById('co-shipping').value : co.shipping || 0) || 0;
+  var pcNForShip   = +(document.getElementById('co-pcN-ship') ? document.getElementById('co-pcN-ship').value : co.pcN || 1) || 1;
+  var perUnitEl    = document.getElementById('co-ship-per-unit');
+  var shipping     = perUnitEl && +perUnitEl.value > 0 ? +perUnitEl.value : (pcNForShip > 0 ? shipingBox / pcNForShip : shipingBox);
+  currentSpec.cost.shipPerUnit = shipping;
   var shippingMode = (document.getElementById('co-shipping-mode')  ? document.getElementById('co-shipping-mode').value : co.shippingMode) || 'exclude';
   currentSpec.cost.shipping     = shipping;
   currentSpec.cost.shippingMode = shippingMode;
