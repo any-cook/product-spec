@@ -743,7 +743,7 @@ function renderEditor() {
     + '</div><div class="g3">'
     +   fld('重量(g)',   'text','pk-puWt',  h(pk.puWt),  'oninput="currentSpec.pkg.puWt=this.value"')
     +   fld('包材材質', 'text','pk-puMat',  h(pk.puMat), 'oninput="currentSpec.pkg.puMat=this.value"')
-    +   fld('単価(円)', 'text','pk-puPrice',h(pk.puPrice||''),'oninput="currentSpec.pkg.puPrice=this.value"')
+    +   fld('単価(円/袋)', 'number','pk-puPrice',pk.puPrice||0,'oninput="currentSpec.pkg.puPrice=+this.value;currentSpec.cost=currentSpec.cost||{};currentSpec.cost.pkgUnitCost=+this.value;calcPackagingCostAuto()"')
     + '</div>'
     // ケース
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px">'
@@ -761,7 +761,7 @@ function renderEditor() {
     + '</div><div class="g3">'
     +   fld('重量(g)',   'text','pk-pcWt',  h(pk.pcWt),  'oninput="currentSpec.pkg.pcWt=this.value"')
     +   fld('包材材質', 'text','pk-pcMat',  h(pk.pcMat), 'oninput="currentSpec.pkg.pcMat=this.value"')
-    +   fld('単価(円)', 'text','pk-pcPrice',h(pk.pcPrice||''),'oninput="currentSpec.pkg.pcPrice=this.value"')
+    +   fld('単価(円/箱)', 'number','pk-pcPrice',pk.pcPrice||0,'oninput="currentSpec.pkg.pcPrice=+this.value;currentSpec.cost=currentSpec.cost||{};currentSpec.cost.pkgCaseCost=+this.value;calcPackagingCostAuto()"')
     + '</div></div>'
     + '<div class="card"><h3>製造工程</h3>'
     +   '<div id="proc-list"></div>'
@@ -1018,7 +1018,26 @@ function buildShipSelector(co) {
       + '<input type="number" id="co-shipping" value="'+(co.shipping||0)+'" step="1" oninput="currentSpec.cost.shipping=+this.value;recalcCost()"></div>'
       + '</div>';
   }
-  html += '<div class="field" style="margin-top:4px"><label class="fl">送料の扱い</label>'
+  // ロット別加工費の生産袋数を取得（設定済みなら自動表示）
+  var autoBags = 0;
+  if (currentSpec && currentSpec.cost && currentSpec.cost.lotCosts) {
+    currentSpec.cost.lotCosts.forEach(function(lc){ if ((lc.bags||0) > autoBags) autoBags = lc.bags||0; });
+  }
+  var pcNVal = co.pcN || autoBags || 1;
+  var perUnitVal = co.shipping && pcNVal ? ((co.shipping||0)/pcNVal).toFixed(2) : '0.00';
+  html += '<div style="margin-top:8px;padding:10px 12px;background:#fff9e6;border:1.5px solid #e0a030;border-radius:8px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#c0392b;margin-bottom:8px">📦 1箱入数で送料を自動計算</div>';
+  html += '<div class="g2">';
+  html += '<div class="field"><label class="fl">1箱入数'+(autoBags>0?' <span style="color:#27ae60;font-size:11px">（ロットから: '+autoBags+'袋）</span>':'')+'</label>'
+    + '<input type="number" id="co-pcN-ship" value="'+pcNVal+'" min="1" step="1"'
+    + ' oninput="currentSpec.cost.pcN=+this.value;calcShipPerUnit()"'
+    + ' style="border:2px solid #e0a030;font-weight:700">';
+  html += '</div>';
+  html += '<div class="field"><label class="fl">1袋あたり送料（自動計算）</label>'
+    + '<input type="number" id="co-ship-per-unit" value="'+perUnitVal+'" readonly'
+    + ' style="background:#fff9e6;color:#c0392b;font-weight:700;border:1.5px solid #e0a030">';
+  html += '</div></div></div>';
+  html += '<div class="field" style="margin-top:8px"><label class="fl">送料の扱い</label>'
     + '<select id="co-shipping-mode" onchange="currentSpec.cost.shippingMode=this.value;recalcCost()">'
     + '<option value="exclude"'+(co.shippingMode==='exclude'||!co.shippingMode?' selected':'')+'>送料別（合計に含めない）</option>'
     + '<option value="include"'+(co.shippingMode==='include'?' selected':'')+'>送料込み（合計に含める）</option>'
@@ -1726,11 +1745,13 @@ function renderLotCostList() {
 // 送料÷ケース入数 = 1袋あたり送料
 function calcShipPerUnit() {
   if (!currentSpec) return;
-  var pcN    = +(document.getElementById('co-pcN-ship') ? document.getElementById('co-pcN-ship').value : currentSpec.cost && currentSpec.cost.pcN || 1) || 1;
-  var ship   = +(document.getElementById('co-shipping')  ? document.getElementById('co-shipping').value  : (currentSpec.cost && currentSpec.cost.shipping)  || 0) || 0;
-  var perUnit = ship / pcN;
+  var pcNEl  = document.getElementById('co-pcN-ship');
+  var shipEl = document.getElementById('co-shipping');
+  var pcN    = +(pcNEl ? pcNEl.value : currentSpec.cost && currentSpec.cost.pcN || 1) || 1;
+  var ship   = +(shipEl ? shipEl.value : currentSpec.cost && currentSpec.cost.shipping || 0) || 0;
+  var perUnit = pcN > 0 ? ship / pcN : 0;
   currentSpec.cost = currentSpec.cost || {};
-  currentSpec.cost.pcN       = pcN;
+  currentSpec.cost.pcN        = pcN;
   currentSpec.cost.shipPerUnit = perUnit;
   var el = document.getElementById('co-ship-per-unit');
   if (el) el.value = perUnit.toFixed(2);
@@ -2024,7 +2045,9 @@ function applyPackagingMaster(type, name) {
     if (mat.width)  { currentSpec.pkg.puW = mat.width;  var el=document.getElementById('pk-puW');  if(el) el.value=mat.width; }
     if (mat.height) { currentSpec.pkg.puH = mat.height; var el=document.getElementById('pk-puH');  if(el) el.value=mat.height; }
     if (mat.material){ currentSpec.pkg.puMat = mat.material; var el=document.getElementById('pk-puMat'); if(el) el.value=mat.material; }
-    if (mat.unitPrice){ currentSpec.pkg.puPrice = mat.unitPrice; var el=document.getElementById('pk-puPrice'); if(el) el.value=mat.unitPrice; }
+    var puCostVal = mat.cost || mat.unitPrice || 0;
+    currentSpec.pkg.puPrice = puCostVal;
+    var elPuP = document.getElementById('pk-puPrice'); if(elPuP) elPuP.value = puCostVal;
     // 包材費を原価計算に自動反映（個装単価 × ケース入数）
     var pcN = currentSpec.pkg.pcN ? +currentSpec.pkg.pcN : 1;
     var puCost = mat.cost || mat.unitPrice || 0;
@@ -2040,7 +2063,9 @@ function applyPackagingMaster(type, name) {
     if (mat.width)  { currentSpec.pkg.pcW = mat.width;  var el=document.getElementById('pk-pcW');  if(el) el.value=mat.width; }
     if (mat.height) { currentSpec.pkg.pcH = mat.height; var el=document.getElementById('pk-pcH');  if(el) el.value=mat.height; }
     if (mat.material){ currentSpec.pkg.pcMat = mat.material; var el=document.getElementById('pk-pcMat'); if(el) el.value=mat.material; }
-    if (mat.unitPrice){ currentSpec.pkg.pcPrice = mat.unitPrice; var el=document.getElementById('pk-pcPrice'); if(el) el.value=mat.unitPrice; }
+    var pcCostVal = mat.cost || mat.unitPrice || 0;
+    currentSpec.pkg.pcPrice = pcCostVal;
+    var elPcP = document.getElementById('pk-pcPrice'); if(elPcP) elPcP.value = pcCostVal;
     var pcCost = mat.cost || mat.unitPrice || 0;
     currentSpec.cost = currentSpec.cost || {};
     currentSpec.cost.pkgCaseCost = pcCost;
