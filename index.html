@@ -3150,7 +3150,8 @@ function importMaterialCSV(input) {
         c   = +g(r, ci.c,   0)||0;
         ash = +g(r, ci.ash, 0)||0;
         s   = +g(r, ci.s,   0)||0;
-      } else {
+        sf    = +g(r, ci.sf,    0)||0;
+        fiber = +g(r, ci.fiber, 0)||0;} else {
         // ヘッダーなし → 旧形式A（原材料名から始まる）
         name=(r[0]||'').trim(); unitPrice=+r[1]||0;
         isOrganic=r[2]==='1'; limitedTo=r[3]||''; isLimited=!!limitedTo;
