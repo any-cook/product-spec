@@ -693,29 +693,23 @@ function renderEditor() {
     + '<p style="font-size:12px;color:#888;margin-bottom:12px">1袋（'+h(b.unit||'—')+'）あたりの値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
     + '<div class="g2" style="margin-bottom:10px">'
     +   fld('エネルギー (kcal)', 'number','n-e', n.e||0, 'step="1"')
+    +   fld('水分 (g)',          'number','n-w', n.w||0, 'step="0.1"')
+    + '</div>'
+    + '<div class="g2" style="margin-bottom:10px">'
     +   fld('たんぱく質 (g)',    'number','n-p', n.p||0, 'step="0.1"')
+    +   fld('脂質 (g)',          'number','n-f', n.f||0, 'step="0.1"')
     + '</div>'
     + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('脂質 (g)',         'number','n-f', n.f||0, 'step="0.1"')
     +   fld('炭水化物 (g)',     'number','n-c', n.c||0, 'step="0.1"')
+    +   fld('食塩相当量 (g)',   'number','n-s', n.s||0, 'step="0.01"')
+    + '</div>'
+
+    + '<div class="g2" style="margin-bottom:10px">'
+    +   fld('飽和脂肪酸 (g)', 'number','n-sf',    n.sf||0,    'step="0.1"')
+    +   fld('食物繊維 (g)',   'number','n-fiber', n.fiber||0, 'step="0.1"')
     + '</div>'
     + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('食塩相当量 (g)',   'number','n-s',  n.s||0,     'step="0.01"')
-    +   fld('飽和脂肪酸 (g)',   'number','n-sf', n.sf||0,    'step="0.1"')
-    + '</div>'
-    + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('食物繊維 (g)',     'number','n-fiber', n.fiber||0, 'step="0.1"')
     +   fld('表示単位（例：1袋180g）','text','n-unit', h(n.unit||''), '')
-    + '</div>'
-    + '<div style="background:#f0f4ff;border-radius:8px;padding:12px 16px;margin-top:4px">'
-    +   '<p style="font-size:11px;color:#888;margin:0 0 6px">参考値（任意）</p>'
-    +   '<div class="g3">'
-    +     fld('水分 (g)',    'number','n-w',   n.w||0,   'step="0.1"')
-    +     fld('灰分 (g)',    'number','n-ash',  n.ash||0, 'step="0.01"')
-    +     fld('糖質 (g)',    'number','n-su',   n.su||0,  'step="0.1"')
-    +   '</div>'
-    + '</div>'
-    + '<div class="field" style="margin-top:10px">'
     +   fld('備考','text','n-note', h(n.note||''), '')
     + '</div>'
     + '</div></div>';
@@ -1380,8 +1374,8 @@ function addFoodIng(name) {
 
   var ing = {
     name: name,
-    country: mat ? '' : (fd ? fd.co||'' : ''),
-    allergens: fd ? (fd.al||[]).join('・') : '',
+    country: mat && mat.origin ? mat.origin : (fd ? fd.co||'' : ''),
+    allergens: mat && mat.allergens ? mat.allergens : (fd ? (fd.al||[]).join('・') : ''),
     ratio: '', feature: '', addUse: '', gmo: '', amount: 0,
     unitPrice: mat && mat.unitPrice > 0 ? mat.unitPrice : 0,
     e: mat && mat.e > 0 ? mat.e : (fd ? fd.e : 0),
