@@ -2191,7 +2191,11 @@ function genPreview() {
   currentSpec.ings.forEach(function(ing, i){
     ingRows += '<tr>';
     ingRows += '<td style="text-align:center">'+(i+1)+'</td>';
-    ingRows += '<td>'+h(ing.name)+'</td><td>'+h(ing.country)+'</td><td>'+h(ing.allergens)+'</td>';
+    var dispName = (function(){
+    var mat = masterData.materialPrices.find(function(m){ return m.name === ing.name; });
+    return (mat && mat.generalName) ? mat.generalName : ing.name;
+  })();
+  ingRows += '<td>'+h(dispName)+'</td><td>'+h(ing.country)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
     ingRows += '<td>'+h(ing.feature)+'</td><td>'+h(ing.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
@@ -2873,9 +2877,11 @@ function renderMatTable() {
       + ' onchange="masterData.materialPrices['+i+'].isLimited=this.checked;renderMatTable()">'
       + '</td>';
     // 原材料名
-    html += mkTdBg(m.name||'',       'name',      i, 'masterData.materialPrices', 'text',   '#f0f4ff');
+    html += mkTdBg(m.name||'',        'name',        i, 'masterData.materialPrices', 'text', '#f0f4ff');
+    // 一般名称
+    html += mkTdBg(m.generalName||'', 'generalName', i, 'masterData.materialPrices', 'text', '#f0fff4');
     // 単価
-    html += mkTdBg(m.unitPrice||0,   'unitPrice', i, 'masterData.materialPrices', 'number', '#f0f4ff');
+    html += mkTdBg(m.unitPrice||0,    'unitPrice',   i, 'masterData.materialPrices', 'number', '#f0f4ff');
     // 産地
     html += mkTdBg(m.origin||'',     'origin',    i, 'masterData.materialPrices', 'text',   '#f0f4ff');
     // アレルゲン
@@ -2947,7 +2953,7 @@ function sortMaterialPrices(key) {
 }
 
 function addMaterialRow() {
-  masterData.materialPrices.unshift({name:'', isOrganic:false, isLimited:false, limitedTo:'', unitPrice:0, origin:'', allergens:'', gmoCheck:'', e:0, p:0, f:0, c:0, s:0, w:0, sf:0, fiber:0});
+  masterData.materialPrices.unshift({name:'', generalName:'', isOrganic:false, isLimited:false, limitedTo:'', unitPrice:0, origin:'', allergens:'', gmoCheck:'', e:0, p:0, f:0, c:0, s:0, w:0, sf:0, fiber:0});
   renderMatTable();
   updateAccordionTitles();
 }
@@ -3091,10 +3097,10 @@ function parseCSV(text) {
 }
 
 function exportMaterialCSV() {
-  var rows = [['有機(1)','限定(1)','原材料名','単価(円/kg)','産地','アレルゲン','遺伝子組換え確認','エネルギー(kcal)','水分(g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)','飽和脂肪酸(g)','食物繊維(g)','限定商品名']];
+  var rows = [['有機(1)','限定(1)','原材料名','一般名称','単価(円/kg)','産地','アレルゲン','遺伝子組換え確認','エネルギー(kcal)','水分(g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)','飽和脂肪酸(g)','食物繊維(g)','限定商品名']];
   masterData.materialPrices.forEach(function(m){
     rows.push([
-      m.isOrganic?1:0, m.isLimited?1:0, m.name, m.unitPrice||0,
+      m.isOrganic?1:0, m.isLimited?1:0, m.name, m.generalName||'', m.unitPrice||0,
       m.origin||'', m.allergens||'', m.gmoCheck||'',
       m.e||0, m.w||0, m.p||0, m.f||0, m.c||0, m.s||0, m.sf||0, m.fiber||0, m.limitedTo||''
     ]);
@@ -3113,7 +3119,8 @@ function importMaterialCSV(input) {
     var ci = {
       organic:   header.findIndex(function(h){ return h.indexOf('有機')>=0; }),
       limited:   header.findIndex(function(h){ return h.indexOf('限定')>=0 && h.indexOf('商品')<0; }),
-      name:      header.findIndex(function(h){ return h.indexOf('原材料名')>=0 || h.indexOf('name')>=0; }),
+      name:        header.findIndex(function(h){ return h.indexOf('原材料名')>=0 || h.indexOf('name')>=0; }),
+      generalName: header.findIndex(function(h){ return h.indexOf('一般名称')>=0 || h.indexOf('general')>=0; }),
       price:     header.findIndex(function(h){ return h.indexOf('単価')>=0 || h.indexOf('price')>=0; }),
       origin:    header.findIndex(function(h){ return h.indexOf('産地')>=0 || h.indexOf('origin')>=0; }),
       allergens: header.findIndex(function(h){ return h.indexOf('アレルゲン')>=0 || h.indexOf('allergen')>=0; }),
@@ -3138,7 +3145,8 @@ function importMaterialCSV(input) {
       var name, unitPrice, isOrganic, isLimited, limitedTo, origin, allergens, gmoCheck, e, p, f, c, s, w, sf, fiber;
       if (hasHeader) {
         // ヘッダー解析成功 → 列番号マッピングで取得
-        name      = (g(r, ci.name,      '')).trim();
+        name        = (g(r, ci.name,        '')).trim();
+        var generalNameVal = (g(r, ci.generalName, '')).trim();
         unitPrice = +g(r, ci.price,     0)||0;
         isOrganic = g(r, ci.organic,    '0')==='1';
         isLimited = g(r, ci.limited,    '0')==='1';
@@ -3164,12 +3172,12 @@ function importMaterialCSV(input) {
       if (!name) return;
       var ex = masterData.materialPrices.find(function(m){ return m.name===name; });
       if (ex) {
-        ex.isOrganic=isOrganic; ex.isLimited=isLimited; ex.limitedTo=limitedTo;
+        ex.generalName=generalNameVal||ex.generalName||''; ex.isOrganic=isOrganic; ex.isLimited=isLimited; ex.limitedTo=limitedTo;
         ex.unitPrice=unitPrice; ex.origin=origin; ex.allergens=allergens; ex.gmoCheck=gmoCheck;
         ex.e=e; ex.w=w; ex.p=p; ex.f=f; ex.c=c; ex.s=s; ex.sf=sf||0; ex.fiber=fiber||0;
       } else {
         masterData.materialPrices.unshift({
-          name:name, isOrganic:isOrganic, isLimited:isLimited, limitedTo:limitedTo,
+          name:name, generalName:generalNameVal||'', isOrganic:isOrganic, isLimited:isLimited, limitedTo:limitedTo,
           unitPrice:unitPrice, origin:origin, allergens:allergens, gmoCheck:gmoCheck,
           e:e, w:w, p:p, f:f, c:c, s:s, sf:sf, fiber:fiber
         });
