@@ -927,7 +927,10 @@ function renderEditor() {
     + '<p style="font-size:12px;color:#555;margin-bottom:10px">原材料費・加工費・包材費・その他経費の合計に対して設定します。</p>'
     + '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:10px">'
     +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:16px;font-weight:700;color:#15803d">'
-    +     '<input type="radio" name="profit-rate" value="20" onchange="currentSpec.cost.profitRate=20;recalcCost()" style="width:20px;height:20px"'+(co.profitRate===30||co.profitRate==="all"?'':' checked')+'>20%'
+    +     '<input type="radio" name="profit-rate" value="10" onchange="currentSpec.cost.profitRate=10;recalcCost()" style="width:20px;height:20px"'+(co.profitRate===10?' checked':'')+'>10%'
+    +   '</label>'
+    +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:16px;font-weight:700;color:#15803d">'
+    +     '<input type="radio" name="profit-rate" value="20" onchange="currentSpec.cost.profitRate=20;recalcCost()" style="width:20px;height:20px"'+(!co.profitRate||co.profitRate===20?' checked':'')+'>20%'
     +   '</label>'
     +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:16px;font-weight:700;color:#15803d">'
     +     '<input type="radio" name="profit-rate" value="30" onchange="currentSpec.cost.profitRate=30;recalcCost()" style="width:20px;height:20px"'+(co.profitRate===30?' checked':'')+'>30%'
@@ -1957,6 +1960,22 @@ function recalcCost() {
     +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
     +'</tr>';
 
+  // 利益率別販売価格（選択中の利益率のみ）
+  var selectedRateEl2 = document.querySelector('input[name="profit-rate"]:checked');
+  var selRate2 = selectedRateEl2 ? selectedRateEl2.value : (co.profitRate ? String(co.profitRate) : '20');
+  var showRates2 = selRate2 === 'all' ? [10,15,20,25,30,35,40] : selRate2 === '10' ? [10] : selRate2 === '30' ? [30] : [20];
+  rhtml += '<tr style="border-top:1px dashed #aaa"><td colspan="2" style="padding:6px 8px;font-size:12px;color:#888">📊 利益率別販売価格（送料込み合計ベース）</td></tr>';
+  showRates2.forEach(function(rate) {
+    var baseP = totalWithShip;
+    var sellP = baseP / (1 - rate/100);
+    var profitP = sellP - baseP;
+    rhtml += '<tr style="background:#f0fdf4">';
+    rhtml += '<td style="padding:5px 8px;font-size:13px;color:#15803d;font-weight:700">利益'+rate+'% 販売価格</td>';
+    rhtml += '<td style="padding:5px 8px;text-align:right;font-size:16px;font-weight:700;color:#15803d">';
+    rhtml += Math.ceil(sellP).toLocaleString()+' <span style="font-size:11px;color:#888">円（税抜）</span>';
+    rhtml += '&nbsp;&nbsp;<span style="font-size:12px;color:#888">利益: '+Math.ceil(profitP).toLocaleString()+'円</span>';
+    rhtml += '</td></tr>';
+  });
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
 
@@ -1974,7 +1993,7 @@ function recalcCost() {
       var selectedRateEl = document.querySelector('input[name="profit-rate"]:checked');
       var selRate = selectedRateEl ? selectedRateEl.value : '20';
       if (currentSpec.cost) currentSpec.cost.profitRate = selRate === 'all' ? 'all' : +selRate;
-      var inlineRates = selRate === '30' ? [30] : selRate === 'all' ? [10,15,20,25,30,35,40] : [20];
+      var inlineRates = selRate === '10' ? [10] : selRate === '30' ? [30] : selRate === 'all' ? [10,15,20,25,30,35,40] : [20];
       var iphtml = '<table style="width:100%;border-collapse:collapse">';
       iphtml += '<thead><tr style="background:#15803d;color:#fff">';
       iphtml += '<th style="padding:8px 12px;text-align:center">利益率</th>';
