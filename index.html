@@ -288,9 +288,13 @@ function renderList() {
     var isSample = s.isSample ? true : false;
     var itemStyle = isSample ? 'opacity:0.5;border-style:dashed;' : '';
     var badge = isSample ? '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;border-radius:3px;padding:1px 5px;margin-left:4px">見本</span>' : '';
-    html += '<div class="spec-item'+active+'" onclick="openSpec(\''+s.id+'\')" style="'+itemStyle+'">';
-    html += '<div class="spec-item-name">'+h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）')+badge+'</div>';
-    html += '<div class="spec-item-meta">'+h(s.basic && s.basic.ptype ? s.basic.ptype : '')+' | '+d+'</div>';
+    html += '<div class="spec-item'+active+'" style="'+itemStyle+';position:relative">';
+    html += '<div onclick="openSpec(\''+s.id+'\')">'
+      + '<div class="spec-item-name">'+h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）')+badge+'</div>'
+      + '<div class="spec-item-meta">'+h(s.basic && s.basic.ptype ? s.basic.ptype : '')+' | '+d+'</div>'
+      + '</div>';
+    html += '<button onclick="event.stopPropagation();copySpec(\''+s.id+'\')" title="この規格書をコピーして新規作成" style="position:absolute;top:6px;right:6px;background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 6px;cursor:pointer">📋</button>';
+      + ' style="position:absolute;top:6px;right:6px;background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 6px;cursor:pointer">📋</button>';
     html += '</div>';
   });
   el.innerHTML = html;
@@ -324,6 +328,40 @@ function makeEmptySpec() {
 }
 
 // ===== 新規作成 =====
+// ===== 規格書をコピーして新規作成 =====
+function copySpec(id) {
+  var src = specListCache.find(function(s){ return s.id === id; });
+  if (!src) {
+    // Firestoreから直接取得して複製
+    db.collection('product_specs').doc(id).get().then(function(doc) {
+      if (!doc.exists) { toast('規格書が見つかりません', true); return; }
+      var data = doc.data();
+      _doCopySpec(data);
+    });
+    return;
+  }
+  _doCopySpec(src);
+}
+
+function _doCopySpec(src) {
+  // ディープコピー
+  currentSpec = JSON.parse(JSON.stringify(src));
+  // IDをクリア（新規として保存されるように）
+  currentSpecId = null;
+  // 商品名に「のコピー」を追加
+  if (!currentSpec.basic) currentSpec.basic = {};
+  currentSpec.basic.pname = (currentSpec.basic.pname || '') + '　のコピー';
+  // 作成日を今日に更新
+  currentSpec.basic.created = todayStr();
+  // updatedAtをクリア
+  delete currentSpec.updatedAt;
+  // isSampleフラグをクリア
+  currentSpec.isSample = false;
+  renderList();
+  renderEditor();
+  toast('「' + (currentSpec.basic.pname || '') + '」としてコピーしました。内容を編集して保存してください ✓');
+}
+
 function newSpec() {
   currentSpecId = null;
   currentSpec = makeEmptySpec();
@@ -603,7 +641,8 @@ function renderEditor() {
     + '<table class="ing-table" style="table-layout:fixed;width:100%">'
     + '<colgroup>'
     +   '<col style="width:28px">'    // No
-    +   '<col style="width:130px">'   // 原材料名
+    +   '<col style="width:32px">'    // 支給
+    +   '<col style="width:125px">'   // 原材料名
     +   '<col style="width:70px">'    // 国名
     +   '<col style="width:75px">'    // アレルゲン
     +   '<col style="width:65px">'    // 重量
@@ -625,6 +664,7 @@ function renderEditor() {
     + '<thead>'
     + '<tr style="background:#2c4a6e;color:#fff;font-size:11px">'
     +   '<th style="padding:6px 3px;text-align:center">No</th>'
+    +   '<th style="padding:4px 2px;text-align:center;background:#e67e22;color:#fff;font-size:10px">支給</th>'
     +   '<th style="padding:6px 4px;text-align:left">原材料名</th>'
     +   '<th style="padding:6px 4px;text-align:center">国名</th>'
     +   '<th style="padding:6px 4px;text-align:center">アレルゲン</th>'
@@ -1115,6 +1155,8 @@ function calcRatio() {
 }
 
 function ingCost(ing) {
+  // 支給品は単価0扱い
+  if (ing.isSupply) return 0;
   // 使用量(g) × 単価(円/kg) ÷ 1000
   return ((ing.amount||0) * (ing.unitPrice||0)) / 1000;
 }
@@ -1272,7 +1314,13 @@ function renderIngTbody() {
 
     html += '<tr style="background:'+rowBg+'">';
     html += '<td style="text-align:center;color:#aaa;font-size:11px;width:28px">'+(i+1)+'</td>';
-    html += '<td><input type="text" value="'+h(ing.name)+'" style="font-weight:500" oninput="updateIngField('+i+',\'name\',this.value)"></td>';
+    // 支給チェックボックス
+    html += '<td style="text-align:center;background:'+(ing.isSupply?'#fff3cd':'#fff')+';padding:2px">'
+      + '<input type="checkbox" '+(ing.isSupply?'checked':'')+' title="支給品（単価0円扱い）"'
+      + ' onchange="currentSpec.ings['+i+'].isSupply=this.checked;renderIngTbody();updateIngSummary();recalcCost()"'
+      + ' style="width:16px;height:16px;cursor:pointer">'
+      + '</td>';
+    html += '<td><input type="text" value="'+h(ing.name)+'" style="font-weight:500;'+(ing.isSupply?'color:#e67e22;':'')+'" oninput="updateIngField('+i+',\'name\',this.value)"></td>';
     html += '<td><input type="text" value="'+h(ing.country)+'" oninput="updateIngField('+i+',\'country\',this.value)"></td>';
     var alStyle = ing.allergens ? 'color:#c62828;font-weight:500' : '';
     html += '<td><input type="text" value="'+h(ing.allergens)+'" style="'+alStyle+'" oninput="updateIngField('+i+',\'allergens\',this.value)"></td>';
@@ -1282,11 +1330,12 @@ function renderIngTbody() {
     html += ' style="text-align:right;font-weight:600;width:100%"';
     html += ' onchange="updateIngField('+i+',\'amount\',this.value)">';
     html += '</td>';
-    // 単価
-    html += '<td style="background:#f0faf4">';
-    html += '<input type="number" id="prc-'+i+'" value="'+(ing.unitPrice||0)+'" min="0" step="1"';
-    html += ' style="text-align:right;width:100%"';
-    html += ' onchange="updateIngField('+i+',\'unitPrice\',this.value)">';
+    // 単価（支給品はグレーアウト）
+    var supplyStyle = ing.isSupply ? 'background:#f5f5f5;color:#aaa;text-decoration:line-through' : 'background:#f0faf4';
+    html += '<td style="'+supplyStyle+'">';
+    html += '<input type="number" id="prc-'+i+'" value="'+(ing.isSupply?0:(ing.unitPrice||0))+'" min="0" step="1"';
+    html += ' style="text-align:right;width:100%;'+(ing.isSupply?'color:#aaa;':'')+'"';
+    html += ' '+(ing.isSupply?'disabled':'')+' onchange="updateIngField('+i+',\'unitPrice\',this.value)">';
     html += '</td>';
     // 原材料費
     var costTxt = cost > 0 ? cost.toFixed(1)+' 円' : '—';
