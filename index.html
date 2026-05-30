@@ -385,6 +385,8 @@ async function openSpec(id) {
     if (!currentSpec.basic) currentSpec.basic = makeEmptySpec().basic;
     if (!currentSpec.nutrition) currentSpec.nutrition = makeEmptySpec().nutrition;
     if (!currentSpec.cost) currentSpec.cost = {laborCost:0,utilityCost:0,packagingCost:0,otherCost:0};
+    // lotCostsが保存されていれば必ず保持する
+    if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
     currentSpec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
     renderEditor();
     setTimeout(function() {
@@ -2466,8 +2468,10 @@ function applyMasterToSpec() {
   var proc = masterData.processingCosts.find(function(p){ return p.productName === pname; });
   if (proc) {
     if (!currentSpec.cost) currentSpec.cost = {};
+    // lotCostsは上書きしない（既存データを保持）
     currentSpec.cost.laborCost   = proc.laborCost   || 0;
     currentSpec.cost.utilityCost = proc.utilityCost || 0;
+    if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
   }
   var pkg = masterData.packagingCosts.find(function(p){ return p.productName === pname; });
   if (pkg) {
