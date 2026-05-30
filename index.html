@@ -2049,6 +2049,7 @@ function applyPackagingMaster(type, name) {
     if (mat.width)  { currentSpec.pkg.puW = mat.width;  var el=document.getElementById('pk-puW');  if(el) el.value=mat.width; }
     if (mat.height) { currentSpec.pkg.puH = mat.height; var el=document.getElementById('pk-puH');  if(el) el.value=mat.height; }
     if (mat.material){ currentSpec.pkg.puMat = mat.material; var el=document.getElementById('pk-puMat'); if(el) el.value=mat.material; }
+    if (mat.weight)  { currentSpec.pkg.puWt  = mat.weight;   var elWt=document.getElementById('pk-puWt');  if(elWt) elWt.value=mat.weight; }
     var puCostVal = mat.cost || mat.unitPrice || 0;
     currentSpec.pkg.puPrice = puCostVal;
     var elPuP = document.getElementById('pk-puPrice'); if(elPuP) elPuP.value = puCostVal;
@@ -2067,6 +2068,7 @@ function applyPackagingMaster(type, name) {
     if (mat.width)  { currentSpec.pkg.pcW = mat.width;  var el=document.getElementById('pk-pcW');  if(el) el.value=mat.width; }
     if (mat.height) { currentSpec.pkg.pcH = mat.height; var el=document.getElementById('pk-pcH');  if(el) el.value=mat.height; }
     if (mat.material){ currentSpec.pkg.pcMat = mat.material; var el=document.getElementById('pk-pcMat'); if(el) el.value=mat.material; }
+    if (mat.weight)  { currentSpec.pkg.pcWt  = mat.weight;   var elWt=document.getElementById('pk-pcWt');  if(elWt) elWt.value=mat.weight; }
     var pcCostVal = mat.cost || mat.unitPrice || 0;
     currentSpec.pkg.pcPrice = pcCostVal;
     var elPcP = document.getElementById('pk-pcPrice'); if(elPcP) elPcP.value = pcCostVal;
