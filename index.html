@@ -921,6 +921,23 @@ function renderEditor() {
     +   fld('包材費（円）',    'number','co-packagingCost',co.packagingCost||0,'step="1" oninput="recalcCost()"')
     +   fld('その他経費（円）','number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
     + '</div></div>'
+    // ③.5 利益率選択
+    + '<div class="card" style="background:#f0fdf4;border:2px solid #22c55e">'
+    + '<h3 style="color:#15803d">💰 利益率を選択（送料前）</h3>'
+    + '<p style="font-size:12px;color:#555;margin-bottom:10px">原材料費・加工費・包材費・その他経費の合計に対して設定します。</p>'
+    + '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:10px">'
+    +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:16px;font-weight:700;color:#15803d">'
+    +     '<input type="radio" name="profit-rate" value="20" onchange="currentSpec.cost.profitRate=20;recalcCost()" style="width:20px;height:20px"'+(co.profitRate===30||co.profitRate==="all"?'':' checked')+'>20%'
+    +   '</label>'
+    +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:16px;font-weight:700;color:#15803d">'
+    +     '<input type="radio" name="profit-rate" value="30" onchange="currentSpec.cost.profitRate=30;recalcCost()" style="width:20px;height:20px"'+(co.profitRate===30?' checked':'')+'>30%'
+    +   '</label>'
+    +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:#555">'
+    +     '<input type="radio" name="profit-rate" value="all" onchange="currentSpec.cost.profitRate=\'all\';recalcCost()" style="width:18px;height:18px"'+(co.profitRate==="all"?' checked':'')+'>全て表示 (10〜40%)'
+    +   '</label>'
+    + '</div>'
+    + '<div id="profit-table-inline"></div>'
+    + '</div>'
     // ④ 送料設定
     + '<div class="card"><h3>④ 送料設定</h3>'
     + buildShipSelector(co)
@@ -1951,6 +1968,35 @@ function recalcCost() {
   var profitEl = document.getElementById('profit-table');
   if (profitEl) {
     var basePrice = shippingMode === 'include' ? totalWithShip : subtotal;
+    // ③.5 送料前利益率（subtotalベース）を更新
+    var profitInlineEl = document.getElementById('profit-table-inline');
+    if (profitInlineEl) {
+      var selectedRateEl = document.querySelector('input[name="profit-rate"]:checked');
+      var selRate = selectedRateEl ? selectedRateEl.value : '20';
+      if (currentSpec.cost) currentSpec.cost.profitRate = selRate === 'all' ? 'all' : +selRate;
+      var inlineRates = selRate === '30' ? [30] : selRate === 'all' ? [10,15,20,25,30,35,40] : [20];
+      var iphtml = '<table style="width:100%;border-collapse:collapse">';
+      iphtml += '<thead><tr style="background:#15803d;color:#fff">';
+      iphtml += '<th style="padding:8px 12px;text-align:center">利益率</th>';
+      iphtml += '<th style="padding:8px 12px;text-align:right">販売価格（税抜）</th>';
+      iphtml += '<th style="padding:8px 12px;text-align:right">税込8%</th>';
+      iphtml += '<th style="padding:8px 12px;text-align:right">税込10%</th>';
+      iphtml += '<th style="padding:8px 12px;text-align:right">利益額</th>';
+      iphtml += '</tr></thead><tbody>';
+      inlineRates.forEach(function(rate) {
+        var p = subtotal / (1 - rate/100);
+        var p8 = p * 1.08, p10 = p * 1.10, profit = p - subtotal;
+        var bg = (rate===20||rate===30) ? '#dcfce7' : '#fff';
+        var fw = (rate===20||rate===30) ? '700' : '400';
+        iphtml += '<tr style="background:'+bg+'"><td style="padding:7px 12px;text-align:center;font-size:15px;font-weight:700;color:#15803d">'+rate+'%</td>';
+        iphtml += '<td style="padding:7px 12px;text-align:right;font-size:17px;font-weight:'+fw+';color:#1a3a5c">'+Math.ceil(p).toLocaleString()+' 円</td>';
+        iphtml += '<td style="padding:7px 12px;text-align:right;color:#555">'+Math.ceil(p8).toLocaleString()+' 円</td>';
+        iphtml += '<td style="padding:7px 12px;text-align:right;color:#555">'+Math.ceil(p10).toLocaleString()+' 円</td>';
+        iphtml += '<td style="padding:7px 12px;text-align:right;color:#c0392b;font-weight:'+fw+'">'+Math.ceil(profit).toLocaleString()+' 円</td></tr>';
+      });
+      iphtml += '</tbody></table>';
+      profitInlineEl.innerHTML = iphtml;
+    }
     var phtml = '<table style="width:100%;border-collapse:collapse">';
     phtml += '<thead><tr style="background:#2a5a2e;color:#fff">';
     phtml += '<th style="padding:6px 10px;text-align:center">利益率</th>';
