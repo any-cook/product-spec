@@ -2094,9 +2094,9 @@ function applyPackagingMaster(type, name) {
   if (!currentSpec.pkg) currentSpec.pkg = {};
   if (type === 'unit') {
     currentSpec.pkg.puMasterId = name;
-    if (mat.depth)  { currentSpec.pkg.puD = mat.depth;  var el=document.getElementById('pk-puD');  if(el) el.value=mat.depth; }
-    if (mat.width)  { currentSpec.pkg.puW = mat.width;  var el=document.getElementById('pk-puW');  if(el) el.value=mat.width; }
-    if (mat.height) { currentSpec.pkg.puH = mat.height; var el=document.getElementById('pk-puH');  if(el) el.value=mat.height; }
+    if (mat.width)   { currentSpec.pkg.puW   = mat.width;    var el=document.getElementById('pk-puW');   if(el) el.value=mat.width; }
+    if (mat.height)  { currentSpec.pkg.puD   = mat.height;   var el=document.getElementById('pk-puD');   if(el) el.value=mat.height; }
+    if (mat.depth)   { currentSpec.pkg.puH   = mat.depth;    var el=document.getElementById('pk-puH');   if(el) el.value=mat.depth; }
     if (mat.material){ currentSpec.pkg.puMat = mat.material; var el=document.getElementById('pk-puMat'); if(el) el.value=mat.material; }
     if (mat.weight)  { currentSpec.pkg.puWt  = mat.weight;   var elWt=document.getElementById('pk-puWt');  if(elWt) elWt.value=mat.weight; }
     var puCostVal = mat.cost || mat.unitPrice || 0;
@@ -2113,11 +2113,11 @@ function applyPackagingMaster(type, name) {
     toast('個装包材「'+name+'」を反映しました ✓');
   } else {
     currentSpec.pkg.pcMasterId = name;
-    if (mat.depth)  { currentSpec.pkg.pcD = mat.depth;  var el=document.getElementById('pk-pcD');  if(el) el.value=mat.depth; }
-    if (mat.width)  { currentSpec.pkg.pcW = mat.width;  var el=document.getElementById('pk-pcW');  if(el) el.value=mat.width; }
-    if (mat.height) { currentSpec.pkg.pcH = mat.height; var el=document.getElementById('pk-pcH');  if(el) el.value=mat.height; }
+    if (mat.width)   { currentSpec.pkg.pcW   = mat.width;    var el=document.getElementById('pk-pcW');   if(el) el.value=mat.width; }
+    if (mat.height)  { currentSpec.pkg.pcD   = mat.height;   var el=document.getElementById('pk-pcD');   if(el) el.value=mat.height; }
+    if (mat.depth)   { currentSpec.pkg.pcH   = mat.depth;    var el=document.getElementById('pk-pcH');   if(el) el.value=mat.depth; }
     if (mat.material){ currentSpec.pkg.pcMat = mat.material; var el=document.getElementById('pk-pcMat'); if(el) el.value=mat.material; }
-    if (mat.weight)  { currentSpec.pkg.pcWt  = mat.weight;   var elWt=document.getElementById('pk-pcWt');  if(elWt) elWt.value=mat.weight; }
+    if (mat.weight)  { currentSpec.pkg.pcWt  = mat.weight;   var elWt=document.getElementById('pk-pcWt'); if(elWt) elWt.value=mat.weight; }
     var pcCostVal = mat.cost || mat.unitPrice || 0;
     currentSpec.pkg.pcPrice = pcCostVal;
     var elPcP = document.getElementById('pk-pcPrice'); if(elPcP) elPcP.value = pcCostVal;
