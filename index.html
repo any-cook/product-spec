@@ -921,11 +921,7 @@ function renderEditor() {
     +   fld('包材費（円）',    'number','co-packagingCost',co.packagingCost||0,'step="1" oninput="recalcCost()"')
     +   fld('その他経費（円）','number','co-otherCost',    co.otherCost||0,    'step="1" oninput="recalcCost()"')
     + '</div></div>'
-    // ④ 送料設定
-    + '<div class="card"><h3>④ 送料設定</h3>'
-    + buildShipSelector(co)
-    + '</div>'
-    // ④.5 利益率選択
+        // ④ 利益率を選択
     + '<div class="card" style="background:#f0fdf4;border:2px solid #22c55e">'
     + '<h3 style="color:#15803d;margin-bottom:10px">💰 利益率を選択（送料を含まない合計ベース）</h3>'
     + '<p style="font-size:12px;color:#555;margin-bottom:10px">原材料費・加工費・包材費・その他経費の合計から計算します（送料は別途⑤で確認）。</p>'
@@ -945,8 +941,12 @@ function renderEditor() {
     + '</div>'
     + '<div id="profit-table-inline"></div>'
     + '</div>'
-    // ⑤ 合計
-    + '<div class="card"><h3>⑤ 1袋あたり合計金額</h3>'
+        // ⑤ 送料設定
+    + '<div class="card"><h3>⑤ 送料設定</h3>'
+    + buildShipSelector(co)
+    + '</div>'
+    // ⑥ 合計
+    + '<div class="card"><h3>⑥ 1袋あたり合計金額</h3>'
     + '<div id="cost-result" style="background:#eef2f7;border-radius:8px;padding:14px"></div>'
     + '</div>'
     + '</div>';
