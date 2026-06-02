@@ -2628,6 +2628,7 @@ function renderMasterPanel() {
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'野菜\')">野菜</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'魚介類\')">魚介類</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'果物\')">果物</button>'
+    +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'乳製品\')">乳製品</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'調味料\')">調味料</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'粉類\')">粉類</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'油類\')">油類</button>'
@@ -3033,6 +3034,16 @@ function renderMatTable() {
       + '<input type="checkbox" '+(m.isLimited?'checked':'')+' title="特定商品限定"'
       + ' onchange="masterData.materialPrices['+i+'].isLimited=this.checked;renderMatTable()">'
       + '</td>';
+    // 分類
+    var catVal = m.category||'';
+    var catList = ['','肉類','野菜','魚介類','果物','乳製品','調味料','粉類','油類','その他'];
+    var catOpts = catList.map(function(c){
+      return '<option value="'+c+'"'+(catVal===c?' selected':'')+'>'+(c||'— 未設定')+'</option>';
+    }).join('');
+    html += '<td style="background:#fff8f0;padding:1px 2px">'
+      + '<select onchange="masterData.materialPrices['+i+'].category=this.value;saveMasterToFirestore()"'
+      + ' style="width:100%;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px">'
+      + catOpts + '</select></td>';
     // 原材料名
     html += mkTdBg(m.name||'',        'name',        i, 'masterData.materialPrices', 'text', '#f0f4ff');
     // 一般名称
