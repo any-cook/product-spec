@@ -612,6 +612,8 @@ function renderEditor() {
     +     '<div class="search-results" id="food-results"></div>'
     +   '</div>'
     +   '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button>'
+    +   '<button class="btn btn-sm" style="background:#fff3cd;color:#856404" onclick="exportIngCSV()">📥 CSV出力</button>'
+    +   '<label class="btn btn-sm" style="background:#fff3cd;color:#856404;cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importIngCSV(this)"></label>'
     + '</div>'
     // 手動追加フォーム
     + '<div id="cust-form" style="display:none;background:#f5f5f0;padding:12px;border-radius:6px;margin-bottom:10px;border:1px solid #ddd">'
@@ -3318,7 +3320,28 @@ function importIngCSV(input) {
       }
     });
     renderIngTbody(); updateIngSummary(); recalcCost();
-    toast('CSV取込完了: 新規'+imported+'件・更新'+updated+'件 ✓');
+    // マスター未登録の原材料を自動登録
+    var autoAdded = 0;
+    (currentSpec.ings || []).forEach(function(ing) {
+      if (!ing.name) return;
+      var exists = masterData.materialPrices.find(function(m){ return m.name === ing.name; });
+      if (!exists) {
+        masterData.materialPrices.push({
+          name: ing.name, generalName: '', isOrganic: false, isLimited: false, limitedTo: '',
+          unitPrice: ing.unitPrice||0, origin: ing.country||'', allergens: ing.allergens||'',
+          gmoCheck: ing.gmo||'', e: ing.e||0, w: ing.w||0, p: ing.p||0, f: ing.f||0,
+          c: ing.c||0, s: ing.s||0, sf: ing.sf||0, fiber: ing.fiber||0
+        });
+        autoAdded++;
+      }
+    });
+    if (autoAdded > 0) {
+      saveMasterToFirestore();
+      renderMatTable(); updateAccordionTitles();
+      toast('CSV取込完了: 新規'+imported+'件・更新'+updated+'件 ✓ / マスター自動登録: '+autoAdded+'件');
+    } else {
+      toast('CSV取込完了: 新規'+imported+'件・更新'+updated+'件 ✓');
+    }
     input.value='';
   };
   reader.readAsText(file, 'UTF-8');
