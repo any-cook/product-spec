@@ -644,39 +644,39 @@ function renderEditor() {
     + '<div style="overflow-x:auto;margin-top:8px">'
     + '<table class="ing-table" style="table-layout:fixed;width:100%">'
     + '<colgroup>'
-    +   '<col style="width:28px">'    // No
-    +   '<col style="width:32px">'    // 支給
-    +   '<col style="width:110px">'   // 原材料名
-    +   '<col style="width:58px">'    // 産地
-    +   '<col style="width:58px">'    // アレルゲン
-    +   '<col style="width:65px">'    // 重量
-    +   '<col style="width:78px">'    // 単価
-    +   '<col style="width:65px">'    // 原材料費
-    +   '<col style="width:52px">'    // 配合比
-    +   '<col style="width:42px">'    // kcal
-    +   '<col style="width:42px">'    // 水分
-    +   '<col style="width:42px">'    // 蛋白質
-    +   '<col style="width:38px">'    // 脂質
-    +   '<col style="width:42px">'    // 炭水化物
-    +   '<col style="width:42px">'    // 食塩相当量
-    +   '<col style="width:42px">'    // 飽和脂肪酸
-    +   '<col style="width:42px">'    // 食物繊維
-    +   '<col style="width:50px">'    // 特色原材料
-    +   '<col style="width:55px">'    // 添加物用途
-    +   '<col style="width:68px">'    // 遺伝子組換え
-    +   '<col style="width:30px">'    // 削除
+    +   '<col style="width:28px">'    // 1:No
+    +   '<col style="width:32px">'    // 2:支給
+    +   '<col style="width:120px">'   // 3:原材料名
+    +   '<col style="width:60px">'    // 4:産地
+    +   '<col style="width:70px">'    // 5:アレルゲン
+    +   '<col style="width:65px">'    // 6:重量(g)
+    +   '<col style="width:75px">'    // 7:単価
+    +   '<col style="width:65px">'    // 8:原材料費
+    +   '<col style="width:52px">'    // 9:配合比
+    +   '<col style="width:40px">'    // 10:kcal
+    +   '<col style="width:40px">'    // 11:水分
+    +   '<col style="width:40px">'    // 12:蛋白質
+    +   '<col style="width:38px">'    // 13:脂質
+    +   '<col style="width:42px">'    // 14:炭水化物
+    +   '<col style="width:40px">'    // 15:食塩
+    +   '<col style="width:40px">'    // 16:飽和脂肪酸
+    +   '<col style="width:40px">'    // 17:食物繊維
+    +   '<col style="width:50px">'    // 18:特色
+    +   '<col style="width:52px">'    // 19:添加物
+    +   '<col style="width:52px">'    // 20:GMO
+    +   '<col style="width:30px">'    // 21:削除
     + '</colgroup>'
     + '<thead>'
     + '<tr style="background:#2c4a6e;color:#fff;font-size:11px">'
-    +   '<th style="padding:6px 3px;text-align:center">No</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#e67e22;color:#fff;font-size:10px">支給</th>'
-    +   '<th style="padding:6px 4px;text-align:left">原材料名</th>'
-    +   '<th style="padding:6px 4px;text-align:center">産地</th>'
-    +   '<th style="padding:6px 4px;text-align:center">アレルゲン</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">重量(g)</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">単価(円/kg)</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">原材料費</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#155a32">配合比</th>'
+    +   '<th style="padding:4px 2px;text-align:center">No</th>'
+    +   '<th style="padding:4px 2px;text-align:center;background:#e67e22">支給</th>'
+    +   '<th style="padding:4px 4px;text-align:left">原材料名</th>'
+    +   '<th style="padding:4px 3px;text-align:center">産地</th>'
+    +   '<th style="padding:4px 3px;text-align:center">アレルゲン</th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#155a32">重量(g)</th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#155a32">単価(円/kg)</th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#155a32">原材料費</th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#155a32">配合比</th>'
     +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">kcal</th>'
     +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">水分<br>g</th>'
     +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">蛋白質<br>g</th>'
@@ -685,10 +685,10 @@ function renderEditor() {
     +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">食塩<br>相当量g</th>'
     +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">飽和<br>脂肪酸g</th>'
     +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">食物<br>繊維g</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">特色</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">添加物</th>'
-    +   '<th style="padding:6px 4px;text-align:center;background:#3a3010">GMO</th>'
-    +   '<th style="padding:6px 4px;background:#333"></th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#3a3010">特色</th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#3a3010">添加物</th>'
+    +   '<th style="padding:4px 3px;text-align:center;background:#3a3010">GMO</th>'
+    +   '<th style="padding:4px 2px;background:#333"></th>'
     + '</tr>'
     + '</thead>'
     + '<tbody id="ing-tbody"></tbody>'
