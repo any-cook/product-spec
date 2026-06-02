@@ -3232,6 +3232,98 @@ function parseCSV(text) {
   });
 }
 
+// ===== ②原材料タブ CSV入出力 =====
+function exportIngCSV() {
+  var rows = [['No','原材料名','使用量(g)','単価(円/kg)','産地','アレルゲン','支給(1/0)','特色','GMO確認','kcal','水分(g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)','飽和脂肪酸(g)','食物繊維(g)']];
+  (currentSpec.ings || []).forEach(function(ing, i) {
+    rows.push([
+      i+1,
+      ing.name||'',
+      ing.amount||0,
+      ing.unitPrice||0,
+      ing.country||'',
+      ing.allergens||'',
+      ing.isSupply?1:0,
+      ing.feature||'',
+      ing.gmo||'',
+      ing.e||0,
+      ing.w||0,
+      ing.p||0,
+      ing.f||0,
+      ing.c||0,
+      ing.s||0,
+      ing.sf||0,
+      ing.fiber||0
+    ]);
+  });
+  downloadCSV((currentSpec.basic&&currentSpec.basic.pname?currentSpec.basic.pname:'原材料')+'_原材料.csv', rows);
+}
+
+function importIngCSV(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    if (rows.length < 2) { toast('データがありません', true); return; }
+    var header = rows[0].map(function(h){ return (h||'').trim().toLowerCase(); });
+    var ci = {
+      name:     header.findIndex(function(h){ return h.indexOf('原材料名')>=0||h.indexOf('name')>=0; }),
+      amount:   header.findIndex(function(h){ return h.indexOf('使用量')>=0||h.indexOf('amount')>=0||h.indexOf('g数')>=0; }),
+      price:    header.findIndex(function(h){ return h.indexOf('単価')>=0||h.indexOf('price')>=0; }),
+      country:  header.findIndex(function(h){ return h.indexOf('産地')>=0||h.indexOf('country')>=0; }),
+      allergens:header.findIndex(function(h){ return h.indexOf('アレルゲン')>=0||h.indexOf('allergen')>=0; }),
+      supply:   header.findIndex(function(h){ return h.indexOf('支給')>=0||h.indexOf('supply')>=0; }),
+      feature:  header.findIndex(function(h){ return h.indexOf('特色')>=0||h.indexOf('feature')>=0; }),
+      gmo:      header.findIndex(function(h){ return h.indexOf('gmo')>=0||h.indexOf('組換')>=0; }),
+      e:        header.findIndex(function(h){ return h.indexOf('kcal')>=0||h.indexOf('エネルギー')>=0; }),
+      w:        header.findIndex(function(h){ return h.indexOf('水分')>=0; }),
+      p:        header.findIndex(function(h){ return h.indexOf('たんぱく質')>=0||h.indexOf('蛋白')>=0; }),
+      f:        header.findIndex(function(h){ return h.indexOf('脂質')>=0; }),
+      c:        header.findIndex(function(h){ return h.indexOf('炭水化物')>=0; }),
+      s:        header.findIndex(function(h){ return h.indexOf('食塩')>=0; }),
+      sf:       header.findIndex(function(h){ return h.indexOf('飽和')>=0; }),
+      fiber:    header.findIndex(function(h){ return h.indexOf('食物繊維')>=0; }),
+    };
+    var g = function(r, idx) { return idx>=0&&idx<r.length ? r[idx] : ''; };
+    var imported = 0, updated = 0;
+    rows.forEach(function(r, i) {
+      if (i===0) return;
+      var name = (g(r, ci.name)||'').trim();
+      if (!name) return;
+      // 既存行を検索して更新、なければ追加
+      var ex = (currentSpec.ings||[]).find(function(ing){ return ing.name===name; });
+      var obj = ex || {};
+      obj.name      = name;
+      if (ci.amount>=0)    obj.amount    = +g(r,ci.amount)||0;
+      if (ci.price>=0)     obj.unitPrice = +g(r,ci.price)||0;
+      if (ci.country>=0)   obj.country   = g(r,ci.country);
+      if (ci.allergens>=0) obj.allergens = g(r,ci.allergens);
+      if (ci.supply>=0)    obj.isSupply  = g(r,ci.supply)==='1';
+      if (ci.feature>=0)   obj.feature   = g(r,ci.feature);
+      if (ci.gmo>=0)       obj.gmo       = g(r,ci.gmo);
+      if (ci.e>=0)         obj.e         = +g(r,ci.e)||0;
+      if (ci.w>=0)         obj.w         = +g(r,ci.w)||0;
+      if (ci.p>=0)         obj.p         = +g(r,ci.p)||0;
+      if (ci.f>=0)         obj.f         = +g(r,ci.f)||0;
+      if (ci.c>=0)         obj.c         = +g(r,ci.c)||0;
+      if (ci.s>=0)         obj.s         = +g(r,ci.s)||0;
+      if (ci.sf>=0)        obj.sf        = +g(r,ci.sf)||0;
+      if (ci.fiber>=0)     obj.fiber     = +g(r,ci.fiber)||0;
+      if (!ex) {
+        if (!currentSpec.ings) currentSpec.ings = [];
+        currentSpec.ings.push(obj);
+        imported++;
+      } else {
+        updated++;
+      }
+    });
+    renderIngTbody(); updateIngSummary(); recalcCost();
+    toast('CSV取込完了: 新規'+imported+'件・更新'+updated+'件 ✓');
+    input.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
 function exportMaterialCSV() {
   var rows = [['有機(1)','限定(1)','原材料名','一般名称','単価(円/kg)','産地','アレルゲン','遺伝子組換え確認','エネルギー(kcal)','水分(g)','たんぱく質(g)','脂質(g)','炭水化物(g)','食塩相当量(g)','飽和脂肪酸(g)','食物繊維(g)','限定商品名']];
   masterData.materialPrices.forEach(function(m){
