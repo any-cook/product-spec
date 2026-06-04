@@ -3020,9 +3020,14 @@ function filterMatByCategory(cat) {
 
 function renderMatTable() {
   var tbody = document.getElementById('master-mat-tbody'); if(!tbody) return;
+  // 分類フィルタリング
+  var list = matCategoryFilter
+    ? masterData.materialPrices.filter(function(m){ return (m.category||'') === matCategoryFilter; })
+    : masterData.materialPrices;
   var GMO_CROPS = ['大豆','とうもろこし','ばれいしょ','なたね','綿実','アルファルファ','てん菜','パパイヤ','からしな'];
   var html = '';
-  masterData.materialPrices.forEach(function(m, i) {
+  list.forEach(function(m) {
+    var i = masterData.materialPrices.indexOf(m); // 元のインデックスを使用
     var rowBg = i%2===0?'#fff':'#fafcff';
     var needsGmo = GMO_CROPS.some(function(c){ return (m.name||'').indexOf(c)>=0; });
     var gmoVal = m.gmoCheck || '';
