@@ -2631,6 +2631,7 @@ function renderMasterPanel() {
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'果物\')">果物</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'乳製品\')">乳製品</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'調味料\')">調味料</button>'
+    +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'スパイス\')">スパイス</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'粉類\')">粉類</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'油類\')">油類</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'その他\')">その他</button>'
@@ -3044,7 +3045,7 @@ function renderMatTable() {
       + '</td>';
     // 分類
     var catVal = m.category||'';
-    var catList = ['','肉類','野菜','魚介類','果物','乳製品','調味料','粉類','油類','その他'];
+    var catList = ['','肉類','野菜','魚介類','果物','乳製品','調味料','スパイス','粉類','油類','その他'];
     var catOpts = catList.map(function(c){
       return '<option value="'+c+'"'+(catVal===c?' selected':'')+'>'+(c||'— 未設定')+'</option>';
     }).join('');
