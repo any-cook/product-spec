@@ -1114,7 +1114,9 @@ function buildShipSelector(co) {
     currentSpec.cost.lotCosts.forEach(function(lc){ if ((lc.bags||0) > autoBags) autoBags = lc.bags||0; });
   }
   var pcNVal = co.pcN || autoBags || 1;
-  var perUnitVal = co.shipping && pcNVal ? ((co.shipping||0)/pcNVal).toFixed(2) : '0.00';
+  // 1袋あたり送料: 保存済みshipPerUnit > shipping÷pcN の優先順
+  var perUnitVal = co.shipPerUnit > 0 ? co.shipPerUnit.toFixed(2)
+    : (co.shipping && pcNVal ? ((co.shipping||0)/pcNVal).toFixed(2) : '0.00');
   html += '<div style="margin-top:8px;padding:10px 12px;background:#fff9e6;border:1.5px solid #e0a030;border-radius:8px">';
   html += '<div style="font-size:12px;font-weight:700;color:#c0392b;margin-bottom:8px">📦 1箱入数で送料を自動計算</div>';
   html += '<div class="g2">';
@@ -1982,17 +1984,19 @@ function recalcCost() {
   var pcNEl2       = document.getElementById('co-pcN-ship');
   var shipBoxEl    = document.getElementById('co-shipping');
   var shipping;
+  // 送料取得: DOM値 > 保存済shipPerUnit > 箱送料÷入数
+  var shipBoxVal = +(shipBoxEl ? shipBoxEl.value : co.shipping || 0) || 0;
+  var pcNVal2    = +(pcNEl2 ? pcNEl2.value : co.pcN || 1) || 1;
   if (perUnitEl && +perUnitEl.value > 0) {
-    // DOMに値がある場合
     shipping = +perUnitEl.value;
   } else if (co.shipPerUnit > 0) {
-    // 保存済みのshipPerUnitを使用
     shipping = co.shipPerUnit;
+    // DOMがある場合はDOMも更新
+    if (perUnitEl) perUnitEl.value = shipping.toFixed(2);
+  } else if (shipBoxVal > 0) {
+    shipping = pcNVal2 > 0 ? shipBoxVal / pcNVal2 : 0;
   } else {
-    // 箱送料÷入数で計算
-    var shipBox  = +(shipBoxEl ? shipBoxEl.value : co.shipping || 0) || 0;
-    var pcNShip  = +(pcNEl2 ? pcNEl2.value : co.pcN || 1) || 1;
-    shipping = pcNShip > 0 ? shipBox / pcNShip : 0;
+    shipping = 0;
   }
   currentSpec.cost.shipPerUnit = shipping;
   var shippingMode = (document.getElementById('co-shipping-mode')  ? document.getElementById('co-shipping-mode').value : co.shippingMode) || 'exclude';
@@ -2101,13 +2105,12 @@ function recalcCost() {
     rhtml += '</td></tr>';
   });
 
-  // ⑤ 送料行（送料別の場合のみ表示）
+  // ⑤ 送料行（送料別の場合のみ表示・0円でも表示）
   if (shippingMode !== 'include') {
+    var shipDisp = shipping > 0 ? shipping.toFixed(0)+' 円' : '<span style="color:#c62828">未設定（⑤送料設定で選択してください）</span>';
     rhtml += '<tr style="background:#f5f5f0;border-top:1px solid #ccc">'
       +'<td style="padding:4px 8px;font-size:13px;color:#555">⑤ 送料</td>'
-      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipping.toFixed(0)+' <span style="font-size:11px;color:#888">円</span>'
-      +'<span style="font-size:10px;color:#e67e22;margin-left:4px">（送料別）</span>'
-      +'</td></tr>';
+      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipDisp+'</td></tr>';
   }
 
   // 送料込み合計（送料別の場合 or 送料込みの場合）
