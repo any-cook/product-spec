@@ -2011,8 +2011,13 @@ function recalcCost() {
   var resEl = document.getElementById('cost-result');
   if (!resEl) return;
 
+  // 使用量合計（1袋の重量）を計算
+  var totalWeightG = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){
+    return s + (+(ing.amount)||0);
+  }, 0) : 0;
+
   var items = [
-    {label:'① 原材料費',        val:ingMaterial, color:'#333'},
+    {label:'① 原材料費　（1袋 '+totalWeightG.toFixed(1)+'g）', val:ingMaterial, color:'#333'},
     {label:'② ロット別加工費（1袋あたり）', val:lotPerBag, color:'#333'},
     {label:'③ 加工費・労務費',  val:labor,       color:'#333'},
     {label:'③ 光熱費',          val:utility,     color:'#333'},
