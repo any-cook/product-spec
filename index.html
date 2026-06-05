@@ -1727,9 +1727,10 @@ function rebuildLabelText() {
   var nameList = sorted.map(function(ing, idx) {
     if (!ing.name) return '';
     var origin = '';
+    // マスターを取得（一般名称と産地のため）
+    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
     // 重量が最大のもの（1位）のみ産地を付ける
     if ((ing.amount||0) === maxAmount && maxAmount > 0) {
-      var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
       if (mat && mat.origin) origin = mat.origin;
       else if (ing.country) origin = ing.country;
     }
