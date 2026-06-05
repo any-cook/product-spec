@@ -1956,8 +1956,8 @@ function recalcCost() {
 
   // 合計（送料別）
   var subtotal = ingMaterial + lotPerBag + labor + utility + packaging + other;
-  // 合計（送料込み）: 送料別の場合は送料を加算、送料込みの場合は送料がsubtotalに含まれるので加算しない
-  var totalWithShip = shippingMode === 'include' ? subtotal : subtotal + shipping;
+  // 合計（送料込み）: 常にsubtotal + shipping
+  var totalWithShip = subtotal + shipping;
 
   // ① 原材料費明細を更新
   // 商品別追加コストを自動反映・表示
@@ -2034,11 +2034,13 @@ function recalcCost() {
       +'</tr>';
   });
 
-  // 送料別合計
-  rhtml += '<tr style="border-top:2px solid #1a3a5c;background:#e8f0f8">'
-    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#1a3a5c">合計（送料別）</td>'
-    +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#1a3a5c">'+subtotal.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
-    +'</tr>';
+  // 送料別の場合のみ「合計（送料別）」を表示
+  if (shippingMode !== 'include') {
+    rhtml += '<tr style="border-top:2px solid #1a3a5c;background:#e8f0f8">'
+      +'<td style="padding:8px;font-size:14px;font-weight:700;color:#1a3a5c">合計（送料別）</td>'
+      +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#1a3a5c">'+subtotal.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
+      +'</tr>';
+  }
 
   // ④ 利益率（送料別合計ベース）
   var profRateForResult = co.profitRate || 20;
@@ -2054,16 +2056,19 @@ function recalcCost() {
     rhtml += '</td></tr>';
   });
 
-  // ⑤ 送料行
-  rhtml += '<tr style="background:#f5f5f0;border-top:1px solid #ccc">'
-    +'<td style="padding:4px 8px;font-size:13px;color:#555">⑤ 送料</td>'
-    +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipping.toFixed(0)+' <span style="font-size:11px;color:#888">円</span>'
-    +(shippingMode==='exclude'?'<span style="font-size:10px;color:#e67e22;margin-left:4px">（送料別）</span>':'<span style="font-size:10px;color:#27ae60;margin-left:4px">（送料込み）</span>')
-    +'</td></tr>';
+  // ⑤ 送料行（送料別の場合のみ表示）
+  if (shippingMode !== 'include') {
+    rhtml += '<tr style="background:#f5f5f0;border-top:1px solid #ccc">'
+      +'<td style="padding:4px 8px;font-size:13px;color:#555">⑤ 送料</td>'
+      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipping.toFixed(0)+' <span style="font-size:11px;color:#888">円</span>'
+      +'<span style="font-size:10px;color:#e67e22;margin-left:4px">（送料別）</span>'
+      +'</td></tr>';
+  }
 
-  // 送料込み合計
+  // 送料込み合計（送料別の場合 or 送料込みの場合）
+  var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）';
   rhtml += '<tr style="border-top:2px solid #e67e22;background:#fef9e7">'
-    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#e67e22">合計（送料込み）</td>'
+    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#e67e22">'+totalLabel+'</td>'
     +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
     +'</tr>';
 
