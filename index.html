@@ -288,13 +288,12 @@ function renderList() {
     var isSample = s.isSample ? true : false;
     var itemStyle = isSample ? 'opacity:0.5;border-style:dashed;' : '';
     var badge = isSample ? '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;border-radius:3px;padding:1px 5px;margin-left:4px">見本</span>' : '';
-    html += '<div class="spec-item'+active+'" style="'+itemStyle+';position:relative">';
-    html += '<div onclick="openSpec(\''+s.id+'\')">'
-      + '<div class="spec-item-name">'+h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）')+badge+'</div>'
-      + '<div class="spec-item-meta">'+h(s.basic && s.basic.ptype ? s.basic.ptype : '')+' | '+d+'</div>'
-      + '</div>';
-    html += '<button onclick="event.stopPropagation();copySpec(\''+s.id+'\')" title="この規格書をコピーして新規作成" style="position:absolute;top:6px;right:6px;background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 6px;cursor:pointer">📋</button>';
-      + ' style="position:absolute;top:6px;right:6px;background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 6px;cursor:pointer">📋</button>';
+    html += '<div class="spec-item'+active+'" style="'+itemStyle+';position:relative;padding-right:64px">';
+    html += '<div onclick="openSpec(\'' + s.id + '\')">' + '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>' + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>' + '</div>';
+    html += '<div style="position:absolute;top:6px;right:6px;display:flex;gap:4px">';
+    html += '<button onclick="event.stopPropagation();copySpec(\'' + s.id + '\')" title="コピーして新規作成" style="background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 5px;cursor:pointer">📋</button>';
+    html += '<button onclick="event.stopPropagation();deleteSpec(\'' + s.id + '\',\'' + h(s.basic&&s.basic.pname?s.basic.pname:'（名称未設定）') + '\')" title="削除" style="background:#fff0f0;border:1px solid #e0a0a0;border-radius:4px;color:#c62828;font-size:10px;padding:2px 5px;cursor:pointer">🗑</button>';
+    html += '</div>';
     html += '</div>';
   });
   el.innerHTML = html;
@@ -328,6 +327,26 @@ function makeEmptySpec() {
 }
 
 // ===== 新規作成 =====
+// ===== 規格書を削除 =====
+function deleteSpec(id, name) {
+  if (!confirm('「' + name + '」を削除しますか？\nこの操作は元に戻せません。')) return;
+  db.collection('product_specs').doc(id).delete().then(function() {
+    // 一覧から削除
+    specListCache = specListCache.filter(function(s){ return s.id !== id; });
+    // 開いていた規格書なら閉じる
+    if (currentSpecId === id) {
+      currentSpec = null;
+      currentSpecId = null;
+      document.getElementById('editor').style.display = 'none';
+      document.getElementById('empty-state').style.display = '';
+    }
+    renderList();
+    toast('「' + name + '」を削除しました');
+  }).catch(function(e) {
+    toast('削除に失敗しました: ' + e.message, true);
+  });
+}
+
 // ===== 規格書をコピーして新規作成 =====
 function copySpec(id) {
   var src = specListCache.find(function(s){ return s.id === id; });
