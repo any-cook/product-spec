@@ -1956,8 +1956,8 @@ function recalcCost() {
 
   // 合計（送料別）
   var subtotal = ingMaterial + lotPerBag + labor + utility + packaging + other;
-  // 合計（送料込み）
-  var totalWithShip = subtotal + shipping;
+  // 合計（送料込み）: 送料別の場合は送料を加算、送料込みの場合は送料がsubtotalに含まれるので加算しない
+  var totalWithShip = shippingMode === 'include' ? subtotal : subtotal + shipping;
 
   // ① 原材料費明細を更新
   // 商品別追加コストを自動反映・表示
