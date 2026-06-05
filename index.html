@@ -1410,41 +1410,120 @@ function renderIngTbody() {
 function removeIng(i) { currentSpec.ings.splice(i,1); renderIngTbody(); syncAllergens(); }
 
 // ===== 食材検索 =====
+// ===== よみがなテーブル =====
+var FOOD_YOMI = {
+  'ぎゅう':['牛肉','有機牛肉'],'ぎゅうにく':['牛肉','有機牛肉'],
+  'ぶた':['豚肉'],'ぶたにく':['豚肉'],
+  'とり':['鶏肉','有機鶏肉'],'とりにく':['鶏肉','有機鶏肉'],
+  'さけ':['鮭'],'まぐろ':['マグロ'],'さば':['サバ'],
+  'にんじん':['にんじん','人参'],'だいこん':['大根'],
+  'たまねぎ':['たまねぎ','玉ねぎ'],'ねぎ':['長ネギ','ネギ'],
+  'じゃがいも':['じゃがいも'],'さつまいも':['さつまいも'],
+  'しょうゆ':['醤油','有機醤油'],'みそ':['味噌'],
+  'しお':['塩','食塩'],'さとう':['砂糖'],
+  'みりん':['みりん','本みりん'],
+  'こむぎこ':['薄力粉','強力粉','小麦粉'],
+  'かたくりこ':['片栗粉'],'でんぷん':['片栗粉'],
+  'たまご':['卵','鶏卵'],'たまごぎゅうにゅう':['牛乳'],
+  'ぎゅうにゅう':['牛乳'],'ちーず':['チーズ'],'ばたー':['バター'],
+  'にんにく':['にんにく'],'しょうが':['しょうが','生姜'],
+  'ごま':['ごま','白ごま','黒ごま'],
+  'あぶら':['ごま油','サラダ油','オリーブオイル'],
+  'こしょう':['胡椒','ブラックペッパー','ホワイトペッパー'],
+  'とうふ':['豆腐（木綿）','豆腐（絹）'],'なっとう':['納豆'],
+  'あぶらあげ':['油揚げ'],'こんにゃく':['こんにゃく'],
+  'きのこ':['しいたけ','えのき','しめじ','まいたけ'],
+  'わかめ':['わかめ'],'こんぶ':['昆布']
+};
+// ひらがな→カタカナ
+function toKatakana(str) {
+  return str.replace(/[ぁ-ゖ]/g, function(c){return String.fromCharCode(c.charCodeAt(0)+96);});
+}
+// カタカナ→ひらがな
+function toHiragana(str) {
+  return str.replace(/[ァ-ヶ]/g, function(c){return String.fromCharCode(c.charCodeAt(0)-96);});
+}
+// ローマ字→ひらがな変換
+var ROMAJI_MAP = [
+  ['shi','し'],['chi','ち'],['tsu','つ'],['sha','しゃ'],['shu','しゅ'],['sho','しょ'],
+  ['cha','ちゃ'],['chu','ちゅ'],['cho','ちょ'],['tchi','っち'],['ttsu','っつ'],
+  ['kya','きゃ'],['kyu','きゅ'],['kyo','きょ'],['nya','にゃ'],['nyu','にゅ'],['nyo','にょ'],
+  ['hya','ひゃ'],['hyu','ひゅ'],['hyo','ひょ'],['mya','みゃ'],['myu','みゅ'],['myo','みょ'],
+  ['rya','りゃ'],['ryu','りゅ'],['ryo','りょ'],['gya','ぎゃ'],['gyu','ぎゅ'],['gyo','ぎょ'],
+  ['ja','じゃ'],['ji','じ'],['ju','じゅ'],['jo','じょ'],
+  ['ka','か'],['ki','き'],['ku','く'],['ke','け'],['ko','こ'],
+  ['sa','さ'],['si','し'],['su','す'],['se','せ'],['so','そ'],
+  ['ta','た'],['ti','ち'],['tu','つ'],['te','て'],['to','と'],
+  ['na','な'],['ni','に'],['nu','ぬ'],['ne','ね'],['no','の'],
+  ['ha','は'],['hi','ひ'],['fu','ふ'],['hu','ふ'],['he','へ'],['ho','ほ'],
+  ['ma','ま'],['mi','み'],['mu','む'],['me','め'],['mo','も'],
+  ['ya','や'],['yu','ゆ'],['yo','よ'],
+  ['ra','ら'],['ri','り'],['ru','る'],['re','れ'],['ro','ろ'],
+  ['wa','わ'],['wo','を'],
+  ['ga','が'],['gi','ぎ'],['gu','ぐ'],['ge','げ'],['go','ご'],
+  ['za','ざ'],['zi','じ'],['zu','ず'],['ze','ぜ'],['zo','ぞ'],
+  ['da','だ'],['di','ぢ'],['du','づ'],['de','で'],['do','ど'],
+  ['ba','ば'],['bi','び'],['bu','ぶ'],['be','べ'],['bo','ぼ'],
+  ['pa','ぱ'],['pi','ぴ'],['pu','ぷ'],['pe','ぺ'],['po','ぽ'],
+  ['a','あ'],['i','い'],['u','う'],['e','え'],['o','お'],['n','ん']
+];
+function romajiToHiragana(str) {
+  var s = str.toLowerCase();
+  s = s.replace(/([ksthnhmrygzdbp])\1/g, 'っ$1');
+  for (var ri = 0; ri < ROMAJI_MAP.length; ri++) {
+    s = s.split(ROMAJI_MAP[ri][0]).join(ROMAJI_MAP[ri][1]);
+  }
+  return s;
+}
+// 検索マッチ判定（ひらがな/カタカナ/ローマ字/よみがな対応）
+function foodMatch(name, q) {
+  if (!q) return false;
+  var ql = q.toLowerCase();
+  if (name.indexOf(q) >= 0) return true;
+  if (name.indexOf(toKatakana(q)) >= 0) return true;
+  if (name.indexOf(toHiragana(q)) >= 0) return true;
+  var qHira = romajiToHiragana(ql);
+  if (qHira !== ql) {
+    if (name.indexOf(qHira) >= 0) return true;
+    if (name.indexOf(toKatakana(qHira)) >= 0) return true;
+  }
+  // よみがな逆引き
+  var qH = toHiragana(q.toLowerCase());
+  for (var yomi in FOOD_YOMI) {
+    if (yomi.indexOf(qH) === 0 || yomi.indexOf(q) === 0) {
+      var targets = FOOD_YOMI[yomi];
+      for (var t = 0; t < targets.length; t++) {
+        if (name.indexOf(targets[t]) >= 0) return true;
+      }
+    }
+  }
+  return false;
+}
+
 function searchFood() {
   var q = document.getElementById('isearch').value;
   var r = document.getElementById('food-results');
   if (!q || q.length < 1) { r.style.display='none'; return; }
-
-  var results = [];
-  var seen = {};
-
-  // マスターDBを優先検索
+  var results = [], seen = {};
   masterData.materialPrices.forEach(function(m) {
-    if (m.name && m.name.indexOf(q) >= 0 && !seen[m.name]) {
-      results.push({name: m.name, src: 'master'});
-      seen[m.name] = true;
+    if (m.name && foodMatch(m.name, q) && !seen[m.name]) {
+      results.push({name:m.name, src:'master'}); seen[m.name]=true;
     }
   });
-
-  // 内蔵FOOD_DBを検索
   Object.keys(FOOD_DB).forEach(function(k) {
-    if (k.indexOf(q) >= 0 && !seen[k]) {
-      results.push({name: k, src: 'db'});
-      seen[k] = true;
+    if (foodMatch(k, q) && !seen[k]) {
+      results.push({name:k, src:'db'}); seen[k]=true;
     }
   });
-
   if (!results.length) { r.style.display='none'; return; }
-
   var html = '';
-  results.slice(0, 12).forEach(function(item) {
-    var badge = item.src === 'master'
+  results.slice(0,15).forEach(function(item) {
+    var badge = item.src==='master'
       ? '<span style="font-size:10px;background:#d4edda;color:#155a32;padding:1px 5px;border-radius:3px;margin-left:6px">マスター</span>'
       : '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;padding:1px 5px;border-radius:3px;margin-left:6px">内蔵DB</span>';
-    html += '<div class="sr-item" onmousedown="addFoodIng(\''+item.name+'\')">'+h(item.name)+badge+'</div>';
+    html += '<div class="sr-item" onmousedown="addFoodIng(''+item.name+'')">'+h(item.name)+badge+'</div>';
   });
-  r.innerHTML = html;
-  r.style.display = 'block';
+  r.innerHTML = html; r.style.display='block';
 }
 
 function showFoodResults() { if(document.getElementById('isearch').value) searchFood(); }
@@ -1653,7 +1732,9 @@ function rebuildLabelText() {
       if (mat && mat.origin) origin = mat.origin;
       else if (ing.country) origin = ing.country;
     }
-    return ing.name + (origin ? '（'+origin+'）' : '');
+    // マスターに一般名称があればそちらを使用
+    var dispName = (mat && mat.generalName) ? mat.generalName : ing.name;
+    return dispName + (origin ? '（'+origin+'）' : '');
   }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
@@ -1692,7 +1773,9 @@ function autoLabelText() {
     var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
     if (mat && mat.origin) origin = mat.origin;
     else if (ing.country) origin = ing.country;
-    return ing.name + (origin ? '（'+origin+'）' : '');
+    // マスターに一般名称があればそちらを使用
+    var dispName = (mat && mat.generalName) ? mat.generalName : ing.name;
+    return dispName + (origin ? '（'+origin+'）' : '');
   }).filter(Boolean).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
