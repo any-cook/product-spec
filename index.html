@@ -1164,6 +1164,13 @@ function selectShippingRate() {
     var cost = best.cost || 0;
     if (shipEl2) shipEl2.value = cost;
     currentSpec.cost.shipping = cost;
+    // 1箱入数を取得してshipPerUnitを計算・保存
+    var pcNEl3 = document.getElementById('co-pcN-ship');
+    var pcN3 = +(pcNEl3 ? pcNEl3.value : co.pcN || 1) || 1;
+    var perUnit3 = pcN3 > 0 ? cost / pcN3 : 0;
+    currentSpec.cost.shipPerUnit = perUnit3;
+    var puEl3 = document.getElementById('co-ship-per-unit');
+    if (puEl3) puEl3.value = perUnit3.toFixed(2);
     if (resEl) {
       resEl.style.display = 'block';
       resEl.innerHTML = '📦 <strong>'+h(best.region)+'</strong>'
@@ -1970,10 +1977,23 @@ function recalcCost() {
   var other    = +(document.getElementById('co-otherCost')    ? document.getElementById('co-otherCost').value    : co.otherCost)    || 0;
 
   // ④ 送料 → 1袋あたり送料（送料÷入数）を使用
-  var shipingBox   = +(document.getElementById('co-shipping') ? document.getElementById('co-shipping').value : co.shipping || 0) || 0;
-  var pcNForShip   = +(document.getElementById('co-pcN-ship') ? document.getElementById('co-pcN-ship').value : co.pcN || 1) || 1;
+  // 1袋あたり送料: DOM > 保存値 の優先順で取得
   var perUnitEl    = document.getElementById('co-ship-per-unit');
-  var shipping     = perUnitEl && +perUnitEl.value > 0 ? +perUnitEl.value : (pcNForShip > 0 ? shipingBox / pcNForShip : shipingBox);
+  var pcNEl2       = document.getElementById('co-pcN-ship');
+  var shipBoxEl    = document.getElementById('co-shipping');
+  var shipping;
+  if (perUnitEl && +perUnitEl.value > 0) {
+    // DOMに値がある場合
+    shipping = +perUnitEl.value;
+  } else if (co.shipPerUnit > 0) {
+    // 保存済みのshipPerUnitを使用
+    shipping = co.shipPerUnit;
+  } else {
+    // 箱送料÷入数で計算
+    var shipBox  = +(shipBoxEl ? shipBoxEl.value : co.shipping || 0) || 0;
+    var pcNShip  = +(pcNEl2 ? pcNEl2.value : co.pcN || 1) || 1;
+    shipping = pcNShip > 0 ? shipBox / pcNShip : 0;
+  }
   currentSpec.cost.shipPerUnit = shipping;
   var shippingMode = (document.getElementById('co-shipping-mode')  ? document.getElementById('co-shipping-mode').value : co.shippingMode) || 'exclude';
   currentSpec.cost.shipping     = shipping;
