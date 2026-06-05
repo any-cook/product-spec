@@ -1521,7 +1521,8 @@ function searchFood() {
     var badge = item.src==='master'
       ? '<span style="font-size:10px;background:#d4edda;color:#155a32;padding:1px 5px;border-radius:3px;margin-left:6px">マスター</span>'
       : '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;padding:1px 5px;border-radius:3px;margin-left:6px">内蔵DB</span>';
-    html += '<div class="sr-item" onmousedown="addFoodIng('"+item.name+"')">'+h(item.name)+badge+'</div>';
+    var q2 = "'";
+    html += '<div class="sr-item" onmousedown="addFoodIng('+q2+item.name+q2+')">'+h(item.name)+badge+'</div>';
   });
   r.innerHTML = html; r.style.display='block';
 }
