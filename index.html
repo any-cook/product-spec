@@ -2040,6 +2040,20 @@ function recalcCost() {
     +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#1a3a5c">'+subtotal.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
     +'</tr>';
 
+  // ④ 利益率（送料別合計ベース）
+  var profRateForResult = co.profitRate || 20;
+  var showRatesInResult = profRateForResult === 'all' ? [10,20,30] : [+profRateForResult];
+  showRatesInResult.forEach(function(rate) {
+    var sellP2 = subtotal / (1 - rate/100);
+    var profitP2 = sellP2 - subtotal;
+    rhtml += '<tr style="background:#dcfce7;border-top:1px solid #86efac">';
+    rhtml += '<td style="padding:6px 8px;font-size:14px;color:#15803d;font-weight:700">④ 利益'+rate+'% 販売価格</td>';
+    rhtml += '<td style="padding:6px 8px;text-align:right;font-size:18px;font-weight:700;color:#15803d">';
+    rhtml += Math.ceil(sellP2).toLocaleString()+' 円';
+    rhtml += '<span style="font-size:12px;color:#555;margin-left:8px">利益: '+Math.ceil(profitP2).toLocaleString()+'円</span>';
+    rhtml += '</td></tr>';
+  });
+
   // ⑤ 送料行
   rhtml += '<tr style="background:#f5f5f0;border-top:1px solid #ccc">'
     +'<td style="padding:4px 8px;font-size:13px;color:#555">⑤ 送料</td>'
@@ -2053,36 +2067,6 @@ function recalcCost() {
     +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
     +'</tr>';
 
-  // ④ 利益率（送料込み合計ベース）
-  var profRateForResult = co.profitRate || 20;
-  var showRatesInResult = profRateForResult === 'all' ? [10,20,30] : [+profRateForResult];
-  showRatesInResult.forEach(function(rate) {
-    var sellP2 = totalWithShip / (1 - rate/100);
-    var profitP2 = sellP2 - totalWithShip;
-    rhtml += '<tr style="background:#dcfce7;border-top:1px solid #86efac">';
-    rhtml += '<td style="padding:6px 8px;font-size:14px;color:#15803d;font-weight:700">④ 利益'+rate+'% 販売価格（送料込み）</td>';
-    rhtml += '<td style="padding:6px 8px;text-align:right;font-size:18px;font-weight:700;color:#15803d">';
-    rhtml += Math.ceil(sellP2).toLocaleString()+' 円';
-    rhtml += '<span style="font-size:12px;color:#555;margin-left:8px">利益: '+Math.ceil(profitP2).toLocaleString()+'円</span>';
-    rhtml += '</td></tr>';
-  });
-
-  // 利益率別販売価格（選択中の利益率のみ）
-  var selectedRateEl2 = document.querySelector('input[name="profit-rate"]:checked');
-  var selRate2 = selectedRateEl2 ? selectedRateEl2.value : (co.profitRate ? String(co.profitRate) : '20');
-  var showRates2 = selRate2 === 'all' ? [10,15,20,25,30,35,40] : selRate2 === '10' ? [10] : selRate2 === '30' ? [30] : [20];
-  rhtml += '<tr style="border-top:1px dashed #aaa"><td colspan="2" style="padding:6px 8px;font-size:12px;color:#888">📊 利益率別販売価格（送料込み合計ベース）</td></tr>';
-  showRates2.forEach(function(rate) {
-    var baseP = totalWithShip;
-    var sellP = baseP / (1 - rate/100);
-    var profitP = sellP - baseP;
-    rhtml += '<tr style="background:#f0fdf4">';
-    rhtml += '<td style="padding:5px 8px;font-size:13px;color:#15803d;font-weight:700">利益'+rate+'% 販売価格</td>';
-    rhtml += '<td style="padding:5px 8px;text-align:right;font-size:16px;font-weight:700;color:#15803d">';
-    rhtml += Math.ceil(sellP).toLocaleString()+' <span style="font-size:11px;color:#888">円（税抜）</span>';
-    rhtml += '&nbsp;&nbsp;<span style="font-size:12px;color:#888">利益: '+Math.ceil(profitP).toLocaleString()+'円</span>';
-    rhtml += '</td></tr>';
-  });
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
 
