@@ -528,7 +528,13 @@ function swTab(name) {
 
   if (name === 'master') renderMasterTables();
   if (name === 'package') refreshPackagingSelects();
-  if (name === 'cost') { refreshLotSelector(); renderLotCostList(); }
+  if (name === 'cost') {
+    refreshLotSelector();
+    renderLotCostList();
+    // 送料設定を再描画（選択状態を正しく表示）
+    var shipWrap = document.getElementById('lot-proc-sel-wrap');
+    recalcCost();
+  }
   if (name === 'preview') genPreview();
 }
 
@@ -2085,7 +2091,7 @@ function recalcCost() {
   }
 
   // 送料込み合計（送料別の場合 or 送料込みの場合）
-  var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）';
+  var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）　※送料別';
   rhtml += '<tr style="border-top:2px solid #e67e22;background:#fef9e7">'
     +'<td style="padding:8px;font-size:14px;font-weight:700;color:#e67e22">'+totalLabel+'</td>'
     +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
