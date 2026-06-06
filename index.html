@@ -1950,7 +1950,11 @@ function calcShipPerUnit() {
   if (el) el.value = perUnit.toFixed(2);
   recalcCost();
 }
-  rhtml = '<table style="width:100%;border-collapse:collapse;font-size:14px">';
+
+  // バナー更新（送料モードに応じて）
+  var resEl = document.getElementById('cost-result');
+  if (resEl) {
+    rhtml = '<table style="width:100%;border-collapse:collapse;font-size:14px">';
 
   // 各費用を行表示（0円は非表示）
   items.forEach(function(item){
@@ -1995,9 +1999,8 @@ function calcShipPerUnit() {
   });
 
   rhtml += '</table>';
-  resEl.innerHTML = rhtml;
-
-  // バナー更新（送料モードに応じて）
+    resEl.innerHTML = rhtml;
+  }
   var bt = document.getElementById('banner-total');
   if (bt) bt.textContent = (shippingMode === 'include' ? totalWithShip : subtotal).toFixed(1) + ' 円';
 
