@@ -2094,6 +2094,10 @@ function recalcCost() {
     var shipAmt = shippingMode !== 'include' ? shipping : 0;
     var finalP = Math.ceil(sellP2) + shipAmt;
 
+    // 送料行と合計
+    var shipAmt = shippingMode !== 'include' ? shipping : 0;
+    var finalP = Math.ceil(sellP2) + shipAmt;
+
     // 利益行
     rhtml += '<tr style="background:#dcfce7;border-top:2px solid #22c55e">'
       +'<td style="padding:7px 12px;font-weight:700;color:#15803d">利益 '+rate+'%</td>'
@@ -2102,19 +2106,21 @@ function recalcCost() {
       +'<span style="font-size:12px;color:#888;margin-left:8px">（利益: '+Math.ceil(profitP2).toLocaleString()+'円）</span>'
       +'</td></tr>';
 
-    // 送料行
-    if (shipAmt > 0) {
+    // 送料行（送料別の場合のみ表示）
+    if (shippingMode !== 'include' && shipping > 0) {
       rhtml += '<tr style="background:#fff8f0;border-top:1px dashed #f0a020">'
-        +'<td style="padding:6px 12px;color:#c0392b">送料</td>'
-        +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#c0392b">'+Math.ceil(shipAmt).toLocaleString()+' 円</td>'
+        +'<td style="padding:6px 12px;color:#c0392b">送料（別途）</td>'
+        +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#c0392b">'+Math.ceil(shipping).toLocaleString()+' 円</td>'
         +'</tr>';
     }
 
     // 合計行
+    // 送料込み→合計に送料を含む / 送料別→合計に送料を含まない
+    var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計';
     rhtml += '<tr style="border-top:2px solid #c0392b;background:#fef3f0">'
-      +'<td style="padding:9px 12px;font-size:16px;font-weight:700;color:#c0392b">合計</td>'
+      +'<td style="padding:9px 12px;font-size:16px;font-weight:700;color:#c0392b">'+totalLabel+'</td>'
       +'<td style="padding:9px 12px;text-align:right;font-size:22px;font-weight:700;color:#c0392b">'
-      +finalP.toLocaleString()+' 円</td>'
+      +Math.ceil(sellP2).toLocaleString()+' 円</td>'
       +'</tr>';
   });
 
