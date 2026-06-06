@@ -1950,186 +1950,49 @@ function calcShipPerUnit() {
   if (el) el.value = perUnit.toFixed(2);
   recalcCost();
 }
+  rhtml = '<table style="width:100%;border-collapse:collapse;font-size:14px">';
 
-function recalcCost() {
-  if (!currentSpec) return;
-  var co = currentSpec.cost || {};
-  if (!currentSpec.cost) currentSpec.cost = {};
-
-  // ① 原材料費
-  var ingMaterial = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0) : 0;
-
-  // ② ロット別加工費（1袋あたり）
-  var lotCosts = co.lotCosts || [];
-  var lotPerBag = 0;
-  lotCosts.forEach(function(lc){
-    var bags = lc.bags || 1;
-    if (bags > 0) lotPerBag += (lc.cost||0) / bags;
-  });
-  // ロット別加工費サマリー更新
-  var lotSummary = document.getElementById('lot-cost-summary');
-  var lotPerBagEl = document.getElementById('lot-per-bag');
-  if (lotSummary) lotSummary.style.display = lotCosts.length > 0 ? 'block' : 'none';
-  if (lotPerBagEl) lotPerBagEl.textContent = lotPerBag.toFixed(1);
-
-  // ③ その他コスト
-  var labor    = +(document.getElementById('co-laborCost')    ? document.getElementById('co-laborCost').value    : co.laborCost)    || 0;
-  var utility  = +(document.getElementById('co-utilityCost')  ? document.getElementById('co-utilityCost').value  : co.utilityCost)  || 0;
-  var packaging= +(document.getElementById('co-packagingCost')? document.getElementById('co-packagingCost').value: co.packagingCost)|| 0;
-  var other    = +(document.getElementById('co-otherCost')    ? document.getElementById('co-otherCost').value    : co.otherCost)    || 0;
-
-  // ④ 送料 → 1袋あたり送料（送料÷入数）を使用
-  // 1袋あたり送料: DOM > 保存値 の優先順で取得
-  var perUnitEl    = document.getElementById('co-ship-per-unit');
-  var pcNEl2       = document.getElementById('co-pcN-ship');
-  var shipBoxEl    = document.getElementById('co-shipping');
-  var shipping;
-  // 送料取得: DOM値 > 保存済shipPerUnit > 箱送料÷入数
-  var shipBoxVal = +(shipBoxEl ? shipBoxEl.value : co.shipping || 0) || 0;
-  var pcNVal2    = +(pcNEl2 ? pcNEl2.value : co.pcN || 1) || 1;
-  if (perUnitEl && +perUnitEl.value > 0) {
-    shipping = +perUnitEl.value;
-  } else if (co.shipPerUnit > 0) {
-    shipping = co.shipPerUnit;
-    // DOMがある場合はDOMも更新
-    if (perUnitEl) perUnitEl.value = shipping.toFixed(2);
-  } else if (shipBoxVal > 0) {
-    shipping = pcNVal2 > 0 ? shipBoxVal / pcNVal2 : 0;
-  } else {
-    shipping = 0;
-  }
-  currentSpec.cost.shipPerUnit = shipping;
-  var shippingMode = (document.getElementById('co-shipping-mode')  ? document.getElementById('co-shipping-mode').value : co.shippingMode) || 'exclude';
-  currentSpec.cost.shipping     = shipping;
-  currentSpec.cost.shippingMode = shippingMode;
-
-  // 合計（送料別）
-  var subtotal = ingMaterial + lotPerBag + labor + utility + packaging + other;
-  // 合計（送料込み）: 常にsubtotal + shipping
-  var totalWithShip = subtotal + shipping;
-
-  // ① 原材料費明細を更新
-  // 商品別追加コストを自動反映・表示
-  var addCostEl = document.getElementById('additional-cost-detail');
-  if (addCostEl) {
-    var pname3 = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
-    var addItems = masterData.additionalCosts.filter(function(a){ return !a.productName || a.productName === pname3; });
-    if (addItems.length > 0) {
-      var addHtml = '<table style="width:100%;border-collapse:collapse;margin-bottom:6px">';
-      addItems.forEach(function(a){
-        addHtml += '<tr><td style="padding:3px 8px;font-size:12px">'+h(a.itemName||'')+'</td>'
-          +'<td style="padding:3px 8px;text-align:right;font-size:12px;color:#1a3a5c;font-weight:700">'+(a.cost||0).toFixed(0)+' 円</td></tr>';
-      });
-      addHtml += '</table>';
-      addCostEl.innerHTML = addHtml;
-    } else {
-      addCostEl.innerHTML = '<p style="font-size:12px;color:#aaa">商品別追加コストなし</p>';
-    }
-  }
-
-  var detEl = document.getElementById('cost-ing-detail');
-  if (detEl) {
-    var rows = '';
-    if (currentSpec.ings) {
-      currentSpec.ings.forEach(function(ing){
-        var c = ingCost(ing);
-        if (!ing.name && !c) return;
-        rows += '<tr>'
-          +'<td style="padding:3px 8px;font-size:12px">'+h(ing.name)+'</td>'
-          +'<td style="padding:3px 8px;text-align:right;font-size:12px">'+(ing.amount||0).toFixed(1)+'g</td>'
-          +'<td style="padding:3px 8px;text-align:right;font-size:12px">'+(ing.unitPrice||0).toLocaleString()+'円/kg</td>'
-          +'<td style="padding:3px 8px;text-align:right;font-size:12px;color:#1a3a5c;font-weight:700">'+c.toFixed(1)+'円</td>'
-          +'</tr>';
-      });
-    }
-    detEl.innerHTML = '<table style="width:100%;border-collapse:collapse;margin-bottom:4px">'
-      +'<thead><tr style="background:#eef2f7">'
-      +'<th style="padding:4px 8px;font-size:11px;text-align:left;border-bottom:1px solid #ccc">原材料名</th>'
-      +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">使用量</th>'
-      +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">単価</th>'
-      +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">原材料費</th></tr></thead>'
-      +'<tbody>'+rows+'</tbody>'
-      +'<tfoot><tr style="border-top:2px solid #1a3a5c;background:#f0f4f8">'
-      +'<td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700">原材料費合計</td>'
-      +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+ingMaterial.toFixed(1)+' 円</td>'
-      +'</tr></tfoot>'
-      +'</table>';
-  }
-
-  // ⑤ 合計表示
-  var resEl = document.getElementById('cost-result');
-  if (!resEl) return;
-
-  // 使用量合計（1袋の重量）を計算
-  var totalWeightG = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){
-    return s + (+(ing.amount)||0);
-  }, 0) : 0;
-
-  var items = [
-    {label:'① 原材料費　（1袋 '+totalWeightG.toFixed(1)+'g）', val:ingMaterial, color:'#333'},
-    {label:'② ロット別加工費（1袋あたり）', val:lotPerBag, color:'#333'},
-    {label:'③ 加工費・労務費',  val:labor,       color:'#333'},
-    {label:'③ 光熱費',          val:utility,     color:'#333'},
-    {label:'③ 包材費',          val:packaging,   color:'#333'},
-    {label:'③ その他経費',      val:other,       color:'#333'},
-  ];
-
-  var rhtml = '<table style="width:100%;border-collapse:collapse">';
+  // 各費用を行表示（0円は非表示）
   items.forEach(function(item){
-    if (item.val === 0) return; // 0円は非表示
-    rhtml += '<tr>'
-      +'<td style="padding:4px 8px;font-size:13px;color:'+item.color+'">'+item.label+'</td>'
-      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+item.val.toFixed(1)+' <span style="font-size:11px;color:#888">円</span></td>'
+    if (item.val === 0) return;
+    rhtml += '<tr style="border-bottom:1px solid #eee">'
+      +'<td style="padding:6px 12px;color:#444">'+item.label+'</td>'
+      +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#222">'+Math.ceil(item.val).toLocaleString()+' 円</td>'
       +'</tr>';
   });
 
-  // 送料別の場合のみ「合計（送料別）」を表示
-  if (shippingMode !== 'include') {
-    rhtml += '<tr style="border-top:2px solid #1a3a5c;background:#e8f0f8">'
-      +'<td style="padding:8px;font-size:14px;font-weight:700;color:#1a3a5c">合計（送料別）</td>'
-      +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#1a3a5c">'+subtotal.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
-      +'</tr>';
-  }
-
-  // ④ 利益率（送料別合計ベース）→ 送料をプラスして最終販売価格を表示
+  // 利益XX% → 販売価格 → 送料 → 合計
   var profRateForResult = co.profitRate || 20;
   var showRatesInResult = profRateForResult === 'all' ? [10,20,30] : [+profRateForResult];
   showRatesInResult.forEach(function(rate) {
     var sellP2 = subtotal / (1 - rate/100);
     var profitP2 = sellP2 - subtotal;
-    var finalPrice = Math.ceil(sellP2) + (shippingMode !== 'include' ? shipping : 0);
-    rhtml += '<tr style="background:#dcfce7;border-top:1px solid #86efac">';
-    rhtml += '<td style="padding:6px 8px;font-size:14px;color:#15803d;font-weight:700">④ 利益'+rate+'% 販売価格</td>';
-    rhtml += '<td style="padding:6px 8px;text-align:right;font-size:18px;font-weight:700;color:#15803d">';
-    rhtml += Math.ceil(sellP2).toLocaleString()+' 円';
-    rhtml += '<span style="font-size:12px;color:#555;margin-left:8px">利益: '+Math.ceil(profitP2).toLocaleString()+'円</span>';
-    rhtml += '</td></tr>';
-    // 送料をプラスした最終販売価格
-    if (shippingMode !== 'include' && shipping > 0) {
-      rhtml += '<tr style="background:#e8f5e9;border-top:1px dashed #86efac">';
-      rhtml += '<td style="padding:4px 8px;font-size:13px;color:#1a3a5c">';
-      rhtml += '&nbsp;&nbsp;＋ ⑤ 送料 '+shipping.toFixed(0)+'円</td>';
-      rhtml += '<td style="padding:6px 8px;text-align:right;font-size:20px;font-weight:700;color:#c0392b">';
-      rhtml += '= '+Math.ceil(finalPrice).toLocaleString()+' 円';
-      rhtml += '<span style="font-size:11px;color:#888;margin-left:6px">（送料込み最終価格）</span>';
-      rhtml += '</td></tr>';
+    var shipAmt = shippingMode !== 'include' ? shipping : 0;
+    var finalP = Math.ceil(sellP2) + shipAmt;
+
+    // 利益行
+    rhtml += '<tr style="background:#dcfce7;border-top:2px solid #22c55e">'
+      +'<td style="padding:7px 12px;font-weight:700;color:#15803d">利益 '+rate+'%</td>'
+      +'<td style="padding:7px 12px;text-align:right;font-size:17px;font-weight:700;color:#15803d">'
+      +Math.ceil(sellP2).toLocaleString()+' 円'
+      +'<span style="font-size:12px;color:#888;margin-left:8px">（利益: '+Math.ceil(profitP2).toLocaleString()+'円）</span>'
+      +'</td></tr>';
+
+    // 送料行
+    if (shipAmt > 0) {
+      rhtml += '<tr style="background:#fff8f0;border-top:1px dashed #f0a020">'
+        +'<td style="padding:6px 12px;color:#c0392b">送料</td>'
+        +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#c0392b">'+Math.ceil(shipAmt).toLocaleString()+' 円</td>'
+        +'</tr>';
     }
+
+    // 合計行
+    rhtml += '<tr style="border-top:2px solid #c0392b;background:#fef3f0">'
+      +'<td style="padding:9px 12px;font-size:16px;font-weight:700;color:#c0392b">合計</td>'
+      +'<td style="padding:9px 12px;text-align:right;font-size:22px;font-weight:700;color:#c0392b">'
+      +Math.ceil(finalP).toLocaleString()+'&nbsp;円</td>'
+      +'</tr>';
   });
-
-  // ⑤ 送料行（送料別の場合のみ表示・0円でも表示）
-  if (shippingMode !== 'include') {
-    var shipDisp = shipping > 0 ? shipping.toFixed(0)+' 円' : '<span style="color:#c62828">未設定（⑤送料設定で選択してください）</span>';
-    rhtml += '<tr style="background:#f5f5f0;border-top:1px solid #ccc">'
-      +'<td style="padding:4px 8px;font-size:13px;color:#555">⑤ 送料</td>'
-      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipDisp+'</td></tr>';
-  }
-
-  // 送料込み合計（送料別の場合 or 送料込みの場合）
-  var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）　※送料別';
-  rhtml += '<tr style="border-top:2px solid #e67e22;background:#fef9e7">'
-    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#e67e22">'+totalLabel+'</td>'
-    +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
-    +'</tr>';
 
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
