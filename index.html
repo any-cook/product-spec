@@ -292,7 +292,7 @@ function renderList() {
     html += '<div onclick="openSpec(\'' + s.id + '\')">' + '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>' + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>' + '</div>';
     html += '<div style="position:absolute;top:6px;right:6px;display:flex;gap:4px">';
     html += '<button onclick="event.stopPropagation();copySpec(\'' + s.id + '\')" title="コピーして新規作成" style="background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 5px;cursor:pointer">📋</button>';
-    html += '<button onclick="event.stopPropagation();deleteSpec(\'' + s.id + '\',\'' + h(s.basic&&s.basic.pname?s.basic.pname:'（名称未設定）') + '\')" title="削除" style="background:#fff0f0;border:1px solid #e0a0a0;border-radius:4px;color:#c62828;font-size:10px;padding:2px 5px;cursor:pointer">🗑</button>';
+    html += '<button onclick="event.stopPropagation();deleteSpec(\'' + s.id + '\')" title="削除" style="background:#fff0f0;border:1px solid #e0a0a0;border-radius:4px;color:#c62828;font-size:10px;padding:2px 5px;cursor:pointer">🗑</button>';
     html += '</div>';
     html += '</div>';
   });
@@ -328,12 +328,12 @@ function makeEmptySpec() {
 
 // ===== 新規作成 =====
 // ===== 規格書を削除 =====
-function deleteSpec(id, name) {
+function deleteSpec(id) {
+  var spec = specListCache.find(function(s){ return s.id === id; });
+  var name = spec && spec.basic && spec.basic.pname ? spec.basic.pname : '（名称未設定）';
   if (!confirm('「' + name + '」を削除しますか？\nこの操作は元に戻せません。')) return;
   db.collection('product_specs').doc(id).delete().then(function() {
-    // 一覧から削除
     specListCache = specListCache.filter(function(s){ return s.id !== id; });
-    // 開いていた規格書なら閉じる
     if (currentSpecId === id) {
       currentSpec = null;
       currentSpecId = null;
