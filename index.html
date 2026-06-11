@@ -331,19 +331,29 @@ function makeEmptySpec() {
 function deleteSpec(id) {
   var spec = specListCache.find(function(s){ return s.id === id; });
   var name = spec && spec.basic && spec.basic.pname ? spec.basic.pname : '（名称未設定）';
-  // 確認ダイアログ（confirmがブロックされる環境用にインライン確認）
-  var confirmDiv = document.getElementById('delete-confirm-bar');
-  if (!confirmDiv) {
-    confirmDiv = document.createElement('div');
-    confirmDiv.id = 'delete-confirm-bar';
-    confirmDiv.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#c62828;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,0.3);font-size:14px';
-    document.body.appendChild(confirmDiv);
+  var bar = document.getElementById('delete-confirm-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'delete-confirm-bar';
+    bar.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#c62828;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,0.3);font-size:14px;white-space:nowrap';
+    document.body.appendChild(bar);
   }
-  confirmDiv.innerHTML = '<span>「' + name + '」を削除しますか？</span>'
-    + '<button onclick="doDeleteSpec(this.closest(\'#delete-confirm-bar\').dataset.did)" style="background:#fff;color:#c62828;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer">削除する</button>'
-    + '<button onclick="document.getElementById('delete-confirm-bar').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer">キャンセル</button>';
-  confirmDiv.dataset.did = id;
-  confirmDiv.style.display = 'flex';
+  bar.dataset.did = id;
+  var msg = document.createElement('span');
+  msg.textContent = '「' + name + '」を削除しますか？';
+  var btnOk = document.createElement('button');
+  btnOk.textContent = '削除する';
+  btnOk.style.cssText = 'background:#fff;color:#c62828;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer';
+  btnOk.onclick = function(){ doDeleteSpec(bar.dataset.did); };
+  var btnCancel = document.createElement('button');
+  btnCancel.textContent = 'キャンセル';
+  btnCancel.style.cssText = 'background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer';
+  btnCancel.onclick = function(){ bar.style.display = 'none'; };
+  bar.innerHTML = '';
+  bar.appendChild(msg);
+  bar.appendChild(btnOk);
+  bar.appendChild(btnCancel);
+  bar.style.display = 'flex';
 }
 
 function doDeleteSpec(id) {
@@ -366,6 +376,7 @@ function doDeleteSpec(id) {
     toast('削除に失敗しました: ' + e.message, true);
   });
 }
+
 
 // ===== 規格書をコピーして新規作成 =====
 function copySpec(id) {
