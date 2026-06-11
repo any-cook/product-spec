@@ -265,7 +265,7 @@ function initFirebase() {
 }
 
 // ===== リスト操作 =====
-async function loadList() {
+async async function loadList() {
   if (!db) return;
   document.getElementById('spec-list').innerHTML = '<div class="loading"><div class="spinner"></div>読込中...</div>';
   try {
@@ -400,7 +400,8 @@ function doDeleteSpec() {
     }
     renderList();
     toast('「' + name + '」を削除しました ✓');
-    loadList();
+    // 削除完了後500ms待ってから再取得
+    setTimeout(function(){ loadList(); }, 500);
   }).catch(function(e) {
     toast('削除に失敗しました: ' + e.message, true);
   });
