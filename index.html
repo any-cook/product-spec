@@ -265,7 +265,7 @@ function initFirebase() {
 }
 
 // ===== リスト操作 =====
-async async function loadList() {
+async function loadList() {
   if (!db) return;
   document.getElementById('spec-list').innerHTML = '<div class="loading"><div class="spinner"></div>読込中...</div>';
   try {
