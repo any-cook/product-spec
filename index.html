@@ -380,18 +380,6 @@ function doDeleteSpec() {
     toast('削除に失敗しました: ' + e.message, true);
   });
 }
-    if (currentSpecId === id) {
-      currentSpec = null; currentSpecId = null;
-      document.getElementById('editor').style.display = 'none';
-      document.getElementById('empty-state').style.display = '';
-    }
-    renderList();
-    toast('「' + name + '」を削除しました ✓');
-    loadList();
-  }).catch(function(e) {
-    toast('削除に失敗しました: ' + e.message, true);
-  });
-}
 
 
 // ===== 規格書をコピーして新規作成 =====
