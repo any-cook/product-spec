@@ -328,27 +328,28 @@ function makeEmptySpec() {
 
 // ===== 新規作成 =====
 // ===== 規格書を削除 =====
+var _deleteTargetId = null;
 function deleteSpec(id) {
+  _deleteTargetId = id;
   var spec = specListCache.find(function(s){ return s.id === id; });
   var name = spec && spec.basic && spec.basic.pname ? spec.basic.pname : '（名称未設定）';
   var bar = document.getElementById('delete-confirm-bar');
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'delete-confirm-bar';
-    bar.style.cssText = 'position:fixed;top:30%;left:50%;transform:translateX(-50%);background:#c62828;color:#fff;padding:16px 24px;border-radius:12px;z-index:99999;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:15px;white-space:nowrap;flex-direction:column';
+    bar.style.cssText = 'position:fixed;top:30%;left:50%;transform:translateX(-50%);background:#c62828;color:#fff;padding:16px 24px;border-radius:12px;z-index:99999;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:15px;flex-direction:column';
     document.body.appendChild(bar);
   }
-  bar.dataset.did = id;
   var msg = document.createElement('span');
   msg.textContent = '「' + name + '」を削除しますか？';
   var btnOk = document.createElement('button');
   btnOk.textContent = '削除する';
-  btnOk.style.cssText = 'background:#fff;color:#c62828;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer';
-  btnOk.onclick = function(){ doDeleteSpec(bar.dataset.did); };
+  btnOk.style.cssText = 'background:#fff;color:#c62828;border:none;border-radius:6px;padding:8px 20px;font-weight:700;cursor:pointer;font-size:16px';
+  btnOk.onclick = function(){ doDeleteSpec(); };
   var btnCancel = document.createElement('button');
   btnCancel.textContent = 'キャンセル';
   btnCancel.style.cssText = 'background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer';
-  btnCancel.onclick = function(){ bar.style.display = 'none'; };
+  btnCancel.onclick = function(){ bar.style.display='none'; _deleteTargetId=null; };
   bar.innerHTML = '';
   bar.appendChild(msg);
   bar.appendChild(btnOk);
@@ -356,16 +357,18 @@ function deleteSpec(id) {
   bar.style.display = 'flex';
 }
 
-function doDeleteSpec(id) {
+function doDeleteSpec() {
   var bar = document.getElementById('delete-confirm-bar');
   if (bar) bar.style.display = 'none';
+  var id = _deleteTargetId;
+  _deleteTargetId = null;
+  if (!id) { toast('削除対象が不明です', true); return; }
   var spec = specListCache.find(function(s){ return s.id === id; });
   var name = spec && spec.basic && spec.basic.pname ? spec.basic.pname : '（名称未設定）';
   db.collection('product_specs').doc(id).delete().then(function() {
     specListCache = specListCache.filter(function(s){ return s.id !== id; });
     if (currentSpecId === id) {
-      currentSpec = null;
-      currentSpecId = null;
+      currentSpec = null; currentSpecId = null;
       document.getElementById('editor').style.display = 'none';
       document.getElementById('empty-state').style.display = '';
     }
