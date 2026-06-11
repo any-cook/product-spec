@@ -333,6 +333,7 @@ function deleteSpec(id) {
   var name = spec && spec.basic && spec.basic.pname ? spec.basic.pname : '（名称未設定）';
   if (!confirm('「' + name + '」を削除しますか？\nこの操作は元に戻せません。')) return;
   db.collection('product_specs').doc(id).delete().then(function() {
+    // キャッシュからも削除
     specListCache = specListCache.filter(function(s){ return s.id !== id; });
     if (currentSpecId === id) {
       currentSpec = null;
@@ -342,6 +343,8 @@ function deleteSpec(id) {
     }
     renderList();
     toast('「' + name + '」を削除しました');
+    // Firestoreから最新一覧を再取得して確実に反映
+    loadList();
   }).catch(function(e) {
     toast('削除に失敗しました: ' + e.message, true);
   });
