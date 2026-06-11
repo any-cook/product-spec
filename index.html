@@ -269,7 +269,7 @@ async function loadList() {
   if (!db) return;
   document.getElementById('spec-list').innerHTML = '<div class="loading"><div class="spinner"></div>読込中...</div>';
   try {
-    var snap = await db.collection('product_specs').orderBy('updatedAt','desc').get();
+    var snap = await db.collection('product_specs').orderBy('updatedAt','desc').get({source: 'server'});
     specListCache = [];
     snap.forEach(function(doc){ specListCache.push(Object.assign({id:doc.id}, doc.data())); });
     renderList();
