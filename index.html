@@ -390,8 +390,8 @@ function doDeleteSpec() {
   if (!id) { toast('削除対象が不明です', true); return; }
   var spec = specListCache.find(function(s){ return s.id === id; });
   var name = spec && spec.basic && spec.basic.pname ? spec.basic.pname : '（名称未設定）';
-  toast('削除中: ' + id.substring(0,8) + '...');
   db.collection('product_specs').doc(id).delete().then(function() {
+    // キャッシュから即座に削除して再描画
     specListCache = specListCache.filter(function(s){ return s.id !== id; });
     if (currentSpecId === id) {
       currentSpec = null; currentSpecId = null;
@@ -400,8 +400,6 @@ function doDeleteSpec() {
     }
     renderList();
     toast('「' + name + '」を削除しました ✓');
-    // 削除完了後500ms待ってから再取得
-    setTimeout(function(){ loadList(); }, 500);
   }).catch(function(e) {
     toast('削除に失敗しました: ' + e.message, true);
   });
