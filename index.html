@@ -280,23 +280,48 @@ async function loadList() {
 
 function renderList() {
   var el = document.getElementById('spec-list');
-  if (!specListCache.length) { el.innerHTML = '<div class="empty-state"><p style="font-size:13px">規格書がありません</p></div>'; return; }
-  var html = '';
+  if (!specListCache.length) {
+    el.innerHTML = '<div class="empty-state"><p style="font-size:13px">規格書がありません</p></div>';
+    return;
+  }
+  el.innerHTML = '';
   specListCache.forEach(function(s) {
     var d = s.updatedAt ? new Date(s.updatedAt.toDate()).toLocaleDateString('ja-JP') : '';
     var active = s.id === currentSpecId ? ' active' : '';
     var isSample = s.isSample ? true : false;
     var itemStyle = isSample ? 'opacity:0.5;border-style:dashed;' : '';
     var badge = isSample ? '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;border-radius:3px;padding:1px 5px;margin-left:4px">見本</span>' : '';
-    html += '<div class="spec-item'+active+'" style="'+itemStyle+';position:relative;padding-right:64px">';
-    html += '<div onclick="openSpec(\'' + s.id + '\')">' + '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>' + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>' + '</div>';
-    html += '<div style="position:absolute;top:6px;right:6px;display:flex;gap:4px">';
-    html += '<button onclick="event.stopPropagation();copySpec(\'' + s.id + '\')" title="コピーして新規作成" style="background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 5px;cursor:pointer">📋</button>';
-    html += '<button onclick="event.stopPropagation();deleteSpec(\'' + s.id + '\')" title="削除" style="background:#fff0f0;border:1px solid #e0a0a0;border-radius:4px;color:#c62828;font-size:10px;padding:2px 5px;cursor:pointer">🗑</button>';
-    html += '</div>';
-    html += '</div>';
+
+    var wrap = document.createElement('div');
+    wrap.className = 'spec-item' + active;
+    wrap.style.cssText = itemStyle + ';position:relative;padding-right:64px';
+
+    var body = document.createElement('div');
+    body.innerHTML = '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>'
+      + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>';
+    body.addEventListener('click', (function(id){ return function(){ openSpec(id); }; })(s.id));
+
+    var btns = document.createElement('div');
+    btns.style.cssText = 'position:absolute;top:6px;right:6px;display:flex;gap:4px';
+
+    var btnCopy = document.createElement('button');
+    btnCopy.title = 'コピーして新規作成';
+    btnCopy.textContent = '📋';
+    btnCopy.style.cssText = 'background:#e8f0f8;border:1px solid #b0c4de;border-radius:4px;color:#1a3a5c;font-size:10px;padding:2px 5px;cursor:pointer';
+    btnCopy.addEventListener('click', (function(id){ return function(e){ e.stopPropagation(); copySpec(id); }; })(s.id));
+
+    var btnDel = document.createElement('button');
+    btnDel.title = '削除';
+    btnDel.textContent = '🗑';
+    btnDel.style.cssText = 'background:#fff0f0;border:1px solid #e0a0a0;border-radius:4px;color:#c62828;font-size:10px;padding:2px 5px;cursor:pointer';
+    btnDel.addEventListener('click', (function(id){ return function(e){ e.stopPropagation(); deleteSpec(id); }; })(s.id));
+
+    btns.appendChild(btnCopy);
+    btns.appendChild(btnDel);
+    wrap.appendChild(body);
+    wrap.appendChild(btns);
+    el.appendChild(wrap);
   });
-  el.innerHTML = html;
 }
 
 // ===== 空のスペック生成 =====
