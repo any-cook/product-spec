@@ -703,6 +703,7 @@ function renderEditor() {
     +     '<div class="search-results" id="food-results"></div>'
     +   '</div>'
     +   '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button>'
+    +   '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="applyMasterToSpec();calcNutritionSilent();">🔄 マスターから栄養素・単価を再反映</button>'
     +   '<button class="btn btn-sm" style="background:#fff3cd;color:#856404" onclick="exportIngCSV()">📥 CSV出力</button>'
     +   '<label class="btn btn-sm" style="background:#fff3cd;color:#856404;cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importIngCSV(this)"></label>'
     + '</div>'
@@ -797,7 +798,7 @@ function renderEditor() {
     +   '<td id="foot-nut-c" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
     +   '<td id="foot-nut-s" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
     +   '<td id="foot-nut-sf" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-fiber" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td id="foot-nut-fib" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
     +   '<td colspan="3" style="border-top:2px solid #2c4a6e"></td>'
     +   '<td style="border-top:2px solid #2c4a6e"></td>'
     + '</tr>'
@@ -826,7 +827,10 @@ function renderEditor() {
   var nutHtml = '<div id="panel-nutrition" class="panel"><div class="card">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
     +   '<h3 style="margin:0">栄養成分情報</h3>'
-    +   '<button class="btn btn-sm" onclick="calcNutrition()" style="background:#e8f0ff;color:#1a3a5c">🧮 原材料から再計算</button>'
+    +   '<div style="display:flex;gap:6px">'
+    +     '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="applyMasterToSpec();calcNutritionSilent();toast(\'マスターから栄養素を再反映しました ✓\')">🔄 マスターから再反映</button>'
+    +     '<button class="btn btn-sm" onclick="calcNutrition()" style="background:#e8f0ff;color:#1a3a5c">🧮 原材料から再計算</button>'
+    +   '</div>'
     + '</div>'
     + '<p style="font-size:12px;color:#888;margin-bottom:12px">1袋（'+h(b.unit||'—')+'）あたりの値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
     + '<div class="g2" style="margin-bottom:10px">'
@@ -991,7 +995,7 @@ function renderEditor() {
     + '<div class="card"><h3>① 原材料費明細</h3>'
     + '<p style="font-size:12px;color:#888;margin-bottom:8px">②原材料タブで重量・単価を入力すると自動計算されます。</p>'
     + '<div id="cost-ing-detail"></div>'
-    + '<div style="margin-top:6px"><button class="btn btn-sm" onclick="applyMasterToSpec();renderIngTbody();recalcCost();">🔄 マスターから単価を再反映</button></div>'
+    + '<div style="margin-top:6px"><button class="btn btn-sm" onclick="applyMasterToSpec();renderIngTbody();recalcCost();calcNutritionSilent();">🔄 マスターから単価を再反映</button></div>'
     + '</div>'
     // ② ロット別加工費
     + '<div class="card"><h3>② ロット別加工費</h3>'
@@ -1364,12 +1368,15 @@ function updateIngSummary() {
     var nutColor = hasNut ? '#5b3a8c' : '#ccc';
     var dash = '—';
     var nutData = [
-      ['nut-e-'+i, hasNut||r2>0 ? ((ing.e||0)*r2).toFixed(0) : dash],
-      ['nut-p-'+i, hasNut||r2>0 ? ((ing.p||0)*r2).toFixed(1) : dash],
-      ['nut-f-'+i, hasNut||r2>0 ? ((ing.f||0)*r2).toFixed(1) : dash],
-      ['nut-c-'+i, hasNut||r2>0 ? ((ing.c||0)*r2).toFixed(1) : dash],
-      ['nut-ash-'+i, hasNut||r2>0 ? ((ing.ash||0)*r2).toFixed(2) : dash],
-      ['nut-s-'+i,   hasNut||r2>0 ? ((ing.s||0)  *r2).toFixed(2) : dash]
+      ['nut-e-'+i,    hasNut||r2>0 ? ((ing.e||0)    *r2).toFixed(0) : dash],
+      ['nut-w-'+i,    hasNut||r2>0 ? ((ing.w||0)    *r2).toFixed(1) : dash],
+      ['nut-p-'+i,    hasNut||r2>0 ? ((ing.p||0)    *r2).toFixed(1) : dash],
+      ['nut-f-'+i,    hasNut||r2>0 ? ((ing.f||0)    *r2).toFixed(1) : dash],
+      ['nut-c-'+i,    hasNut||r2>0 ? ((ing.c||0)    *r2).toFixed(1) : dash],
+      ['nut-s-'+i,    hasNut||r2>0 ? ((ing.s||0)    *r2).toFixed(2) : dash],
+      ['nut-sf-'+i,   hasNut||r2>0 ? ((ing.sf||0)   *r2).toFixed(2) : dash],
+      ['nut-fib-'+i,  hasNut||r2>0 ? ((ing.fiber||0)*r2).toFixed(1) : dash],
+      ['nut-ash-'+i,  hasNut||r2>0 ? ((ing.ash||0)  *r2).toFixed(2) : dash]
     ];
     nutData.forEach(function(nd) {
       var el = document.getElementById(nd[0]);
@@ -1378,41 +1385,29 @@ function updateIngSummary() {
   });
   recalcCost();
   // フッターの栄養素合計を更新
-  var totE=0, totP=0, totF=0, totC=0, totS=0, hasAny=false;
+  var ftE=0, ftW=0, ftP=0, ftF=0, ftC=0, ftS=0, ftSF=0, ftFib=0, ftAsh=0, hasAny=false;
   currentSpec.ings.forEach(function(ing){
     var r3 = (ing.amount||0)/100;
-    totE += (ing.e||0)*r3; totP += (ing.p||0)*r3;
-    totF += (ing.f||0)*r3; totC += (ing.c||0)*r3; totS += (ing.s||0)*r3;
+    ftE   += (ing.e||0)    *r3;
+    ftW   += (ing.w||0)    *r3;
+    ftP   += (ing.p||0)    *r3;
+    ftF   += (ing.f||0)    *r3;
+    ftC   += (ing.c||0)    *r3;
+    ftS   += (ing.s||0)    *r3;
+    ftSF  += (ing.sf||0)   *r3;
+    ftFib += (ing.fiber||0)*r3;
+    ftAsh += (ing.ash||0)  *r3;
     if ((ing.e||0)>0 || (ing.amount||0)>0) hasAny = true;
   });
-  var totW=0;
-  currentSpec.ings.forEach(function(ing){ var r4=(ing.amount||0)/100; totW+=(ing.w||0)*r4; });
-  var fne = document.getElementById('foot-nut-e'); if(fne) fne.textContent = hasAny ? totE.toFixed(0) : '—';
-  var fnp = document.getElementById('foot-nut-p'); if(fnp) fnp.textContent = hasAny ? totP.toFixed(1) : '—';
-  var fnf = document.getElementById('foot-nut-f'); if(fnf) fnf.textContent = hasAny ? totF.toFixed(1) : '—';
-  var fnc = document.getElementById('foot-nut-c'); if(fnc) fnc.textContent = hasAny ? totC.toFixed(1) : '—';
-  var fns = document.getElementById('foot-nut-s'); if(fns) fns.textContent = hasAny ? totS.toFixed(2) : '—';
-  var fnw = document.getElementById('foot-nut-w'); if(fnw) fnw.textContent = hasAny ? totW.toFixed(1) : '—';
-  var totAsh=0;
-  currentSpec.ings.forEach(function(ing){ var r5=(ing.amount||0)/100; totAsh+=(ing.ash||0)*r5; });
-  var fnash = document.getElementById('foot-nut-ash'); if(fnash) fnash.textContent = hasAny ? totAsh.toFixed(2) : '—';
-  // 全栄養素の合計をフッターに表示
-  var totE=0, totP=0, totF=0, totC=0, totS=0, totW2=0;
-  currentSpec.ings.forEach(function(ing){
-    var r6 = (ing.amount||0)/100;
-    totE  += (ing.e||0)*r6;
-    totW2 += (ing.w||0)*r6;
-    totP  += (ing.p||0)*r6;
-    totF  += (ing.f||0)*r6;
-    totC  += (ing.c||0)*r6;
-    totS  += (ing.s||0)*r6;
-  });
-  var fne  = document.getElementById('foot-nut-e');   if(fne)  fne.textContent  = hasAny ? Math.round(totE)    : '—';
-  var fnw2 = document.getElementById('foot-nut-w');   if(fnw2) fnw2.textContent = hasAny ? totW2.toFixed(1)    : '—';
-  var fnp  = document.getElementById('foot-nut-p');   if(fnp)  fnp.textContent  = hasAny ? totP.toFixed(1)     : '—';
-  var fnf  = document.getElementById('foot-nut-f');   if(fnf)  fnf.textContent  = hasAny ? totF.toFixed(1)     : '—';
-  var fnc  = document.getElementById('foot-nut-c');   if(fnc)  fnc.textContent  = hasAny ? totC.toFixed(1)     : '—';
-  var fns  = document.getElementById('foot-nut-s');   if(fns)  fns.textContent  = hasAny ? totS.toFixed(2)     : '—';
+  var fne  = document.getElementById('foot-nut-e');   if(fne)  fne.textContent  = hasAny ? Math.round(ftE)    : '—';
+  var fnw  = document.getElementById('foot-nut-w');   if(fnw)  fnw.textContent  = hasAny ? ftW.toFixed(1)     : '—';
+  var fnp  = document.getElementById('foot-nut-p');   if(fnp)  fnp.textContent  = hasAny ? ftP.toFixed(1)     : '—';
+  var fnf  = document.getElementById('foot-nut-f');   if(fnf)  fnf.textContent  = hasAny ? ftF.toFixed(1)     : '—';
+  var fnc  = document.getElementById('foot-nut-c');   if(fnc)  fnc.textContent  = hasAny ? ftC.toFixed(1)     : '—';
+  var fns  = document.getElementById('foot-nut-s');   if(fns)  fns.textContent  = hasAny ? ftS.toFixed(2)     : '—';
+  var fnsf = document.getElementById('foot-nut-sf');  if(fnsf) fnsf.textContent = hasAny ? ftSF.toFixed(2)    : '—';
+  var fnfib= document.getElementById('foot-nut-fib'); if(fnfib)fnfib.textContent= hasAny ? ftFib.toFixed(1)   : '—';
+  var fnash= document.getElementById('foot-nut-ash'); if(fnash)fnash.textContent= hasAny ? ftAsh.toFixed(2)   : '—';
 }
 
 function renderIngTbody() {
@@ -2577,7 +2572,10 @@ function genPreview() {
   var labelText = currentSpec.labelText || currentSpec.ings.map(function(i){ return i.name; }).join('、');
 
   var ingRows = '';
-  currentSpec.ings.forEach(function(ing, i){
+  var sortedIngs = currentSpec.ings.slice().sort(function(a, b){
+    return (parseFloat(b.ratio)||0) - (parseFloat(a.ratio)||0);
+  });
+  sortedIngs.forEach(function(ing, i){
     ingRows += '<tr>';
     ingRows += '<td style="text-align:center">'+(i+1)+'</td>';
     var dispName = (function(){
