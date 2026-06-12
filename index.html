@@ -470,10 +470,10 @@ async function openSpec(id) {
     if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
     currentSpec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
     renderEditor();
-    setTimeout(function() {
+    onMasterLoaded(function() {
       applyMasterToSpec();
       calcNutritionSilent();
-    }, 400);
+    });
   } catch(e) {
     toast('読込失敗: '+e.message, true);
     console.error(e);
@@ -2710,6 +2710,12 @@ function initMaster() {
   loadMasterFromFirestore();
 }
 
+var masterLoaded = false;
+var masterLoadedCallbacks = [];
+function onMasterLoaded(fn) {
+  if (masterLoaded) { fn(); } else { masterLoadedCallbacks.push(fn); }
+}
+
 async function loadMasterFromFirestore() {
   try {
     var doc = await db.collection('masters').doc('all').get();
@@ -2745,6 +2751,9 @@ async function loadMasterFromFirestore() {
                 + masterData.additionalCosts.length;
       if (total > 0) toast('マスター読込完了（原材料' + masterData.materialPrices.length + '品目）✓');
     }
+    masterLoaded = true;
+    masterLoadedCallbacks.forEach(function(fn){ fn(); });
+    masterLoadedCallbacks = [];
     console.log('[Master] 読込完了');
   } catch(e) { console.warn('[Master] 読込失敗:', e.message); }
 }
@@ -2786,11 +2795,14 @@ function applyMasterToSpec() {
     if (mat) {
       if (mat.unitPrice > 0) ing.unitPrice = mat.unitPrice;
       // 栄養素もマスターから反映（FOOD_DBにない独自食材用）
-      if (mat.e != null && mat.e > 0) ing.e = mat.e;
-      if (mat.p != null) ing.p = mat.p;
-      if (mat.f != null) ing.f = mat.f;
-      if (mat.c != null) ing.c = mat.c;
-      if (mat.s != null) ing.s = mat.s;
+      if (mat.e  != null && mat.e  > 0) ing.e     = mat.e;
+      if (mat.w  != null)               ing.w     = mat.w;
+      if (mat.p  != null)               ing.p     = mat.p;
+      if (mat.f  != null)               ing.f     = mat.f;
+      if (mat.c  != null)               ing.c     = mat.c;
+      if (mat.s  != null)               ing.s     = mat.s;
+      if (mat.sf != null)               ing.sf    = mat.sf;
+      if (mat.fiber != null)            ing.fiber = mat.fiber;
       // 有機フラグ
       if (mat.isOrganic && !ing.feature) ing.feature = '有機';
       // GMO確認結果をマスターから反映
