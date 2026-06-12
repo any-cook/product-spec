@@ -2296,39 +2296,76 @@ function recalcCost() {
 
 // ===== 栄養再計算 =====
 function calcNutritionSilent() {
-  var e=0, p=0, f=0, c=0, s=0, w=0, hasData=false;
+  var e=0, w=0, p=0, f=0, c=0, s=0, sf=0, fiber=0, hasData=false;
   currentSpec.ings.forEach(function(ing){
     var amount = ing.amount || 0;
     if (amount <= 0) return;
     hasData = true;
     var r = amount / 100;
-    e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
-    c += (ing.c||0)*r; s += (ing.s||0)*r; w += (ing.w||0)*r; w += (ing.w||0)*r;
+    e     += (ing.e||0)     * r;
+    w     += (ing.w||0)     * r;
+    p     += (ing.p||0)     * r;
+    f     += (ing.f||0)     * r;
+    c     += (ing.c||0)     * r;
+    s     += (ing.s||0)     * r;
+    sf    += (ing.sf||0)    * r;
+    fiber += (ing.fiber||0) * r;
   });
   if (hasData) {
-    sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
-    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2)); sv('n-w', w.toFixed(1)); sv('n-w', w.toFixed(1));
+    sv('n-e',     Math.round(e));
+    sv('n-w',     w.toFixed(1));
+    sv('n-p',     p.toFixed(1));
+    sv('n-f',     f.toFixed(1));
+    sv('n-c',     c.toFixed(1));
+    sv('n-s',     s.toFixed(2));
+    sv('n-sf',    sf.toFixed(2));
+    sv('n-fiber', fiber.toFixed(1));
     if (!currentSpec.nutrition) currentSpec.nutrition = {};
-    currentSpec.nutrition.e = Math.round(e);
-    currentSpec.nutrition.p = +p.toFixed(1);
-    currentSpec.nutrition.f = +f.toFixed(1);
-    currentSpec.nutrition.c = +c.toFixed(1);
-    currentSpec.nutrition.s = +s.toFixed(2);
-    currentSpec.nutrition.w = +w.toFixed(1);
+    currentSpec.nutrition.e     = Math.round(e);
+    currentSpec.nutrition.w     = +w.toFixed(1);
+    currentSpec.nutrition.p     = +p.toFixed(1);
+    currentSpec.nutrition.f     = +f.toFixed(1);
+    currentSpec.nutrition.c     = +c.toFixed(1);
+    currentSpec.nutrition.s     = +s.toFixed(2);
+    currentSpec.nutrition.sf    = +sf.toFixed(2);
+    currentSpec.nutrition.fiber = +fiber.toFixed(1);
   }
 }
 
 function calcNutrition() {
-  var e=0, p=0, f=0, c=0, s=0;
+  var e=0, w=0, p=0, f=0, c=0, s=0, sf=0, fiber=0, hasData=false;
   currentSpec.ings.forEach(function(ing){
-    if (!ing.amount) return;
-    var r = ing.amount / 100;
-    e += (ing.e||0)*r; p += (ing.p||0)*r; f += (ing.f||0)*r;
-    c += (ing.c||0)*r; s += (ing.s||0)*r; w += (ing.w||0)*r;
+    var amount = ing.amount || 0;
+    if (amount <= 0) return;
+    hasData = true;
+    var r = amount / 100;
+    e     += (ing.e||0)     * r;
+    w     += (ing.w||0)     * r;
+    p     += (ing.p||0)     * r;
+    f     += (ing.f||0)     * r;
+    c     += (ing.c||0)     * r;
+    s     += (ing.s||0)     * r;
+    sf    += (ing.sf||0)    * r;
+    fiber += (ing.fiber||0) * r;
   });
-  if (e > 0) {
-    sv('n-e', Math.round(e)); sv('n-p', p.toFixed(1)); sv('n-f', f.toFixed(1));
-    sv('n-c', c.toFixed(1)); sv('n-s', s.toFixed(2)); sv('n-w', w.toFixed(1));
+  if (hasData) {
+    sv('n-e',     Math.round(e));
+    sv('n-w',     w.toFixed(1));
+    sv('n-p',     p.toFixed(1));
+    sv('n-f',     f.toFixed(1));
+    sv('n-c',     c.toFixed(1));
+    sv('n-s',     s.toFixed(2));
+    sv('n-sf',    sf.toFixed(2));
+    sv('n-fiber', fiber.toFixed(1));
+    if (!currentSpec.nutrition) currentSpec.nutrition = {};
+    currentSpec.nutrition.e     = Math.round(e);
+    currentSpec.nutrition.w     = +w.toFixed(1);
+    currentSpec.nutrition.p     = +p.toFixed(1);
+    currentSpec.nutrition.f     = +f.toFixed(1);
+    currentSpec.nutrition.c     = +c.toFixed(1);
+    currentSpec.nutrition.s     = +s.toFixed(2);
+    currentSpec.nutrition.sf    = +sf.toFixed(2);
+    currentSpec.nutrition.fiber = +fiber.toFixed(1);
     toast('栄養計算しました ✓');
   } else {
     toast('使用量(g)を手動追加で入力後、再計算してください', true);
