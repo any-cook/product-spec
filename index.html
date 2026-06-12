@@ -2604,14 +2604,23 @@ function genPreview() {
   var sortedIngs = currentSpec.ings.slice().sort(function(a, b){
     return (parseFloat(b.ratio)||0) - (parseFloat(a.ratio)||0);
   });
-  sortedIngs.forEach(function(ing, i){
+  var rowNum = 0;
+  sortedIngs.forEach(function(ing){
+    // 水・飲料水・水（食品）は原材料情報から除外
+    var nm = (ing.name || '').trim();
+    if (nm === '水' || nm === '飲料水' || nm === '水（食品）' || nm === '食品水') return;
+    rowNum++;
     ingRows += '<tr>';
-    ingRows += '<td style="text-align:center">'+(i+1)+'</td>';
-    var dispName = (function(){
-      var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
-      return (mat && mat.generalName) ? mat.generalName : ing.name;
-    })();
-  ingRows += '<td>'+h(dispName)+'</td><td>'+h(ing.country)+'</td><td>'+h(ing.allergens)+'</td>';
+    ingRows += '<td style="text-align:center">'+rowNum+'</td>';
+    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    var dispName = (mat && mat.generalName) ? mat.generalName
+                 : (mat ? ing.name : (findInFoodDB(ing.name) ? ing.name : ing.name));
+    // マスターにgeneralNameが未登録でもing.generalNameがあれば使用
+    if (!dispName || dispName === ing.name) {
+      if (ing.generalName) dispName = ing.generalName;
+    }
+    if (!dispName) dispName = ing.name;
+    ingRows += '<td>'+h(dispName)+'</td><td>'+h(ing.country)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
     ingRows += '<td>'+h(ing.feature)+'</td><td>'+h(ing.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
@@ -2874,6 +2883,7 @@ function applyMasterToSpec() {
       applied++;
     } else {
       // マスター未登録 → FOOD_DBから栄養素のみ補完
+      console.log('[applyMaster] 未マッチ:', JSON.stringify(ing.name), '/ normName:', normName(ing.name));
       var fd = findInFoodDB(ing.name);
       if (fd) {
         if (fd.e != null) ing.e = fd.e;
