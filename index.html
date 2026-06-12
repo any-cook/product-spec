@@ -297,10 +297,10 @@ function renderList() {
     wrap.style.cssText = itemStyle + ';position:relative;padding-right:64px';
 
     var body = document.createElement('div');
-    var content = s.basic && s.basic.content ? s.basic.content : '';
+    var contentAmount = s.basic && s.basic.amount ? s.basic.amount : '';
     body.innerHTML = '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>'
       + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>'
-      + (content ? '<div style="font-size:10px;color:#888;margin-top:1px">' + h(content) + '</div>' : '');
+      + (contentAmount ? '<div style="font-size:10px;color:#aaa;margin-top:1px">' + h(contentAmount) + '</div>' : '');
     body.addEventListener('click', (function(id){ return function(){ openSpec(id); }; })(s.id));
 
     var btns = document.createElement('div');
