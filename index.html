@@ -506,6 +506,10 @@ async function saveSpec() {
     if (currentSpecId) {
       await db.collection('product_specs').doc(currentSpecId).set(currentSpec);
       toast('保存しました ✓');
+    // 一覧のキャッシュを更新して内容量などを反映
+    var idx2 = specListCache.findIndex(function(s){ return s.id === currentSpecId; });
+    if (idx2 >= 0) { specListCache[idx2] = Object.assign({id: currentSpecId}, currentSpec); }
+    renderList();
     } else {
       var ref = await db.collection('product_specs').add(currentSpec);
       currentSpecId = ref.id;
