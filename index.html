@@ -226,7 +226,27 @@ const FOOD_DB = {
   "塩こうじ":{e:108,p:3.5,f:0.5,c:22.5,s:9.2,al:["小麦"],co:"国内製造"},
   "有機塩こうじ":{e:108,p:3.5,f:0.5,c:22.5,s:9.2,al:["小麦"],co:"国内製造"},
   "マヨネーズ":{e:703,p:1.5,f:76.0,c:3.6,s:1.9,al:["卵","大豆"],co:"国内製造"},
-  "豆乳":{e:46,p:3.6,f:2.0,c:3.1,s:0,al:["大豆"],co:"国内製造"}
+  "豆乳":{e:46,p:3.6,f:2.0,c:3.1,s:0,al:["大豆"],co:"国内製造"},
+  "ケチャップ":{e:119,p:1.7,f:0.2,c:27.0,s:3.1,al:["トマト"],co:"国内製造"},
+  "トマトケチャップ":{e:119,p:1.7,f:0.2,c:27.0,s:3.1,al:["トマト"],co:"国内製造"},
+  "ソテーオニオン":{e:68,p:1.2,f:3.2,c:9.0,s:0.2,al:[],co:"国産"},
+  "炒め玉ねぎ":{e:68,p:1.2,f:3.2,c:9.0,s:0.2,al:[],co:"国産"},
+  "カレー粉":{e:415,p:13.0,f:12.2,c:63.3,s:0.2,al:[],co:"国内製造"},
+  "CBカレー粉":{e:415,p:13.0,f:12.2,c:63.3,s:0.2,al:[],co:"国内製造"},
+  "カレールー":{e:474,p:6.6,f:31.5,c:43.8,s:4.3,al:["小麦","乳","大豆"],co:"国内製造"},
+  "ウスターソース":{e:117,p:1.0,f:0.1,c:29.0,s:8.5,al:["小麦","りんご"],co:"国内製造"},
+  "中濃ソース":{e:132,p:1.0,f:0.1,c:31.9,s:5.6,al:["小麦","りんご"],co:"国内製造"},
+  "コンソメ":{e:233,p:17.0,f:4.0,c:28.6,s:42.9,al:["鶏肉","大豆"],co:"国内製造"},
+  "チキンコンソメ":{e:233,p:17.0,f:4.0,c:28.6,s:42.9,al:["鶏肉","大豆"],co:"国内製造"},
+  "トマトピューレ":{e:41,p:1.9,f:0.2,c:8.7,s:0,al:[],co:"国内製造"},
+  "トマトペースト":{e:93,p:3.8,f:0.4,c:19.6,s:0,al:[],co:"国内製造"},
+  "酢":{e:25,p:0.1,f:0,c:2.4,s:0,al:[],co:"国内製造"},
+  "米酢":{e:46,p:0.2,f:0,c:7.4,s:0,al:[],co:"国内製造"},
+  "みそ":{e:192,p:12.5,f:6.0,c:21.9,s:12.4,al:["大豆","小麦"],co:"国内製造"},
+  "味噌":{e:192,p:12.5,f:6.0,c:21.9,s:12.4,al:["大豆","小麦"],co:"国内製造"},
+  "コチュジャン":{e:238,p:5.5,f:2.3,c:48.0,s:7.0,al:["大豆","小麦"],co:"国内製造"},
+  "豆板醤":{e:57,p:2.3,f:1.7,c:7.6,s:14.0,al:["大豆","小麦"],co:"国内製造"},
+  "オイスターソース":{e:105,p:7.4,f:0.3,c:18.2,s:11.4,al:["大豆","小麦"],co:"国内製造"}
 };
 
 // ===== ユーティリティ =====
@@ -2766,12 +2786,29 @@ async function saveMasterToFirestore() {
 }
 
 // ===== マスターから規格書に価格を自動反映 =====
+function normName(s) {
+  if (!s) return '';
+  return s
+    .replace(/\s/g, '')               // 空白除去
+    .replace(/^(有機|国産|無農薬|特選|特製|純正|天然|国内産)/g, '') // 一般的なプレフィックス除去
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0)-0xFEE0); }) // 全角英数→半角
+    .replace(/[ａ-ｚ]/g, function(c){ return c.toUpperCase(); })  // 半角小文字→大文字
+    .replace(/[a-z]/g, function(c){ return c.toUpperCase(); })    // 半角英小文字→大文字
+    .toLowerCase()                     // 最終的に小文字統一
+    .replace(/ヲ/g,'オ').replace(/ヴ/g,'ブ') // カタカナ異字体
+    .replace(/[−－‐]/g,'-');          // ハイフン統一
+}
 function matchMaster(ingName, masterName) {
   if (!ingName || !masterName) return false;
   if (ingName === masterName) return true;
-  var n1 = ingName.replace(/^有機/,'').replace(/\s/g,'');
-  var n2 = masterName.replace(/^有機/,'').replace(/\s/g,'');
-  return n1 === n2;
+  var n1 = normName(ingName);
+  var n2 = normName(masterName);
+  if (n1 === n2) return true;
+  // 片方が他方を含む（短い方が3文字以上の場合のみ）
+  var shorter = n1.length <= n2.length ? n1 : n2;
+  var longer  = n1.length <= n2.length ? n2 : n1;
+  if (shorter.length >= 3 && longer.indexOf(shorter) !== -1) return true;
+  return false;
 }
 
 function applyMasterToSpec() {
