@@ -1328,9 +1328,18 @@ function updateIngField(i, field, val) {
     });
     if (!mat) mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
     if (!mat) {
-      // FOOD_DBからも検索
-      var fd = FOOD_DB[ing.name];
-      if (fd) { ing.e=fd.e; ing.p=fd.p; ing.f=fd.f; ing.c=fd.c; ing.s=fd.s; }
+      // FOOD_DBからも検索（normName正規化・部分一致対応）
+      var fd = findInFoodDB(ing.name);
+      if (fd) {
+        if (fd.e != null) ing.e = fd.e;
+        if (fd.w != null) ing.w = fd.w;
+        if (fd.p != null) ing.p = fd.p;
+        if (fd.f != null) ing.f = fd.f;
+        if (fd.c != null) ing.c = fd.c;
+        if (fd.s != null) ing.s = fd.s;
+        if (fd.sf != null)    ing.sf    = fd.sf;
+        if (fd.fiber != null) ing.fiber = fd.fiber;
+      }
     }
     if (mat) {
       if (mat.unitPrice > 0) {
@@ -2798,6 +2807,25 @@ function normName(s) {
     .replace(/ヲ/g,'オ').replace(/ヴ/g,'ブ') // カタカナ異字体
     .replace(/[−－‐]/g,'-');          // ハイフン統一
 }
+function findInFoodDB(name) {
+  // 完全一致
+  if (FOOD_DB[name]) return FOOD_DB[name];
+  // normName正規化後に一致検索
+  var n1 = normName(name);
+  var keys = Object.keys(FOOD_DB);
+  for (var i = 0; i < keys.length; i++) {
+    if (normName(keys[i]) === n1) return FOOD_DB[keys[i]];
+  }
+  // 部分一致（3文字以上）
+  for (var j = 0; j < keys.length; j++) {
+    var n2 = normName(keys[j]);
+    var shorter = n1.length <= n2.length ? n1 : n2;
+    var longer  = n1.length <= n2.length ? n2 : n1;
+    if (shorter.length >= 3 && longer.indexOf(shorter) !== -1) return FOOD_DB[keys[j]];
+  }
+  return null;
+}
+
 function matchMaster(ingName, masterName) {
   if (!ingName || !masterName) return false;
   if (ingName === masterName) return true;
@@ -2844,6 +2872,20 @@ function applyMasterToSpec() {
       if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
       if (mat.allergens && !ing.allergens) ing.allergens = mat.allergens;
       applied++;
+    } else {
+      // マスター未登録 → FOOD_DBから栄養素のみ補完
+      var fd = findInFoodDB(ing.name);
+      if (fd) {
+        if (fd.e != null) ing.e = fd.e;
+        if (fd.w != null) ing.w = fd.w;
+        if (fd.p != null) ing.p = fd.p;
+        if (fd.f != null) ing.f = fd.f;
+        if (fd.c != null) ing.c = fd.c;
+        if (fd.s != null) ing.s = fd.s;
+        if (fd.sf != null)    ing.sf    = fd.sf;
+        if (fd.fiber != null) ing.fiber = fd.fiber;
+        applied++;
+      }
     }
   });
   // 商品別加工費・包材費を反映
