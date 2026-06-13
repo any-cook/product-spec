@@ -1073,10 +1073,13 @@ function renderEditor() {
 
   // ---- 規格書プレビュー ----
   var prevHtml = '<div id="panel-preview" class="panel">'
-    + '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">'
+    + '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">'
     +   '<strong>商品規格書 A4プレビュー</strong>'
     +   '<button class="btn btn-sm" onclick="genPreview()">↻ 更新</button>'
     +   '<button class="btn btn-primary btn-sm" onclick="doPrint()">🖨️ 印刷・PDF保存</button>'
+    +   '<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:#f0f4ff;border:1px solid #b0c4de;border-radius:5px;padding:3px 10px">'
+    +     '<input type="checkbox" id="chk-show-ing-table" style="width:16px;height:16px" checked onchange="genPreview()"> 原材料情報を表示'
+    +   '</label>'
     + '</div>'
     + '<div class="preview-wrap"><div class="a4" id="a4-body"><p style="color:#999;font-size:12px">↻ 更新ボタンを押すとプレビューが表示されます</p></div></div>'
     + '</div>';
@@ -2661,12 +2664,16 @@ function genPreview() {
   html += '<tr><th>個</th><td>'+h(pk.puD)+'×'+h(pk.puW)+'×'+h(pk.puH)+'</td><td>'+h(pk.puN)+'</td><td>'+h(pk.puWt)+'</td><td>'+h(pk.puMat)+'</td></tr>';
   html += '<tr><th>ケース</th><td>'+h(pk.pcD)+'×'+h(pk.pcW)+'×'+h(pk.pcH)+'</td><td>'+h(pk.pcN)+'</td><td>'+h(pk.pcWt)+'</td><td>'+h(pk.pcMat)+'</td></tr>';
   html += '</table></div></div>';
-  html += '<div class="sec">▼ 原材料情報</div><table>';
-  html += '<tr><th style="width:4%">No</th><th style="width:18%">原材料名・添加物（一般名称）</th><th style="width:10%">国名</th>';
-  html += '<th style="width:14%">アレルゲン</th><th style="width:8%">配合比</th>';
-  html += '<th style="width:10%">特色原材料</th><th style="width:10%">添加物用途</th><th style="width:12%">遺伝子組換え区分</th></tr>';
-  html += ingRows + '</table>';
-  html += '<div class="note">・配合比は社外秘のため非開示　・アレルギー物質は特定原材料等28品目のみ調査　・遺伝子組み換え区分は主要原料のみ</div>';
+  var chkIngTable = document.getElementById('chk-show-ing-table');
+  var showIngTable = !chkIngTable || chkIngTable.checked;
+  if (showIngTable) {
+    html += '<div class="sec">▼ 原材料情報</div><table>';
+    html += '<tr><th style="width:4%">No</th><th style="width:18%">原材料名・添加物（一般名称）</th><th style="width:10%">国名</th>';
+    html += '<th style="width:14%">アレルゲン</th><th style="width:8%">配合比</th>';
+    html += '<th style="width:10%">特色原材料</th><th style="width:10%">添加物用途</th><th style="width:12%">遺伝子組換え区分</th></tr>';
+    html += ingRows + '</table>';
+    html += '<div class="note">・配合比は社外秘のため非開示　・アレルギー物質は特定原材料等28品目のみ調査　・遺伝子組み換え区分は主要原料のみ</div>';
+  }
   html += '<div class="tgrid" style="margin-top:5px">';
   html += '<div><div class="sec">▼ 製造情報</div>';
   html += '<div class="lbox" style="font-size:7pt">製造所：'+h(b.mfr)+'<br>'+h(b.maddr)+'</div>';
