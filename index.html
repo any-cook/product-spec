@@ -355,7 +355,7 @@ function makeEmptySpec() {
       storage2:'要冷蔵', gmo:'無', preservative:'無', degradation:'本品特有の風味がなくなること',
       contami:'直射日光、高温多湿を避けて常温で保存してください。',
       mfr:'合同会社 エニクック', maddr:'福岡県筑紫野市阿志岐133-1', created:todayStr(),
-      buyer:'', buyerContact:''
+      buyer:'', buyerAddr:'', buyerContact:''
     },
     ings: [],
     nutrition: {e:214, p:6.2, f:14.9, c:15.5, s:0.6, w:92.5, sf:'', su:'', unit:'1袋130g', note:'推定値'},
@@ -521,6 +521,14 @@ function toggleSample() {
 async function saveSpec() {
   if (!db) { toast('Firestoreに接続されていません',true); return; }
   collectForm();
+  // Firestoreはundefinedを許容しないため再帰的にnullへ変換
+  (function sanitize(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    Object.keys(obj).forEach(function(k) {
+      if (obj[k] === undefined) obj[k] = '';
+      else if (typeof obj[k] === 'object') sanitize(obj[k]);
+    });
+  })(currentSpec);
   currentSpec.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
   try {
     if (currentSpecId) {
@@ -568,7 +576,8 @@ function collectForm() {
   if (!currentSpec) return;
   var b = currentSpec.basic;
   ['pname','ptype','amount','expiry','country','storage','storage2','gmo','preservative','degradation','contami','mfr','maddr','created','buyer','buyerAddr','buyerContact'].forEach(function(k){
-    var el = document.getElementById('f-'+k); if(el) b[k] = el.value;
+    var el = document.getElementById('f-'+k); if(el) b[k] = el.value || '';
+    else if (b[k] === undefined) b[k] = '';
   });
   var n = currentSpec.nutrition;
   ['e','p','f','c','s','w','sf','su','fiber','ash','unit','note'].forEach(function(k){
