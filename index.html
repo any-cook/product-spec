@@ -2702,10 +2702,12 @@ function genPreview() {
   html += '<tr><th>賞味期限</th><td>'+h(b.expiry)+'</td></tr>';
   html += '<tr><th>保存方法</th><td style="font-size:6.5pt">'+h(b.storage)+'</td></tr>';
   var chkSeller = document.getElementById('chk-show-seller');
-  if (chkSeller && chkSeller.checked && b.buyer && b.buyer.trim()) {
+  var showSeller = chkSeller && chkSeller.checked && b.buyer && b.buyer.trim();
+  if (showSeller) {
     html += '<tr><th>販売者</th><td style="font-size:6.5pt">'+h(b.buyer.trim())+(b.buyerAddr && b.buyerAddr.trim() ? '　'+h(b.buyerAddr.trim()) : '')+'</td></tr>';
+  } else {
+    html += '<tr><th>製造所</th><td style="font-size:6.5pt">'+h(b.mfr)+'　'+h(b.maddr)+'</td></tr>';
   }
-  html += '<tr><th>製造所</th><td style="font-size:6.5pt">'+h(b.mfr)+'　'+h(b.maddr)+'</td></tr>';
   html += '</table>';
   html += '<div style="margin-top:3px;font-size:7pt;font-weight:700">アレルギー：'+(al.length?al.join('・'):'なし')+'</div>';
   html += '<div class="note">＊コンタミ：'+h(b.contami)+'</div></div>';
