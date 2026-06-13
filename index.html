@@ -2709,6 +2709,9 @@ function genPreview() {
     html += '<tr><th>製造所</th><td style="font-size:6.5pt">'+h(b.mfr)+'　'+h(b.maddr)+'</td></tr>';
   }
   html += '</table>';
+  if (showSeller) {
+    html += '<div style="font-size:6.5pt;margin-top:2px">製造所　'+h(b.mfr)+'　'+h(b.maddr)+'</div>';
+  }
   html += '<div style="margin-top:3px;font-size:7pt;font-weight:700">アレルギー：'+(al.length?al.join('・'):'なし')+'</div>';
   html += '<div class="note">＊コンタミ：'+h(b.contami)+'</div></div>';
   html += '<div><div class="sec">▼ 注意表示</div>';
