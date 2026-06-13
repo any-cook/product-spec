@@ -567,7 +567,7 @@ async function confirmDelete() {
 function collectForm() {
   if (!currentSpec) return;
   var b = currentSpec.basic;
-  ['pname','ptype','amount','expiry','country','storage','storage2','gmo','preservative','degradation','contami','mfr','maddr','created'].forEach(function(k){
+  ['pname','ptype','amount','expiry','country','storage','storage2','gmo','preservative','degradation','contami','mfr','maddr','created','buyer','buyerAddr','buyerContact'].forEach(function(k){
     var el = document.getElementById('f-'+k); if(el) b[k] = el.value;
   });
   var n = currentSpec.nutrition;
