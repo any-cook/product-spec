@@ -521,12 +521,14 @@ function toggleSample() {
 async function saveSpec() {
   if (!db) { toast('Firestoreに接続されていません',true); return; }
   collectForm();
-  // Firestoreはundefinedを許容しないため再帰的にnullへ変換
+  // Firestoreはundefinedを許容しないため再帰的に空文字へ変換（タイムスタンプ除く）
   (function sanitize(obj) {
     if (!obj || typeof obj !== 'object') return;
+    if (typeof obj.toDate === 'function') return; // Firestoreタイムスタンプはスキップ
     Object.keys(obj).forEach(function(k) {
+      if (k === 'updatedAt') return; // タイムスタンプフィールドはスキップ
       if (obj[k] === undefined) obj[k] = '';
-      else if (typeof obj[k] === 'object') sanitize(obj[k]);
+      else if (obj[k] !== null && typeof obj[k] === 'object' && typeof obj[k].toDate !== 'function') sanitize(obj[k]);
     });
   })(currentSpec);
   currentSpec.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
