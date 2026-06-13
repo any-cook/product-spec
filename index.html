@@ -2730,7 +2730,8 @@ function doPrint() {
   var printCSS = [
     '*{box-sizing:border-box;margin:0;padding:0}',
     'body{font-family:\'Hiragino Kaku Gothic Pro\',\'Meiryo\',\'MS Gothic\',sans-serif;font-size:8pt;color:#111;background:white}',
-    '@page{size:A4;margin:10mm}',
+    '@page{size:A4;margin:10mm;margin-header:0;margin-footer:0}',
+    '@page{@top-left{content:none}@top-center{content:none}@top-right{content:none}@bottom-left{content:none}@bottom-center{content:none}@bottom-right{content:none}}',
     'h1{font-size:12pt;font-weight:700;text-align:center;border:2px solid #111;padding:4px;margin-bottom:7px;letter-spacing:2px}',
     '.sec{font-size:8pt;font-weight:700;background:#ccc;border:1px solid #999;padding:2px 5px;margin:4px 0 2px}',
     'table{width:100%;border-collapse:collapse;font-size:7.5pt}',
