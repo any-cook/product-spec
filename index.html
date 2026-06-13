@@ -2663,7 +2663,6 @@ function genPreview() {
   html += '<tr><th>保存方法（開封前）</th><td colspan="3" style="font-size:7pt">'+h(b.storage)+'</td></tr>';
   html += '<tr><th>保存方法（開封後）</th><td colspan="3">'+h(b.storage2)+'</td></tr>';
   html += '<tr><th>品質劣化内容</th><td colspan="3" style="font-size:7pt">'+h(b.degradation)+'</td></tr>';
-  html += '<tr><th>遺伝子組み換え</th><td>'+h(b.gmo)+'</td><th>品質保持剤</th><td>'+h(b.preservative)+'</td></tr>';
   if (b.buyer && b.buyer.trim()) {
     html += '<tr><th>販売者</th><td colspan="3" style="font-size:7pt">'+h(b.buyer.trim())+(b.buyerAddr && b.buyerAddr.trim() ? '　'+h(b.buyerAddr.trim()) : '')+'</td></tr>';
   }
