@@ -1092,6 +1092,9 @@ function renderEditor() {
     +   '<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:#f0f4ff;border:1px solid #b0c4de;border-radius:5px;padding:3px 10px">'
     +     '<input type="checkbox" id="chk-show-ing-table" style="width:16px;height:16px" checked onchange="genPreview()"> 原材料情報を表示'
     +   '</label>'
+    +   '<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:#f0f4ff;border:1px solid #b0c4de;border-radius:5px;padding:3px 10px">'
+    +     '<input type="checkbox" id="chk-show-seller" style="width:16px;height:16px" onchange="genPreview()"> 販売者を表示'
+    +   '</label>'
     + '</div>'
     + '<div class="preview-wrap"><div class="a4" id="a4-body"><p style="color:#999;font-size:12px">↻ 更新ボタンを押すとプレビューが表示されます</p></div></div>'
     + '</div>';
@@ -2698,7 +2701,11 @@ function genPreview() {
   html += '<tr><th>内容量</th><td>'+h(b.amount)+'</td></tr>';
   html += '<tr><th>賞味期限</th><td>'+h(b.expiry)+'</td></tr>';
   html += '<tr><th>保存方法</th><td style="font-size:6.5pt">'+h(b.storage)+'</td></tr>';
-  html += '<tr><th>製造者</th><td style="font-size:6.5pt">'+h(b.mfr)+'　'+h(b.maddr)+'</td></tr>';
+  var chkSeller = document.getElementById('chk-show-seller');
+  if (chkSeller && chkSeller.checked && b.buyer && b.buyer.trim()) {
+    html += '<tr><th>販売者</th><td style="font-size:6.5pt">'+h(b.buyer.trim())+(b.buyerAddr && b.buyerAddr.trim() ? '　'+h(b.buyerAddr.trim()) : '')+'</td></tr>';
+  }
+  html += '<tr><th>製造所</th><td style="font-size:6.5pt">'+h(b.mfr)+'　'+h(b.maddr)+'</td></tr>';
   html += '</table>';
   html += '<div style="margin-top:3px;font-size:7pt;font-weight:700">アレルギー：'+(al.length?al.join('・'):'なし')+'</div>';
   html += '<div class="note">＊コンタミ：'+h(b.contami)+'</div></div>';
