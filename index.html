@@ -518,6 +518,24 @@ function toggleSample() {
 }
 
 // ===== 保存 =====
+async function saveNutritionOnly() {
+  if (!db) { toast('Firestoreに接続されていません', true); return; }
+  if (!currentSpecId) { toast('先に規格書を保存してください', true); return; }
+  // フォームから栄養成分値を収集
+  var n = currentSpec.nutrition;
+  ['e','p','f','c','s','w','sf','su','fiber','ash','unit','note'].forEach(function(k) {
+    var el = document.getElementById('n-' + k);
+    if (el) n[k] = (el.type === 'number') ? (parseFloat(el.value) || 0) : el.value;
+  });
+  try {
+    await db.collection('product_specs').doc(currentSpecId).update({ nutrition: n });
+    toast('栄養成分を保存しました ✓');
+  } catch(e) {
+    toast('保存失敗: ' + e.message, true);
+    console.error(e);
+  }
+}
+
 async function saveSpec() {
   if (!db) { toast('Firestoreに接続されていません',true); return; }
   collectForm();
@@ -862,6 +880,7 @@ function renderEditor() {
     +   '<div style="display:flex;gap:6px">'
     +     '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="applyMasterToSpec();calcNutritionSilent();toast(\'マスターから栄養素を再反映しました ✓\')">🔄 マスターから再反映</button>'
     +     '<button class="btn btn-sm" onclick="calcNutrition()" style="background:#e8f0ff;color:#1a3a5c">🧮 原材料から再計算</button>'
+    +     '<button class="btn btn-primary btn-sm" onclick="saveNutritionOnly()">💾 栄養成分を保存</button>'
     +   '</div>'
     + '</div>'
     + '<p style="font-size:12px;color:#888;margin-bottom:12px">1袋（'+h(b.unit||'—')+'）あたりの値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
