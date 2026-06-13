@@ -306,7 +306,7 @@ function renderList() {
   }
   el.innerHTML = '';
   specListCache.forEach(function(s) {
-    var d = s.updatedAt ? new Date(s.updatedAt.toDate()).toLocaleDateString('ja-JP') : '';
+    var d = (s.updatedAt && typeof s.updatedAt.toDate === 'function') ? new Date(s.updatedAt.toDate()).toLocaleDateString('ja-JP') : '';
     var active = s.id === currentSpecId ? ' active' : '';
     var isSample = s.isSample ? true : false;
     var itemStyle = isSample ? 'opacity:0.5;border-style:dashed;' : '';
@@ -538,7 +538,7 @@ async function saveSpec() {
       toast('保存しました ✓');
     // 一覧のキャッシュを更新して内容量などを反映
     var idx2 = specListCache.findIndex(function(s){ return s.id === currentSpecId; });
-    if (idx2 >= 0) { specListCache[idx2] = Object.assign({id: currentSpecId}, currentSpec); }
+    if (idx2 >= 0) { var cached = Object.assign({id: currentSpecId}, currentSpec); cached.updatedAt = null; specListCache[idx2] = cached; }
     renderList();
     } else {
       var ref = await db.collection('product_specs').add(currentSpec);
