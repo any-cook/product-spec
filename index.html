@@ -698,6 +698,7 @@ function renderEditor() {
     + '</div>'
     + '<div class="g2">'
     +   fld('販売先会社名','text','f-buyer',     h(b.buyer||''),     'oninput="currentSpec.basic.buyer=this.value"')
+    +   fld('販売先住所',  'text','f-buyerAddr', h(b.buyerAddr||''), 'oninput="currentSpec.basic.buyerAddr=this.value"')
     +   fld('販売先担当者','text','f-buyerContact', h(b.buyerContact||''), 'oninput="currentSpec.basic.buyerContact=this.value"')
     + '</div>'
     +   fld('作成日','text','f-created', h(b.created), 'oninput="currentSpec.basic.created=this.value"')
@@ -2649,6 +2650,9 @@ function genPreview() {
   html += '<tr><th>保存方法（開封後）</th><td colspan="3">'+h(b.storage2)+'</td></tr>';
   html += '<tr><th>品質劣化内容</th><td colspan="3" style="font-size:7pt">'+h(b.degradation)+'</td></tr>';
   html += '<tr><th>遺伝子組み換え</th><td>'+h(b.gmo)+'</td><th>品質保持剤</th><td>'+h(b.preservative)+'</td></tr>';
+  if (b.buyer) {
+    html += '<tr><th>販売者</th><td colspan="3" style="font-size:7pt">'+h(b.buyer)+(b.buyerAddr ? '　'+h(b.buyerAddr) : '')+'</td></tr>';
+  }
   html += '</table></div>';
   html += '<div><div class="sec">▼ 栄養成分情報</div><table>';
   html += '<tr><th colspan="2">分析項目名</th><th>分析値</th><th>単位</th></tr>';
@@ -2675,9 +2679,6 @@ function genPreview() {
     html += '<div class="note">・配合比は社外秘のため非開示　・アレルギー物質は特定原材料等28品目のみ調査　・遺伝子組み換え区分は主要原料のみ</div>';
   }
   html += '<div class="tgrid" style="margin-top:5px">';
-  html += '<div><div class="sec">▼ 製造情報</div>';
-  html += '<div class="lbox" style="font-size:7pt">製造所：'+h(b.mfr)+'<br>'+h(b.maddr)+'</div>';
-  html += '<table><tr><th>No</th><th>工程名称</th><th>管理基準</th></tr>'+procRows+'</table></div>';
   html += '<div><div class="sec">▼ 一括表示内容記載例</div><table>';
   html += '<tr><th>名称</th><td>'+h(b.ptype)+'</td></tr>';
   html += '<tr><th>原材料名</th><td style="font-size:6.5pt;line-height:1.3">'+h(labelText)+'</td></tr>';
@@ -2693,6 +2694,9 @@ function genPreview() {
   html += '<div class="sec">▼ 調理方法</div>';
   html += '<div class="lbox" style="font-size:6.5pt;line-height:1.3">'+(currentSpec.cooking||'').replace(/\n/g,'<br>')+'</div></div>';
   html += '</div>';
+  html += '<div style="margin-top:6px;font-size:7pt;color:#444;border-top:1px solid #ccc;padding-top:4px">'
+        + '製造所　合同会社 エニクック　福岡県筑紫野市阿志岐133-1'
+        + '</div>';
   html += '<div class="footer">▼ 特記事項：'+(currentSpec.special||'').replace(/\n/g,' ')+'</div>';
 
   a4.innerHTML = html;
