@@ -2852,21 +2852,29 @@ async function loadMasterFromFirestore() {
       if (d.additionalCosts)  masterData.additionalCosts  = d.additionalCosts;
       if (d.cautionMaster)    masterData.cautionMaster    = d.cautionMaster;
       if (d.cookingMaster)    masterData.cookingMaster    = d.cookingMaster;
-      // master-areaが存在すれば再描画（常に存在するはず）
-      renderMasterTables();
+      // master-areaが存在すれば再描画
+      try { renderMasterTables(); } catch(re) { console.warn('[Master] renderMasterTables失敗:', re.message); }
       // 荷姿タブの包材選択ドロップダウンを更新
-      refreshPackagingSelects();
-      refreshLotSelector();
+      try { refreshPackagingSelects(); } catch(re2) { console.warn('[Master] refreshPackagingSelects失敗:', re2.message); }
+      try { refreshLotSelector(); } catch(re3) { console.warn('[Master] refreshLotSelector失敗:', re3.message); }
       var total = masterData.materialPrices.length + masterData.processingCosts.length
                 + masterData.packagingCosts.length + masterData.shippingCosts.length
                 + masterData.additionalCosts.length;
       if (total > 0) toast('マスター読込完了（原材料' + masterData.materialPrices.length + '品目）✓');
     }
     masterLoaded = true;
-    masterLoadedCallbacks.forEach(function(fn){ fn(); });
+    var cbs = masterLoadedCallbacks.slice();
     masterLoadedCallbacks = [];
+    cbs.forEach(function(fn){ try { fn(); } catch(ce){ console.warn('[Master] callback失敗:', ce.message); } });
     console.log('[Master] 読込完了');
-  } catch(e) { console.warn('[Master] 読込失敗:', e.message); }
+  } catch(e) { 
+    console.warn('[Master] 読込失敗:', e.message);
+    // 読込失敗でもmasterLoadedをtrueにしてopenSpecをブロックしない
+    masterLoaded = true;
+    var cbs2 = masterLoadedCallbacks.slice();
+    masterLoadedCallbacks = [];
+    cbs2.forEach(function(fn){ try { fn(); } catch(ce){} });
+  }
 }
 
 async function saveMasterToFirestore() {
