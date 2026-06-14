@@ -2642,26 +2642,43 @@ function genPreview() {
     return (parseFloat(b.ratio)||0) - (parseFloat(a.ratio)||0);
   });
   var rowNum = 0;
+  var additiveRows = [];
   sortedIngs.forEach(function(ing){
     // 水・飲料水・水（食品）は原材料情報から除外
     var nm = (ing.name || '').trim();
     if (nm === '水' || nm === '飲料水' || nm === '水（食品）' || nm === '食品水') return;
-    rowNum++;
-    ingRows += '<tr>';
-    ingRows += '<td style="text-align:center">'+rowNum+'</td>';
     var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
     var dispName = (mat && mat.generalName) ? mat.generalName
-                 : (mat ? ing.name : (findInFoodDB(ing.name) ? ing.name : ing.name));
-    // マスターにgeneralNameが未登録でもing.generalNameがあれば使用
+                 : (mat ? ing.name : ing.name);
     if (!dispName || dispName === ing.name) {
       if (ing.generalName) dispName = ing.generalName;
     }
     if (!dispName) dispName = ing.name;
     var dispCountry = ing.country || (mat && mat.origin ? mat.origin : '');
+    // 添加物チェックがついている場合は末尾にまとめる
+    var isAdditive = mat && mat.isAdditive;
+    if (isAdditive) {
+      additiveRows.push({dispName:dispName, country:dispCountry, allergens:ing.allergens, ratio:ing.ratio, feature:ing.feature, addUse:ing.addUse, gmo:ing.gmo});
+      return;
+    }
+    rowNum++;
+    ingRows += '<tr>';
+    ingRows += '<td style="text-align:center">'+rowNum+'</td>';
     ingRows += '<td>'+h(dispName)+'</td><td>'+h(dispCountry)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
     ingRows += '<td>'+h(ing.feature)+'</td><td>'+h(ing.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
+    ingRows += '</tr>';
+  });
+  // 添加物を末尾に追加
+  additiveRows.forEach(function(a){
+    rowNum++;
+    ingRows += '<tr style="background:#fff8f0">';
+    ingRows += '<td style="text-align:center">'+rowNum+'</td>';
+    ingRows += '<td>'+h(a.dispName)+'</td><td>'+h(a.country)+'</td><td>'+h(a.allergens)+'</td>';
+    ingRows += '<td style="text-align:center">'+h(a.ratio||'社外秘')+'</td>';
+    ingRows += '<td>'+h(a.feature)+'</td><td>'+h(a.addUse)+'</td>';
+    ingRows += '<td style="text-align:center">'+h(a.gmo)+'</td>';
     ingRows += '</tr>';
   });
 
@@ -3048,6 +3065,7 @@ function renderMasterPanel() {
     + '<colgroup>'
     +   '<col style="width:28px">'
     +   '<col style="width:28px">'
+    +   '<col style="width:28px">'
     +   '<col style="width:62px">'
     +   '<col style="width:115px">'
     +   '<col style="width:95px">'
@@ -3068,6 +3086,7 @@ function renderMasterPanel() {
     + '<thead><tr style="background:#1a3a5c;color:#fff;font-size:11px">'
     +   '<th style="padding:3px 2px;background:#155a32">有機</th>'
     +   '<th style="padding:3px 2px;background:#155a32">限定</th>'
+    +   '<th style="padding:3px 2px;background:#7b3f00;font-size:10px">添加物</th>'
     +   '<th style="padding:3px 3px;background:#7b3f00;font-size:10px">分類</th>'
     +   '<th style="padding:3px 5px;text-align:left;background:#1e4d7a">原材料名</th>'
     +   '<th style="padding:3px 5px;text-align:left;background:#0a5a3a">一般名称</th>'
@@ -3448,6 +3467,11 @@ function renderMatTable() {
     html += '<td style="text-align:center;background:#f0f4ff;padding:3px">'
       + '<input type="checkbox" '+(m.isLimited?'checked':'')+' title="特定商品限定"'
       + ' onchange="masterData.materialPrices['+i+'].isLimited=this.checked;renderMatTable()">'
+      + '</td>';
+    // 添加物チェック
+    html += '<td style="text-align:center;background:#fff4e0;padding:3px">'
+      + '<input type="checkbox" '+(m.isAdditive?'checked':'')+' title="添加物"'
+      + ' onchange="masterData.materialPrices['+i+'].isAdditive=this.checked;saveMasterToFirestore()">'
       + '</td>';
     // 分類
     var catVal = m.category||'';
