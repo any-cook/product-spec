@@ -2639,6 +2639,10 @@ function genPreview() {
 
   var ingRows = '';
   var sortedIngs = currentSpec.ings.slice().sort(function(a, b){
+    // 重量(amount)が入力されていればamount優先、なければ配合比(ratio)でソート
+    var wa = parseFloat(a.amount)||0;
+    var wb = parseFloat(b.amount)||0;
+    if (wb !== wa) return wb - wa;
     return (parseFloat(b.ratio)||0) - (parseFloat(a.ratio)||0);
   });
   var rowNum = 0;
