@@ -2923,16 +2923,33 @@ function findInFoodDB(name) {
   return null;
 }
 
+// 加工語・記号を除いたコアワードリストを返す
+function coreWords(s) {
+  var n = normName(s);
+  return n.replace(/[・、,\/･]/g, ' ')
+          .replace(/(カット|代|ゆがき|ゆで|ボイル|スライス|みじん|ざく|処理済|加工)/g, ' ')
+          .split(' ').filter(function(w){ return w.length >= 2; });
+}
 function matchMaster(ingName, masterName) {
   if (!ingName || !masterName) return false;
   if (ingName === masterName) return true;
   var n1 = normName(ingName);
   var n2 = normName(masterName);
   if (n1 === n2) return true;
-  // 片方が他方を含む（短い方が3文字以上の場合のみ）
+  // 通常の部分一致（短い方3文字以上）
   var shorter = n1.length <= n2.length ? n1 : n2;
   var longer  = n1.length <= n2.length ? n2 : n1;
   if (shorter.length >= 3 && longer.indexOf(shorter) !== -1) return true;
+  // コアワード比較（「牛肉カット代、ゆがき代」→「牛肉」がマスター「牛肉カット」にマッチ）
+  var w1 = coreWords(ingName);
+  var w2 = coreWords(masterName);
+  if (w1.length > 0 && w2.length > 0) {
+    var main1 = w1.slice().sort(function(a,b){ return b.length-a.length; })[0];
+    var main2 = w2.slice().sort(function(a,b){ return b.length-a.length; })[0];
+    if (main1.length >= 2 && main2.length >= 2) {
+      if (main2.indexOf(main1) !== -1 || main1.indexOf(main2) !== -1) return true;
+    }
+  }
   return false;
 }
 
