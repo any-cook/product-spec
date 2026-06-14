@@ -3480,8 +3480,7 @@ function renderMatTable() {
       + '<div style="display:flex;align-items:center;gap:3px">'
       + '<input type="checkbox" '+(m.isAdditive?'checked':'')+' title="添加物"'
       + ' onchange="masterData.materialPrices['+i+'].isAdditive=this.checked;saveMasterToFirestore()">'
-      + '<input type="text" value="'+h(m.additiveUse||'')+'"
-        placeholder="用途" style="width:58px;font-size:10px;padding:1px 3px;border:1px solid #ccc;border-radius:3px"'
+      + '<input type="text" value="'+h(m.additiveUse||'')+'" placeholder="用途" style="width:58px;font-size:10px;padding:1px 3px;border:1px solid #ccc;border-radius:3px"'
       + ' oninput="masterData.materialPrices['+i+'].additiveUse=this.value" onblur="saveMasterToFirestore()">'
       + '</div>'
       + '</td>';
