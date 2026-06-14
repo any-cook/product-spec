@@ -2674,12 +2674,13 @@ function genPreview() {
     ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
     ingRows += '</tr>';
   });
-  // 添加物を末尾に追加
+  // 添加物を末尾に追加（用途がある場合は「一般名称（用途）」形式）
   additiveRows.forEach(function(a){
     rowNum++;
+    var addName = a.addUse ? h(a.dispName)+'（'+h(a.addUse)+'）' : h(a.dispName);
     ingRows += '<tr style="background:#fff8f0">';
     ingRows += '<td style="text-align:center">'+rowNum+'</td>';
-    ingRows += '<td>'+h(a.dispName)+'</td><td>'+h(a.country)+'</td><td>'+h(a.allergens)+'</td>';
+    ingRows += '<td>'+addName+'</td><td>'+h(a.country)+'</td><td>'+h(a.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(a.ratio||'社外秘')+'</td>';
     ingRows += '<td>'+h(a.feature)+'</td><td>'+h(a.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(a.gmo)+'</td>';
@@ -2951,6 +2952,8 @@ function applyMasterToSpec() {
       if (mat.fiber != null)            ing.fiber = mat.fiber;
       // 有機フラグ
       if (mat.isOrganic && !ing.feature) ing.feature = '有機';
+      // 添加物用途をマスターから反映
+      if (mat.isAdditive && mat.additiveUse) ing.addUse = mat.additiveUse;
       // GMO確認結果をマスターから反映
       if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
       if (mat.allergens && !ing.allergens) ing.allergens = mat.allergens;
@@ -3069,7 +3072,7 @@ function renderMasterPanel() {
     + '<colgroup>'
     +   '<col style="width:28px">'
     +   '<col style="width:28px">'
-    +   '<col style="width:28px">'
+    +   '<col style="width:90px">'
     +   '<col style="width:62px">'
     +   '<col style="width:115px">'
     +   '<col style="width:95px">'
@@ -3090,7 +3093,7 @@ function renderMasterPanel() {
     + '<thead><tr style="background:#1a3a5c;color:#fff;font-size:11px">'
     +   '<th style="padding:3px 2px;background:#155a32">有機</th>'
     +   '<th style="padding:3px 2px;background:#155a32">限定</th>'
-    +   '<th style="padding:3px 2px;background:#7b3f00;font-size:10px">添加物</th>'
+    +   '<th style="padding:3px 2px;background:#7b3f00;font-size:10px">添加物/用途</th>'
     +   '<th style="padding:3px 3px;background:#7b3f00;font-size:10px">分類</th>'
     +   '<th style="padding:3px 5px;text-align:left;background:#1e4d7a">原材料名</th>'
     +   '<th style="padding:3px 5px;text-align:left;background:#0a5a3a">一般名称</th>'
@@ -3472,10 +3475,15 @@ function renderMatTable() {
       + '<input type="checkbox" '+(m.isLimited?'checked':'')+' title="特定商品限定"'
       + ' onchange="masterData.materialPrices['+i+'].isLimited=this.checked;renderMatTable()">'
       + '</td>';
-    // 添加物チェック
-    html += '<td style="text-align:center;background:#fff4e0;padding:3px">'
+    // 添加物チェック＋用途入力
+    html += '<td style="background:#fff4e0;padding:2px 3px">'
+      + '<div style="display:flex;align-items:center;gap:3px">'
       + '<input type="checkbox" '+(m.isAdditive?'checked':'')+' title="添加物"'
       + ' onchange="masterData.materialPrices['+i+'].isAdditive=this.checked;saveMasterToFirestore()">'
+      + '<input type="text" value="'+h(m.additiveUse||'')+'"
+        placeholder="用途" style="width:58px;font-size:10px;padding:1px 3px;border:1px solid #ccc;border-radius:3px"'
+      + ' oninput="masterData.materialPrices['+i+'].additiveUse=this.value" onblur="saveMasterToFirestore()">'
+      + '</div>'
       + '</td>';
     // 分類
     var catVal = m.category||'';
