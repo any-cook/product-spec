@@ -1380,6 +1380,9 @@ function updateIngField(i, field, val) {
         if (fd.sf != null)    ing.sf    = fd.sf;
         if (fd.fiber != null) ing.fiber = fd.fiber;
       }
+    } else {
+      // マスターにgeneralNameがあればing.generalNameに保存
+      if (mat.generalName && mat.generalName.trim()) ing.generalName = mat.generalName.trim();
     }
     if (mat) {
       if (mat.unitPrice > 0) {
@@ -2962,6 +2965,8 @@ function applyMasterToSpec() {
       if (mat.fiber != null)            ing.fiber = mat.fiber;
       // 有機フラグ
       if (mat.isOrganic && !ing.feature) ing.feature = '有機';
+      // 一般名称をing.generalNameに保存（プレビューで参照）
+      if (mat.generalName && mat.generalName.trim()) ing.generalName = mat.generalName.trim();
       // 添加物用途をマスターから反映
       if (mat.isAdditive && mat.additiveUse) ing.addUse = mat.additiveUse;
       // GMO確認結果をマスターから反映
