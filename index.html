@@ -1405,6 +1405,9 @@ function updateIngField(i, field, val) {
   } else if (field === 'allergens') {
     syncAllergens();
     updateIngSummary();
+  } else if (field === 'feature' || field === 'country' || field === 'gmo' || field === 'addUse') {
+    // 特色・産地・GMO・添加物用途は専用セルIDがないため行を再描画
+    renderIngTbody();
   } else {
     updateIngSummary();
   }
