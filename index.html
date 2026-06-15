@@ -2636,6 +2636,11 @@ function removeProc(i) { currentSpec.procs.splice(i,1); renderProcList(); }
 
 // ===== プレビュー生成 =====
 function genPreview() {
+  // マスター未ロードなら待機してから実行
+  if (!masterLoaded) {
+    onMasterLoaded(function(){ genPreview(); });
+    return;
+  }
   collectForm();
   var b = currentSpec.basic;
   var n = currentSpec.nutrition;
@@ -2663,6 +2668,7 @@ function genPreview() {
                  ? mat.generalName.trim()
                  : (ing.generalName && ing.generalName.trim() ? ing.generalName.trim() : ing.name);
     if (!dispName) dispName = ing.name;
+    console.log('[preview]', ing.name, '→ mat:', mat ? mat.name : 'none', '→ dispName:', dispName);
     var dispCountry = ing.country || (mat && mat.origin ? mat.origin : '');
     // 添加物チェックがついている場合は末尾にまとめる
     var isAdditive = mat && mat.isAdditive;
