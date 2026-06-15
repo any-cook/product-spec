@@ -2684,7 +2684,8 @@ function genPreview() {
     ingRows += '<td style="text-align:center">'+rowNum+'</td>';
     ingRows += '<td>'+h(dispName)+'</td><td>'+h(dispCountry)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
-    ingRows += '<td>'+h(ing.feature)+'</td><td>'+h(ing.addUse)+'</td>';
+    var dispFeature = ing.feature || (mat && mat.isOrganic ? '有機' : '');
+    ingRows += '<td>'+h(dispFeature)+'</td><td>'+h(ing.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
     ingRows += '</tr>';
   });
@@ -2696,7 +2697,7 @@ function genPreview() {
     ingRows += '<td style="text-align:center">'+rowNum+'</td>';
     ingRows += '<td>'+addName+'</td><td>'+h(a.country)+'</td><td>'+h(a.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(a.ratio||'社外秘')+'</td>';
-    ingRows += '<td>'+h(a.feature)+'</td><td>'+h(a.addUse)+'</td>';
+    ingRows += '<td>'+h(a.feature||'')+'</td><td>'+h(a.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(a.gmo)+'</td>';
     ingRows += '</tr>';
   });
@@ -2991,7 +2992,9 @@ function applyMasterToSpec() {
       if (mat.sf != null)               ing.sf    = mat.sf;
       if (mat.fiber != null)            ing.fiber = mat.fiber;
       // 有機フラグ
-      if (mat.isOrganic && !ing.feature) ing.feature = '有機';
+      // isOrganicがtrueならfeatureを必ず「有機」に設定（チェックが外れていても）
+      if (mat.isOrganic) ing.feature = '有機';
+      else if (!ing.feature) ing.feature = '';
       // 一般名称をing.generalNameに保存（プレビューで参照）
       if (mat.generalName && mat.generalName.trim()) ing.generalName = mat.generalName.trim();
       // 添加物用途をマスターから反映
