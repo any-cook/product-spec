@@ -2710,7 +2710,7 @@ function genPreview() {
   if (!a4) return;
 
   var html = '<h1>【商品規格書】</h1>';
-  html += '<div class="mgrid">';
+  html += '<div class="mgrid" style="align-items:start">';
   html += '<div><div class="sec">▼ 基本情報</div><table>';
   html += '<tr><th>商品名</th><td>'+h(b.pname)+'</td><th>作成日</th><td>'+h(b.created)+'</td></tr>';
   html += '<tr><th>名称</th><td>'+h(b.ptype)+'</td><th>製造国</th><td>'+h(b.country)+'</td></tr>';
@@ -2732,6 +2732,7 @@ function genPreview() {
   html += '<tr><td colspan="2">水分</td><td style="text-align:right">'+h(n.w)+'</td><td>g</td></tr>';
   html += '<tr><td colspan="2">食塩相当量</td><td style="text-align:right">'+h(n.s)+'</td><td>g</td></tr>';
   html += '</table><div class="note">（'+h(n.note)+'）'+h(n.unit)+'</div>';
+  html += '</div></div>';
   var chkIngTable = document.getElementById('chk-show-ing-table');
   var showIngTable = !chkIngTable || chkIngTable.checked;
   if (showIngTable) {
@@ -2742,7 +2743,6 @@ function genPreview() {
     html += ingRows + '</table>';
     html += '<div class="note">・配合比は社外秘のため非開示　・アレルギー物質は特定原材料等28品目のみ調査　・遺伝子組み換え区分は主要原料のみ</div>';
   }
-  html += '</div></div>';
   html += '<div class="sec" style="margin-top:5px">▼ 荷姿</div><table>';
   html += '<tr><th></th><th>縦×横×高（mm）</th><th>入数</th><th>重量(g)</th><th>材質</th></tr>';
   html += '<tr><th>個</th><td>'+h(pk.puD)+'×'+h(pk.puW)+'×'+h(pk.puH)+'</td><td>'+h(pk.puN)+'</td><td>'+h(pk.puWt)+'</td><td>'+h(pk.puMat)+'</td></tr>';
