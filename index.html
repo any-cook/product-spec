@@ -2732,11 +2732,6 @@ function genPreview() {
   html += '<tr><td colspan="2">水分</td><td style="text-align:right">'+h(n.w)+'</td><td>g</td></tr>';
   html += '<tr><td colspan="2">食塩相当量</td><td style="text-align:right">'+h(n.s)+'</td><td>g</td></tr>';
   html += '</table><div class="note">（'+h(n.note)+'）'+h(n.unit)+'</div>';
-  html += '<div class="sec" style="margin-top:5px">▼ 荷姿</div><table>';
-  html += '<tr><th></th><th>縦×横×高（mm）</th><th>入数</th><th>重量(g)</th><th>材質</th></tr>';
-  html += '<tr><th>個</th><td>'+h(pk.puD)+'×'+h(pk.puW)+'×'+h(pk.puH)+'</td><td>'+h(pk.puN)+'</td><td>'+h(pk.puWt)+'</td><td>'+h(pk.puMat)+'</td></tr>';
-  html += '<tr><th>ケース</th><td>'+h(pk.pcD)+'×'+h(pk.pcW)+'×'+h(pk.pcH)+'</td><td>'+h(pk.pcN)+'</td><td>'+h(pk.pcWt)+'</td><td>'+h(pk.pcMat)+'</td></tr>';
-  html += '</table></div></div>';
   var chkIngTable = document.getElementById('chk-show-ing-table');
   var showIngTable = !chkIngTable || chkIngTable.checked;
   if (showIngTable) {
@@ -2747,6 +2742,11 @@ function genPreview() {
     html += ingRows + '</table>';
     html += '<div class="note">・配合比は社外秘のため非開示　・アレルギー物質は特定原材料等28品目のみ調査　・遺伝子組み換え区分は主要原料のみ</div>';
   }
+  html += '<div class="sec" style="margin-top:5px">▼ 荷姿</div><table>';
+  html += '<tr><th></th><th>縦×横×高（mm）</th><th>入数</th><th>重量(g)</th><th>材質</th></tr>';
+  html += '<tr><th>個</th><td>'+h(pk.puD)+'×'+h(pk.puW)+'×'+h(pk.puH)+'</td><td>'+h(pk.puN)+'</td><td>'+h(pk.puWt)+'</td><td>'+h(pk.puMat)+'</td></tr>';
+  html += '<tr><th>ケース</th><td>'+h(pk.pcD)+'×'+h(pk.pcW)+'×'+h(pk.pcH)+'</td><td>'+h(pk.pcN)+'</td><td>'+h(pk.pcWt)+'</td><td>'+h(pk.pcMat)+'</td></tr>';
+  html += '</table>';
   html += '<div class="tgrid" style="margin-top:5px">';
   html += '<div><div class="sec">▼ 製造工程</div>';
   html += '<table><tr><th>No</th><th>工程名称</th><th>管理基準</th></tr>'+procRows+'</table></div>';
