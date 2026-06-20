@@ -2227,14 +2227,12 @@ function recalcCost() {
   var profRateForResult = co.profitRate || 20;
   var showRatesInResult = profRateForResult === 'all' ? [10,20,30] : [+profRateForResult];
   showRatesInResult.forEach(function(rate) {
-    var sellP2 = subtotal / (1 - rate/100);
+    var sellP2   = subtotal / (1 - rate / 100);
     var profitP2 = sellP2 - subtotal;
-    var shipAmt = shippingMode !== 'include' ? shipping : 0;
-    var finalP = Math.ceil(sellP2) + shipAmt;
-
-    // 送料行と合計
-    var shipAmt = shippingMode !== 'include' ? shipping : 0;
-    var finalP = Math.ceil(sellP2) + shipAmt;
+    // 合計: 送料込みモードは売価のみ、送料別モードは売価+送料
+    var finalP = shippingMode === 'include'
+               ? Math.ceil(sellP2)
+               : Math.ceil(sellP2) + shipping;
 
     // 利益行
     rhtml += '<tr style="background:#dcfce7;border-top:2px solid #22c55e">'
@@ -2244,7 +2242,7 @@ function recalcCost() {
       +'<span style="font-size:12px;color:#888;margin-left:8px">（利益: '+Math.ceil(profitP2).toLocaleString()+'円）</span>'
       +'</td></tr>';
 
-    // 送料行（送料別の場合のみ表示）
+    // 送料行（送料別モードかつ送料あり）
     if (shippingMode !== 'include' && shipping > 0) {
       rhtml += '<tr style="background:#fff8f0;border-top:1px dashed #f0a020">'
         +'<td style="padding:6px 12px;color:#c0392b">送料（別途）</td>'
@@ -2252,116 +2250,19 @@ function recalcCost() {
         +'</tr>';
     }
 
-    // 合計行
-    // 送料込み→合計に送料を含む / 送料別→合計に送料を含まない
-    var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計';
+    // 合計行（送料込みモード: 売価 / 送料別モード: 売価+送料）
+    var totalLabel2 = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）';
     rhtml += '<tr style="border-top:2px solid #c0392b;background:#fef3f0">'
-      +'<td style="padding:9px 12px;font-size:16px;font-weight:700;color:#c0392b">'+totalLabel+'</td>'
+      +'<td style="padding:9px 12px;font-size:16px;font-weight:700;color:#c0392b">'+totalLabel2+'</td>'
       +'<td style="padding:9px 12px;text-align:right;font-size:22px;font-weight:700;color:#c0392b">'
-      +Math.ceil(sellP2).toLocaleString()+' 円</td>'
+      +finalP.toLocaleString()+' 円</td>'
       +'</tr>';
   });
 
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
 
-  // ⑤ 送料行（送料別の場合のみ表示・0円でも表示）
-  if (shippingMode !== 'include') {
-    var shipDisp = shipping > 0 ? shipping.toFixed(0)+' 円' : '<span style="color:#c62828">未設定（⑤送料設定で選択してください）</span>';
-    rhtml += '<tr style="background:#f5f5f0;border-top:1px solid #ccc">'
-      +'<td style="padding:4px 8px;font-size:13px;color:#555">⑤ 送料</td>'
-      +'<td style="padding:4px 8px;text-align:right;font-size:13px">'+shipDisp+'</td></tr>';
-  }
 
-  // 送料込み合計（送料別の場合 or 送料込みの場合）
-  var totalLabel = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）　※送料別';
-  rhtml += '<tr style="border-top:2px solid #e67e22;background:#fef9e7">'
-    +'<td style="padding:8px;font-size:14px;font-weight:700;color:#e67e22">'+totalLabel+'</td>'
-    +'<td style="padding:8px;text-align:right;font-size:20px;font-weight:700;color:#e67e22">'+totalWithShip.toFixed(1)+' <span style="font-size:12px;color:#888">円</span></td>'
-    +'</tr>';
-
-  rhtml += '</table>';
-  resEl.innerHTML = rhtml;
-
-  // バナー更新（送料モードに応じて）
-  var bt = document.getElementById('banner-total');
-  if (bt) bt.textContent = (shippingMode === 'include' ? totalWithShip : subtotal).toFixed(1) + ' 円';
-
-  // 利益率別 販売価格シミュレーション
-  var profitEl = document.getElementById('profit-table');
-  if (profitEl) {
-    var basePrice = shippingMode === 'include' ? totalWithShip : subtotal;
-    // ③.5 送料前利益率（subtotalベース）を更新
-    var profitInlineEl = document.getElementById('profit-table-inline');
-    if (profitInlineEl) {
-      var selectedRateEl = document.querySelector('input[name="profit-rate"]:checked');
-      var selRate = selectedRateEl ? selectedRateEl.value : '20';
-      if (currentSpec.cost) currentSpec.cost.profitRate = selRate === 'all' ? 'all' : +selRate;
-      var inlineRates = selRate === '10' ? [10] : selRate === '30' ? [30] : selRate === 'all' ? [10,15,20,25,30,35,40] : [20];
-      var iphtml = '<table style="width:100%;border-collapse:collapse">';
-      iphtml += '<thead><tr style="background:#15803d;color:#fff">';
-      iphtml += '<th style="padding:8px 12px;text-align:center">利益率</th>';
-      iphtml += '<th style="padding:8px 12px;text-align:right">販売価格（税抜）</th>';
-      iphtml += '<th style="padding:8px 12px;text-align:right">税込8%</th>';
-      iphtml += '<th style="padding:8px 12px;text-align:right">税込10%</th>';
-      iphtml += '<th style="padding:8px 12px;text-align:right">利益額</th>';
-      iphtml += '</tr></thead><tbody>';
-      inlineRates.forEach(function(rate) {
-        var p = subtotal / (1 - rate/100);
-        var p8 = p * 1.08, p10 = p * 1.10, profit = p - subtotal;
-        var bg = (rate===20||rate===30) ? '#dcfce7' : '#fff';
-        var fw = (rate===20||rate===30) ? '700' : '400';
-        iphtml += '<tr style="background:'+bg+'"><td style="padding:7px 12px;text-align:center;font-size:15px;font-weight:700;color:#15803d">'+rate+'%</td>';
-        iphtml += '<td style="padding:7px 12px;text-align:right;font-size:17px;font-weight:'+fw+';color:#1a3a5c">'+Math.ceil(p).toLocaleString()+' 円</td>';
-        iphtml += '<td style="padding:7px 12px;text-align:right;color:#555">'+Math.ceil(p8).toLocaleString()+' 円</td>';
-        iphtml += '<td style="padding:7px 12px;text-align:right;color:#555">'+Math.ceil(p10).toLocaleString()+' 円</td>';
-        iphtml += '<td style="padding:7px 12px;text-align:right;color:#c0392b;font-weight:'+fw+'">'+Math.ceil(profit).toLocaleString()+' 円</td></tr>';
-      });
-      iphtml += '</tbody></table>';
-      profitInlineEl.innerHTML = iphtml;
-    }
-    var phtml = '<table style="width:100%;border-collapse:collapse">';
-    phtml += '<thead><tr style="background:#2a5a2e;color:#fff">';
-    phtml += '<th style="padding:6px 10px;text-align:center">利益率</th>';
-    phtml += '<th style="padding:6px 10px;text-align:right">販売価格（税抜）</th>';
-    phtml += '<th style="padding:6px 10px;text-align:right">販売価格（税込8%）</th>';
-    phtml += '<th style="padding:6px 10px;text-align:right">販売価格（税込10%）</th>';
-    phtml += '<th style="padding:6px 10px;text-align:right">利益額</th>';
-    phtml += '</tr></thead><tbody>';
-    [10,15,20,25,30,35,40].forEach(function(rate) {
-      var price    = basePrice / (1 - rate/100);
-      var price8   = price * 1.08;
-      var price10  = price * 1.10;
-      var profit   = price - basePrice;
-      var rowBg    = rate % 20 === 0 ? '#e8f5e9' : '#fff';
-      phtml += '<tr style="background:'+rowBg+'">';
-      phtml += '<td style="padding:5px 10px;text-align:center;font-weight:700;color:#2a5a2e">'+rate+'%</td>';
-      phtml += '<td style="padding:5px 10px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+Math.ceil(price).toLocaleString()+' 円</td>';
-      phtml += '<td style="padding:5px 10px;text-align:right;color:#555">'+Math.ceil(price8).toLocaleString()+' 円</td>';
-      phtml += '<td style="padding:5px 10px;text-align:right;color:#555">'+Math.ceil(price10).toLocaleString()+' 円</td>';
-      phtml += '<td style="padding:5px 10px;text-align:right;color:#c0392b">'+Math.ceil(profit).toLocaleString()+' 円</td>';
-      phtml += '</tr>';
-    });
-    phtml += '</tbody></table>';
-    profitEl.innerHTML = phtml;
-  }
-
-  // 送料マスター参照
-  var shipEl = document.getElementById('cost-shipping-ref');
-  if (shipEl) {
-    if (masterData.shippingCosts.length > 0) {
-      var totalW = currentSpec.ings ? currentSpec.ings.reduce(function(s,i){return s+(i.amount||0);},0)/1000 : 0;
-      var matched = masterData.shippingCosts.filter(function(s){ return (+s.weightLimit||0) >= totalW; });
-      matched.sort(function(a,b){ return (a.cost||0)-(b.cost||0); });
-      if (matched.length > 0) {
-        shipEl.innerHTML = '<span style="color:#1a3a5c">📦 送料マスター参照: '+h(matched[0].region)+' '+matched[0].cost+'円（'+h(matched[0].carrier)+'）</span>';
-      } else {
-        shipEl.textContent = '送料マスターに該当する地域がありません';
-      }
-    } else {
-      shipEl.textContent = '送料マスター未登録（⑦マスター登録で設定）';
-    }
-  }
 }
 
 // ===== 栄養再計算 =====
