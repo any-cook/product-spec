@@ -3633,9 +3633,11 @@ function renderProcTable() {
     html += '<tr style="background:' + rowBg + '">';
     html += mkTd(m.condition || m.productName || '', 'condition', i, 'masterData.processingCosts');
     html += mkTd(m.bags||1,  'bags',          i, 'masterData.processingCosts', 'number');
-    html += mkTd(labor,      'laborCost',      i, 'masterData.processingCosts', 'number');
-    html += mkTd(utility,    'utilityCost',    i, 'masterData.processingCosts', 'number');
-    html += '<td style="text-align:right;padding:0 6px;font-size:12px;font-weight:700;color:#1a3a5c;background:#eef2f7">' + total.toLocaleString() + ' 円</td>';
+    html += '<td><input type="number" value="'+labor+'" style="width:100%;font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px" '
+      + 'onchange="masterData.processingCosts['+i+'].laborCost=+this.value;renderProcTable();saveMasterToFirestore()"></td>';
+    html += '<td><input type="number" value="'+utility+'" style="width:100%;font-size:12px;padding:3px 5px;border:1px solid #ccc;border-radius:3px" '
+      + 'onchange="masterData.processingCosts['+i+'].utilityCost=+this.value;renderProcTable();saveMasterToFirestore()"></td>';
+    html += '<td style="text-align:right;padding:0 6px;font-size:12px;font-weight:700;color:#1a3a5c;background:#eef2f7" id="proc-total-'+i+'">' + total.toLocaleString() + ' 円</td>';
     html += mkDelBtn('masterData.processingCosts', i, 'renderProcTable');
     html += '</tr>';
   });
