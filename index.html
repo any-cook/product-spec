@@ -756,7 +756,7 @@ function renderEditor() {
     +     '<div class="search-results" id="food-results"></div>'
     +   '</div>'
     +   '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button>'
-    +   '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="applyMasterToSpec();renderIngTbody();calcNutritionSilent();">🔄 マスターから栄養素・単価を再反映</button>'
+    +   '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="loadMasterFromFirestore().then(function(){applyMasterToSpec();renderIngTbody();calcNutritionSilent();toast(\'マスターから再反映しました ✓\');});">🔄 マスターから栄養素・単価を再反映</button>'
     +   '<button class="btn btn-sm" style="background:#fff3cd;color:#856404" onclick="exportIngCSV()">📥 CSV出力</button>'
     +   '<label class="btn btn-sm" style="background:#fff3cd;color:#856404;cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importIngCSV(this)"></label>'
     + '</div>'
@@ -881,7 +881,7 @@ function renderEditor() {
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
     +   '<h3 style="margin:0">栄養成分情報</h3>'
     +   '<div style="display:flex;gap:6px">'
-    +     '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="applyMasterToSpec();renderIngTbody();calcNutritionSilent();toast(\'マスターから栄養素を再反映しました ✓\')">🔄 マスターから再反映</button>'
+    +     '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="loadMasterFromFirestore().then(function(){applyMasterToSpec();renderIngTbody();calcNutritionSilent();toast(\'マスターから再反映しました ✓\');});">🔄 マスターから再反映</button>'
     +     '<button class="btn btn-sm" onclick="calcNutrition()" style="background:#e8f0ff;color:#1a3a5c">🧮 原材料から再計算</button>'
     +     '<button class="btn btn-primary btn-sm" onclick="saveNutritionOnly()">💾 栄養成分を保存</button>'
     +   '</div>'
@@ -1049,7 +1049,7 @@ function renderEditor() {
     + '<div class="card"><h3>① 原材料費明細</h3>'
     + '<p style="font-size:12px;color:#888;margin-bottom:8px">②原材料タブで重量・単価を入力すると自動計算されます。</p>'
     + '<div id="cost-ing-detail"></div>'
-    + '<div style="margin-top:6px"><button class="btn btn-sm" onclick="applyMasterToSpec();renderIngTbody();recalcCost();calcNutritionSilent();">🔄 マスターから単価を再反映</button></div>'
+    + '<div style="margin-top:6px"><button class="btn btn-sm" onclick="loadMasterFromFirestore().then(function(){applyMasterToSpec();renderIngTbody();recalcCost();calcNutritionSilent();toast(\'マスターから再反映しました ✓\');});">🔄 マスターから単価を再反映</button></div>'
     + '</div>'
     // ② ロット別加工費
     + '<div class="card"><h3>② ロット別加工費</h3>'
@@ -2751,7 +2751,7 @@ function onMasterLoaded(fn) {
 
 async function loadMasterFromFirestore() {
   try {
-    var doc = await db.collection('masters').doc('all').get();
+    var doc = await db.collection('masters').doc('all').get({source:'server'});
     if (doc.exists) {
       var d = doc.data();
       if (d.materialPrices)   masterData.materialPrices   = d.materialPrices;
