@@ -2905,7 +2905,8 @@ function applyMasterToSpec() {
       if (mat.origin && mat.origin.trim()) ing.country = mat.origin.trim();
       // GMO確認結果をマスターから反映
       if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
-      if (mat.allergens && !ing.allergens) ing.allergens = mat.allergens;
+      // アレルゲンはマスターの値で常に上書き
+      if (mat.allergens != null) ing.allergens = mat.allergens;
       applied++;
     } else {
       // マスター未登録 → FOOD_DBから栄養素のみ補完
