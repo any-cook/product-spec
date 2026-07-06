@@ -2609,8 +2609,9 @@ function genPreview() {
   });
 
   var a4 = document.getElementById('a4-body');
-  if (!a4) return;
+  if (!a4) { console.error('[genPreview] a4-body not found'); return; }
 
+  try {
   var html = '<h1>【商品規格書】</h1>';
   html += '<div class="mgrid" style="align-items:start">';
   html += '<div><div class="sec">▼ 基本情報</div><table>';
@@ -2680,6 +2681,10 @@ function genPreview() {
   html += '<div class="footer">▼ 特記事項：'+(currentSpec.special||'').replace(/\n/g,' ')+'</div>';
 
   a4.innerHTML = html;
+  } catch(gpe) {
+    console.error('[genPreview] エラー:', gpe.message, gpe.stack);
+    a4.innerHTML = '<p style="color:red;padding:20px">プレビュー生成エラー: ' + gpe.message + '</p>';
+  }
 }
 
 // ===== 印刷 =====
