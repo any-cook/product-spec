@@ -485,6 +485,8 @@ async function openSpec(id) {
     currentSpec = doc.data();
     if (!currentSpec.ings) currentSpec.ings = JSON.parse(JSON.stringify(DEFAULT_INGS));
     if (!currentSpec.procs) currentSpec.procs = JSON.parse(JSON.stringify(DEFAULT_PROCS));
+    // labelTextが未定義の場合はnullにして自動生成を許可
+    if (currentSpec.labelText === undefined) currentSpec.labelText = null;
     if (!currentSpec.pkg) currentSpec.pkg = makeEmptySpec().pkg;
     if (!currentSpec.basic) currentSpec.basic = makeEmptySpec().basic;
     if (!currentSpec.nutrition) currentSpec.nutrition = makeEmptySpec().nutrition;
@@ -862,7 +864,7 @@ function renderEditor() {
     +     '<label class="fl" style="margin:0">一括表示用 原材料名（重量多い順・自動生成）</label>'
     +     '<button class="btn btn-sm" style="font-size:11px;padding:2px 8px" onclick="rebuildLabelText()">↻ 重量順に再生成</button>'
     +   '</div>'
-    +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value" placeholder="自動生成されます。直接編集も可能です。"></textarea>'
+    +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value===undefined?null:this.value" placeholder="自動生成されます。直接編集も可能です。"></textarea>'
     + '</div>'
     + '<div style="margin-top:8px">'
     +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
@@ -1966,19 +1968,20 @@ function autoLabelText() {
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
-  // 自動生成は初回のみ（currentSpec.labelTextが空の場合）
-  // アレルゲン変更時は既存テキストのアレルゲン部分だけ更新
-  var currentVal = el.value || '';
+  // labelTextが未設定(null/undefined)の場合のみ自動生成
+  // 空文字('')は手動で消去した状態として保持する
   var alPattern = /、（一部に[^）]+を含む）$/;
-  if (currentVal === '' || !currentSpec.labelText) {
+  if (currentSpec.labelText == null) {
     // 初回生成
     el.value = countryText + nameList + allergenText;
+    currentSpec.labelText = el.value;
   } else {
-    // 既存テキストのアレルゲン部分だけ更新（手動編集を保持）
+    // 既存テキストのアレルゲン部分だけ更新（手動編集・消去を保持）
+    var currentVal = el.value || '';
     var baseText = currentVal.replace(alPattern, '');
     el.value = baseText + allergenText;
+    currentSpec.labelText = el.value;
   }
-  if (currentSpec) currentSpec.labelText = el.value;
 }
 
 // ===== アレルゲン =====
