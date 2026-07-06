@@ -2599,7 +2599,8 @@ function genPreview() {
     ingRows += '<td>'+h(dispName)+'</td><td>'+h(dispCountry)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
     ingRows += '<td>'+h(dispFeature)+'</td><td>'+h(ing.addUse)+'</td>';
-    var dispGmo = (ing.gmo && ing.gmo !== '対象外') ? ing.gmo : '';
+    var _validGmo = ['非組換え','組換え','不分別'];
+    var dispGmo = (ing.gmo && _validGmo.indexOf(ing.gmo) !== -1) ? ing.gmo : '';
     ingRows += '<td style="text-align:center">'+h(dispGmo)+'</td>';
     ingRows += '</tr>';
   });
@@ -2951,8 +2952,9 @@ function applyMasterToSpec() {
       if (mat.allergens != null) ing.allergens = mat.allergens;
       applied++;
     } else {
-      // マスター未登録 → FOOD_DBから栄養素のみ補完
-      console.log('[applyMaster] 未マッチ:', JSON.stringify(ing.name), '/ normName:', normName(ing.name));
+      // マスター未登録 → GMOをクリア・FOOD_DBから栄養素のみ補完
+      ing.gmo = '';
+      ing.isAdditive = false;
       var fd = findInFoodDB(ing.name);
       if (fd) {
         if (fd.e != null) ing.e = fd.e;
