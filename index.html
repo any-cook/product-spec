@@ -1914,7 +1914,21 @@ function rebuildLabelText() {
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
   // 添加物を反映（/添加物 形式）
+  // 添加物フラグがtrueのingを自動集約（additiveTextが空でも添加物ingがあれば生成）
   var additive = currentSpec.additiveText || '';
+  if (!additive.trim()) {
+    // isAdditiveがtrueのingから一般名称を収集
+    var autoAddList = sorted.filter(function(ing){
+      var m2 = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+      return (m2 && m2.isAdditive) || ing.isAdditive;
+    }).map(function(ing){
+      var m2 = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+      var gn = (m2 && m2.generalName) ? m2.generalName : (ing.generalName || ing.name);
+      var use = (m2 && m2.additiveUse) ? m2.additiveUse : (ing.addUse || '');
+      return use ? gn + '（' + use + '）' : gn;
+    });
+    additive = autoAddList.join('、');
+  }
   var labelVal = countryText + nameList;
   if (additive.trim()) labelVal += '/' + additive.trim();
   labelVal += allergenText;
@@ -2551,6 +2565,10 @@ function genPreview() {
   var pk = currentSpec.pkg;
   var al = currentSpec.allergens || [];
   var labelText = currentSpec.labelText || currentSpec.ings.map(function(i){ return i.name; }).join('、');
+  // 添加物テキストが空の場合、末尾に残った不要な/を除去
+  if (!(currentSpec.additiveText || '').trim()) {
+    labelText = labelText.replace(/\/+([（(]一部に)/g, '$1').replace(/\/+$/g, '').replace(/\/+([（(]一部に)/g, '$1');
+  }
 
   var ingRows = '';
   var sortedIngs = currentSpec.ings.slice().sort(function(a, b){
