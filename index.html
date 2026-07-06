@@ -1906,8 +1906,7 @@ function rebuildLabelText() {
       if (mat && mat.origin) origin = mat.origin;
       else if (ing.country) origin = ing.country;
     }
-    // マスターに一般名称があればそちらを使用
-    var dispName = (mat && mat.generalName) ? mat.generalName : ing.name;
+    var dispName = getDispName(ing);
     return dispName + (origin ? '（'+origin+'）' : '');
   }).filter(Boolean).join('、');
   var checked = [];
@@ -1961,8 +1960,7 @@ function autoLabelText() {
     var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
     if (mat && mat.origin) origin = mat.origin;
     else if (ing.country) origin = ing.country;
-    // マスターに一般名称があればそちらを使用
-    var dispName = (mat && mat.generalName) ? mat.generalName : ing.name;
+    var dispName = getDispName(ing);
     return dispName + (origin ? '（'+origin+'）' : '');
   }).filter(Boolean).join('、');
   var checked = [];
@@ -2584,11 +2582,7 @@ function genPreview() {
     var nm = (ing.name || '').trim();
     if (nm === '水' || nm === '飲料水' || nm === '水（食品）' || nm === '食品水') return;
     var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
-    // 一般名称の優先順位: ①マスターのgeneralName ②ing.generalName ③ing.name
-    var dispName = (mat && mat.generalName && mat.generalName.trim())
-                 ? mat.generalName.trim()
-                 : (ing.generalName && ing.generalName.trim() ? ing.generalName.trim() : ing.name);
-    if (!dispName) dispName = ing.name;
+    var dispName = getDispName(ing);
     var dispCountry = ing.country || (mat && mat.origin ? mat.origin : '');
     var isAdditive = (mat && mat.isAdditive) || ing.isAdditive;
     var dispFeature = ing.feature || (mat && mat.isOrganic ? '有機' : '');
@@ -2839,6 +2833,14 @@ function findInFoodDB(name) {
     if (shorter.length >= 3 && longer.indexOf(shorter) !== -1) return FOOD_DB[keys[j]];
   }
   return null;
+}
+
+// 原材料の表示名（一般名称）を取得する共通関数
+function getDispName(ing) {
+  var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+  if (mat && mat.generalName && mat.generalName.trim()) return mat.generalName.trim();
+  if (ing.generalName && ing.generalName.trim()) return ing.generalName.trim();
+  return ing.name || '';
 }
 
 function stripSuffix(s) {
