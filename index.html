@@ -2588,7 +2588,7 @@ function genPreview() {
     var dispFeature = ing.feature || (mat && mat.isOrganic ? '有機' : '');
     rowNum++;
     // 添加物チェックがついている行のみ薄オレンジ背景
-    var rowStyle = (isAdditive && ing.addUse) ? ' style="background:#fff8f0"' : '';
+    var rowStyle = '';
     ingRows += '<tr'+rowStyle+'>';
     ingRows += '<td style="text-align:center">'+rowNum+'</td>';
     ingRows += '<td>'+h(dispName)+'</td><td>'+h(dispCountry)+'</td><td>'+h(ing.allergens)+'</td>';
