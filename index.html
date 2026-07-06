@@ -2579,7 +2579,6 @@ function genPreview() {
     return (parseFloat(b.ratio)||0) - (parseFloat(a.ratio)||0);
   });
   var rowNum = 0;
-  var additiveRows = [];
   sortedIngs.forEach(function(ing){
     // 水・飲料水・水（食品）は原材料情報から除外
     var nm = (ing.name || '').trim();
@@ -2590,34 +2589,18 @@ function genPreview() {
                  ? mat.generalName.trim()
                  : (ing.generalName && ing.generalName.trim() ? ing.generalName.trim() : ing.name);
     if (!dispName) dispName = ing.name;
-    console.log('[preview]', ing.name, '→ mat:', mat ? mat.name : 'none', '→ dispName:', dispName);
     var dispCountry = ing.country || (mat && mat.origin ? mat.origin : '');
-    // 添加物チェックがついている場合は末尾にまとめる
     var isAdditive = (mat && mat.isAdditive) || ing.isAdditive;
-    if (isAdditive) {
-      additiveRows.push({dispName:dispName, country:dispCountry, allergens:ing.allergens, ratio:ing.ratio, feature:ing.feature, addUse:ing.addUse, gmo:ing.gmo});
-      return;
-    }
+    var dispFeature = ing.feature || (mat && mat.isOrganic ? '有機' : '');
     rowNum++;
-    ingRows += '<tr>';
+    // 添加物は薄オレンジ背景で区別
+    var rowStyle = isAdditive ? ' style="background:#fff8f0"' : '';
+    ingRows += '<tr'+rowStyle+'>';
     ingRows += '<td style="text-align:center">'+rowNum+'</td>';
     ingRows += '<td>'+h(dispName)+'</td><td>'+h(dispCountry)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
-    var dispFeature = ing.feature || (mat && mat.isOrganic ? '有機' : '');
     ingRows += '<td>'+h(dispFeature)+'</td><td>'+h(ing.addUse)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
-    ingRows += '</tr>';
-  });
-  // 添加物を末尾に追加（用途がある場合は「一般名称（用途）」形式）
-  additiveRows.forEach(function(a){
-    rowNum++;
-    var addName = h(a.dispName);
-    ingRows += '<tr style="background:#fff8f0">';
-    ingRows += '<td style="text-align:center">'+rowNum+'</td>';
-    ingRows += '<td>'+addName+'</td><td>'+h(a.country)+'</td><td>'+h(a.allergens)+'</td>';
-    ingRows += '<td style="text-align:center">'+h(a.ratio||'社外秘')+'</td>';
-    ingRows += '<td>'+h(a.feature||'')+'</td><td>'+h(a.addUse)+'</td>';
-    ingRows += '<td style="text-align:center">'+h(a.gmo)+'</td>';
     ingRows += '</tr>';
   });
 
