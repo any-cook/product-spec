@@ -1400,7 +1400,8 @@ function updateIngField(i, field, val) {
       if (mat.w != null)     ing.w     = mat.w;
       if (mat.sf != null)    ing.sf    = mat.sf;
       if (mat.fiber != null) ing.fiber = mat.fiber;
-      if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
+      // GMO: 対象外は空文字（未設定）として扱う
+      if (mat.gmoCheck) ing.gmo = (mat.gmoCheck === '対象外') ? '' : mat.gmoCheck;
     }
     autoLabelText();
     updateIngSummary();
@@ -2366,7 +2367,7 @@ function applyGmoCheckToSpec(matName, gmoVal) {
   if (!currentSpec || !currentSpec.ings) return;
   currentSpec.ings.forEach(function(ing) {
     if (matchMaster(ing.name, matName)) {
-      ing.gmo = gmoVal;
+      ing.gmo = (gmoVal === '対象外') ? '' : gmoVal;
     }
   });
   // renderIngTbodyでGMOセルを更新
@@ -2943,7 +2944,7 @@ function applyMasterToSpec() {
       // 産地をマスターから反映
       if (mat.origin && mat.origin.trim()) ing.country = mat.origin.trim();
       // GMO確認結果をマスターから反映
-      if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
+      if (mat.gmoCheck) ing.gmo = (mat.gmoCheck === '対象外') ? '' : mat.gmoCheck;
       // アレルゲンはマスターの値で常に上書き
       if (mat.allergens != null) ing.allergens = mat.allergens;
       applied++;
