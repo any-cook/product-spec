@@ -2836,10 +2836,42 @@ function findInFoodDB(name) {
 }
 
 // 原材料の表示名（一般名称）を取得する共通関数
+// 原材料名→一般名称変換テーブル
+var FOOD_NAME = {
+  '豚肩ロース':'豚肉','豚ロース':'豚肉','豚バラ':'豚肉','豚もも':'豚肉','豚ヒレ':'豚肉',
+  '牛肩ロース':'牛肉','牛ロース':'牛肉','牛バラ':'牛肉','牛もも':'牛肉','牛ヒレ':'牛肉',
+  '鶏もも':'鶏肉','鶏むね':'鶏肉','鶏ささみ':'鶏肉','鶏ひき肉':'鶏肉',
+  '薄口醤油':'醤油','濃口醤油':'醤油','たまり醤油':'醤油','白醤油':'醤油',
+  '薄口しょうゆ':'醤油','濃口しょうゆ':'醤油',
+  '本みりん':'みりん','みりん風調味料':'みりん',
+  '上白糖':'砂糖','グラニュー糖':'砂糖','三温糖':'砂糖','きび砂糖':'砂糖',
+  '食塩':'塩','岩塩':'塩','海塩':'塩',
+  '米酢':'酢','穀物酢':'酢','りんご酢':'酢',
+  '白味噌':'みそ','赤味噌':'みそ','合わせ味噌':'みそ',
+  'にんにく':'ニンニク','生姜':'ショウガ','しょうが':'ショウガ'
+};
+function findInFoodName(name) {
+  if (!name) return null;
+  // 完全一致
+  if (FOOD_NAME[name]) return FOOD_NAME[name];
+  // normNameで正規化後に検索
+  var n1 = normName(name);
+  var keys = Object.keys(FOOD_NAME);
+  // マスター名が前方一致（豚肩ロース2.3mm→豚肩ロース）
+  for (var i=0; i<keys.length; i++) {
+    var n2 = normName(keys[i]);
+    if (n2.length >= 3 && n1.startsWith(n2)) return FOOD_NAME[keys[i]];
+  }
+  return null;
+}
+
 function getDispName(ing) {
   var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
   if (mat && mat.generalName && mat.generalName.trim()) return mat.generalName.trim();
   if (ing.generalName && ing.generalName.trim()) return ing.generalName.trim();
+  // FOOD_NAMEから一般名称を検索
+  var fd = findInFoodName(ing.name);
+  if (fd) return fd;
   return ing.name || '';
 }
 
