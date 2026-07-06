@@ -2575,7 +2575,7 @@ function genPreview() {
     console.log('[preview]', ing.name, '→ mat:', mat ? mat.name : 'none', '→ dispName:', dispName);
     var dispCountry = ing.country || (mat && mat.origin ? mat.origin : '');
     // 添加物チェックがついている場合は末尾にまとめる
-    var isAdditive = mat && mat.isAdditive;
+    var isAdditive = (mat && mat.isAdditive) || ing.isAdditive;
     if (isAdditive) {
       additiveRows.push({dispName:dispName, country:dispCountry, allergens:ing.allergens, ratio:ing.ratio, feature:ing.feature, addUse:ing.addUse, gmo:ing.gmo});
       return;
@@ -2899,7 +2899,8 @@ function applyMasterToSpec() {
       else if (!ing.feature) ing.feature = '';
       // 一般名称をing.generalNameに保存（プレビューで参照）
       if (mat.generalName && mat.generalName.trim()) ing.generalName = mat.generalName.trim();
-      // 添加物用途をマスターから反映
+      // 添加物フラグ・用途をマスターから反映
+      ing.isAdditive = mat.isAdditive ? true : false;
       if (mat.isAdditive && mat.additiveUse) ing.addUse = mat.additiveUse;
       // 産地をマスターから反映
       if (mat.origin && mat.origin.trim()) ing.country = mat.origin.trim();
