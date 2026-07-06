@@ -2901,6 +2901,8 @@ function applyMasterToSpec() {
       if (mat.generalName && mat.generalName.trim()) ing.generalName = mat.generalName.trim();
       // 添加物用途をマスターから反映
       if (mat.isAdditive && mat.additiveUse) ing.addUse = mat.additiveUse;
+      // 産地をマスターから反映
+      if (mat.origin && mat.origin.trim()) ing.country = mat.origin.trim();
       // GMO確認結果をマスターから反映
       if (mat.gmoCheck) ing.gmo = mat.gmoCheck;
       if (mat.allergens && !ing.allergens) ing.allergens = mat.allergens;
