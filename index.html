@@ -2598,7 +2598,8 @@ function genPreview() {
     ingRows += '<td>'+h(dispName)+'</td><td>'+h(dispCountry)+'</td><td>'+h(ing.allergens)+'</td>';
     ingRows += '<td style="text-align:center">'+h(ing.ratio||'社外秘')+'</td>';
     ingRows += '<td>'+h(dispFeature)+'</td><td>'+h(ing.addUse)+'</td>';
-    ingRows += '<td style="text-align:center">'+h(ing.gmo)+'</td>';
+    var dispGmo = (ing.gmo && ing.gmo !== '対象外') ? ing.gmo : '';
+    ingRows += '<td style="text-align:center">'+h(dispGmo)+'</td>';
     ingRows += '</tr>';
   });
 
