@@ -321,9 +321,18 @@ function renderList() {
 
     var body = document.createElement('div');
     var contentAmount = s.basic && s.basic.amount ? s.basic.amount : '';
+    var costInfo = '';
+    if (s.cost && s.cost.subtotal > 0) {
+      costInfo += '<span style="color:#1a3a5c">原価 ' + s.cost.subtotal.toLocaleString() + '円</span>';
+    }
+    if (s.cost && s.cost.sellPrice > 0) {
+      costInfo += (costInfo ? ' / ' : '') + '<span style="color:#c0392b;font-weight:700">売価 ' + s.cost.sellPrice.toLocaleString() + '円</span>';
+      if (s.cost.profitRate) costInfo += '<span style="color:#888">（利益' + s.cost.profitRate + '%）</span>';
+    }
     body.innerHTML = '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>'
       + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>'
-      + (contentAmount ? '<div style="font-size:10px;color:#aaa;margin-top:1px">' + h(contentAmount) + '</div>' : '');
+      + (contentAmount ? '<div style="font-size:10px;color:#aaa;margin-top:1px">' + h(contentAmount) + '</div>' : '')
+      + (costInfo ? '<div style="font-size:10px;margin-top:2px">' + costInfo + '</div>' : '');
     body.addEventListener('click', (function(id){ return function(){ openSpec(id); }; })(s.id));
 
     var btns = document.createElement('div');
@@ -2279,7 +2288,17 @@ function recalcCost() {
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
 
-
+  // 原価・売価をcostに保存（一覧表示用）
+  if (currentSpec && currentSpec.cost) {
+    currentSpec.cost.subtotal = Math.ceil(subtotal);
+    var _rate = co.profitRate || 20;
+    var _rates = _rate === 'all' ? [10,20,30] : [+_rate];
+    var _mainRate = _rates[0];
+    var _sellP = subtotal / (1 - _mainRate / 100);
+    var _finalP = shippingMode === 'include' ? Math.ceil(_sellP) : Math.ceil(_sellP) + shipping;
+    currentSpec.cost.sellPrice = _finalP;
+    currentSpec.cost.profitRate = _mainRate;
+  }
 }
 
 // ===== 栄養再計算 =====
