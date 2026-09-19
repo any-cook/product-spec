@@ -1408,8 +1408,26 @@ function updateToolbarTitle() {
 // ===== 原材料テーブル =====
 function calcRatio() {
   var total = currentSpec.ings.reduce(function(s,ing){ return s + (ing.amount||0); }, 0);
-  currentSpec.ings.forEach(function(ing){
-    ing.ratio = total > 0 ? ((ing.amount||0)/total*100).toFixed(1) : '0.0';
+  if (total <= 0) {
+    currentSpec.ings.forEach(function(ing){ ing.ratio = '0.0'; });
+    return total;
+  }
+  // 各配合比を計算
+  var sumSoFar = 0;
+  var lastIdx = -1;
+  currentSpec.ings.forEach(function(ing, i){
+    if ((ing.amount||0) > 0) lastIdx = i;
+  });
+  currentSpec.ings.forEach(function(ing, i){
+    if (i === lastIdx) {
+      // 最後の原材料は端数調整で合計を100%にする
+      var remaining = Math.round((100 - sumSoFar) * 10) / 10;
+      ing.ratio = remaining.toFixed(1);
+    } else {
+      var r = (ing.amount||0) / total * 100;
+      ing.ratio = r.toFixed(1);
+      sumSoFar += parseFloat(r.toFixed(1));
+    }
   });
   return total;
 }
