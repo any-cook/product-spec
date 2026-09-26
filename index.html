@@ -47,6 +47,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:14px;b
 input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;padding:6px 9px;border:1.5px solid #b0bec5;border-radius:5px;background:#fff;color:#222;transition:.15s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.1)}
 textarea{resize:vertical;min-height:50px;line-height:1.5}
+input::placeholder,textarea::placeholder{color:#b8b8b8;opacity:1}
 .ing-table{width:100%;border-collapse:collapse;font-size:12px}
 .ing-table th{background:#eef2f7;padding:4px 5px;border:1px solid #ccc;font-size:11px;font-weight:700;text-align:center}
 .ing-table td{border:1px solid #ccc;padding:2px 2px;vertical-align:middle}
@@ -508,14 +509,23 @@ function renderList() {
   });
 }
 
+// ===== 製品基本情報の記入例（薄文字のプレースホルダー。保存・規格書には反映されない） =====
+var BASIC_EXAMPLES = {
+  pname:'筑紫ちゃんカレー 中辛', ptype:'有機そうざい', amount:'130g×100袋', expiry:'製造日より365日',
+  country:'日本', storage:'直射日光、高温多湿を避けて常温で保存してください。', storage2:'要冷蔵',
+  degradation:'本品特有の風味がなくなること', contami:'直射日光、高温多湿を避けて常温で保存してください。'
+};
+function exPh(key) { return BASIC_EXAMPLES[key] ? ' placeholder="例：' + h(BASIC_EXAMPLES[key]) + '"' : ''; }
+
 // ===== 空のスペック生成 =====
 function makeEmptySpec() {
   return {
     basic: {
-      pname:'', ptype:'有機そうざい', amount:'130g×100袋', expiry:'製造日より365日',
-      country:'日本', storage:'直射日光、高温多湿を避けて常温で保存してください。',
-      storage2:'要冷蔵', gmo:'無', preservative:'無', degradation:'本品特有の風味がなくなること',
-      contami:'直射日光、高温多湿を避けて常温で保存してください。',
+      // 製品基本情報は空欄で開始（記入例は入力欄に薄文字で表示するだけで規格書には出ない）
+      pname:'', ptype:'', amount:'', expiry:'',
+      country:'', storage:'',
+      storage2:'', gmo:'無', preservative:'無', degradation:'',
+      contami:'',
       mfr:'合同会社 エニクック', maddr:'福岡県筑紫野市阿志岐133-1', created:todayStr(),
       buyer:'', buyerAddr:'', buyerContact:''
     },
@@ -921,32 +931,32 @@ function renderEditor() {
   var basicHtml = '<div id="panel-basic" class="panel active">'
     + '<div class="card"><h3>製品基本情報</h3>'
     + '<div class="g2">'
-    +   fld('商品名',     'text',   'f-pname',    h(b.pname),    'oninput="currentSpec.basic.pname=this.value;updateToolbarTitle()"')
-    +   fld('名称',       'text',   'f-ptype',    h(b.ptype),    'oninput="currentSpec.basic.ptype=this.value"')
+    +   fld('商品名',     'text',   'f-pname',    h(b.pname),    exPh('pname')+' oninput="currentSpec.basic.pname=this.value;updateToolbarTitle()"')
+    +   fld('名称',       'text',   'f-ptype',    h(b.ptype),    exPh('ptype')+' oninput="currentSpec.basic.ptype=this.value"')
     + '</div>'
     + '<div class="g3">'
     +   '<div class="field"><label class="fl">内容量</label>'
     +     '<div style="display:flex;gap:6px;align-items:center">'
-    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'" style="flex:1" oninput="currentSpec.basic.amount=this.value;calcNutritionSilent()">'
+    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'"'+exPh('amount')+' style="flex:1" oninput="currentSpec.basic.amount=this.value;calcNutritionSilent()">'
     +       '<label class="btn btn-sm" style="cursor:pointer;white-space:nowrap;margin:0;font-size:11px" title="商品名,内容量(g)のCSVをインポート">'
     +         '📤 CSV'
     +         '<input type="file" accept=".csv" style="display:none" onchange="importAmountCSV(this)">'
     +       '</label>'
     +     '</div>'
     +   '</div>'
-    +   fld('賞味期限（開封前）','text', 'f-expiry',  h(b.expiry),  'oninput="currentSpec.basic.expiry=this.value"')
-    +   fld('製造国',            'text', 'f-country', h(b.country), 'oninput="currentSpec.basic.country=this.value"')
+    +   fld('賞味期限（開封前）','text', 'f-expiry',  h(b.expiry),  exPh('expiry')+' oninput="currentSpec.basic.expiry=this.value"')
+    +   fld('製造国',            'text', 'f-country', h(b.country), exPh('country')+' oninput="currentSpec.basic.country=this.value"')
     + '</div>'
     + '<div class="g2">'
-    +   fld('保存方法（開封前）','text', 'f-storage',  h(b.storage),  'oninput="currentSpec.basic.storage=this.value"')
-    +   fld('保存方法（開封後）','text', 'f-storage2', h(b.storage2), 'oninput="currentSpec.basic.storage2=this.value"')
+    +   fld('保存方法（開封前）','text', 'f-storage',  h(b.storage),  exPh('storage')+' oninput="currentSpec.basic.storage=this.value"')
+    +   fld('保存方法（開封後）','text', 'f-storage2', h(b.storage2), exPh('storage2')+' oninput="currentSpec.basic.storage2=this.value"')
     + '</div>'
     + '<div class="g2">'
     +   '<div class="field"><label class="fl">遺伝子組み換え</label><select id="f-gmo" onchange="currentSpec.basic.gmo=this.value">' + selOpts(['無','有','一部有'], b.gmo) + '</select></div>'
     +   '<div class="field"><label class="fl">品質保持剤の有無</label><select id="f-preservative" onchange="currentSpec.basic.preservative=this.value">' + selOpts(['無','有'], b.preservative) + '</select></div>'
     + '</div>'
-    +   fld('品質劣化内容',   'text', 'f-degradation', h(b.degradation), 'oninput="currentSpec.basic.degradation=this.value"')
-    +   fld('コンタミ注意表示','text','f-contami',      h(b.contami),     'oninput="currentSpec.basic.contami=this.value"')
+    +   fld('品質劣化内容',   'text', 'f-degradation', h(b.degradation), exPh('degradation')+' oninput="currentSpec.basic.degradation=this.value"')
+    +   fld('コンタミ注意表示','text','f-contami',      h(b.contami),     exPh('contami')+' oninput="currentSpec.basic.contami=this.value"')
     + '</div>'
     + '<div class="card"><h3>製造者・販売先情報</h3>'
     + '<div class="g2">'
