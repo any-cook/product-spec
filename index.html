@@ -434,7 +434,7 @@ function makeEmptySpec() {
       pcD:'4700', pcW:'3600', pcH:'2200', pcN:'10', pcWt:'10500', pcMat:'段ボール'
     },
     procs: JSON.parse(JSON.stringify(DEFAULT_PROCS)),
-    labelText:'',
+    labelText: null,
     allergens:[],
     notes:'袋のふちで手を切らないようにお気を付け下さい。開けにくい時ははさみで切って下さい。\n開封時や容器に移す時はやけどをしないようにご注意ください。\n電子レンジを使用する際はラップを取る際にやけどにご注意下さい。\n開封後はなるべく早くお召上がり下さい。投げたりすると破袋します。',
     cooking:'袋（レトルトパウチ）の封を切らずにそのまま熱湯に入れ、温まるまで約5〜6分間沸騰させて下さい。\n電子レンジを使用する際は必ず別の容器に移してラップをかけて温めて下さい。\n（目安：500Wで約2分、600Wで約1分30秒）',
@@ -931,7 +931,7 @@ function renderEditor() {
     +     '<label class="fl" style="margin:0">一括表示用 原材料名（重量多い順・自動生成）</label>'
     +     '<button class="btn btn-sm" style="font-size:11px;padding:2px 8px" onclick="rebuildLabelText()">↻ 重量順に再生成</button>'
     +   '</div>'
-    +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value===undefined?null:this.value" placeholder="自動生成されます。直接編集も可能です。"></textarea>'
+    +   '<textarea id="label-text" rows="3" style="width:100%" oninput="if(currentSpec)currentSpec.labelText=this.value===undefined?null:this.value" placeholder="自動生成されます。直接編集も可能です。">'+h(currentSpec.labelText!=null?currentSpec.labelText:'')+'</textarea>'
     + '</div>'
     + '<div style="margin-top:8px">'
     +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
@@ -2057,7 +2057,7 @@ function autoLabelText() {
   var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
   // labelTextが未設定(null/undefined)の場合のみ自動生成
   // 空文字('')は手動で消去した状態として保持する
-  var alPattern = /、（一部に[^）]+を含む）$/;
+  var alPattern = /\/（一部に[^）]+を含む）$|、（一部に[^）]+を含む）$/;
   if (currentSpec.labelText == null) {
     // 初回生成
     el.value = countryText + nameList + allergenText;
