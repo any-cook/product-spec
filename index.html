@@ -487,8 +487,8 @@ function doDeleteSpec() {
     specListCache = specListCache.filter(function(s){ return s.id !== id; });
     if (currentSpecId === id) {
       currentSpec = null; currentSpecId = null;
-      document.getElementById('editor').style.display = 'none';
-      document.getElementById('empty-state').style.display = '';
+      var mainArea = document.getElementById('main-area');
+      if (mainArea) mainArea.innerHTML = '<div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選ぶか<br>「新規作成」で開始してください</p></div>';
     }
     renderList();
     toast('「' + name + '」を削除しました ✓');
@@ -575,10 +575,8 @@ async function openSpec(id) {
 // ===== 削除（削除ボタンから） =====
 function doDelete() {
   if (!currentSpecId || !currentSpec) return;
-  var name = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : 'この規格書';
-  deleteTargetId = currentSpecId;
-  document.getElementById('del-msg').textContent = '「' + name + '」を削除しますか？この操作は取り消せません。';
-  document.getElementById('del-modal').classList.add('open');
+  // 一覧の削除ボタンと同じ処理に統一
+  deleteSpec(currentSpecId);
 }
 
 // ===== 見本フラグ切替 =====
@@ -652,14 +650,17 @@ function askDelete(id, name) {
 async function confirmDelete() {
   if (!deleteTargetId || !db) return;
   try {
-    await db.collection('product_specs').doc(deleteTargetId).delete();
+    var delId = deleteTargetId;
+    await db.collection('product_specs').doc(delId).delete();
     document.getElementById('del-modal').classList.remove('open');
-    if (currentSpecId === deleteTargetId) {
+    deleteTargetId = null;
+    specListCache = specListCache.filter(function(s){ return s.id !== delId; });
+    if (currentSpecId === delId) {
       currentSpecId = null; currentSpec = null;
-      document.getElementById('main-area').innerHTML = '<div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選んでください</p></div>';
+      document.getElementById('main-area').innerHTML = '<div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選ぶか<br>「新規作成」で開始してください</p></div>';
     }
     toast('削除しました');
-    loadList();
+    renderList();
   } catch(e) { toast('削除失敗: '+e.message, true); }
 }
 
@@ -3962,15 +3963,18 @@ function importMaterialCSV(input) {
     // ヘッダーが見つからない場合は固定列順で処理
     var hasHeader = ci.name >= 0;
     var g = function(r, idx, def) { return idx >= 0 && idx < r.length ? r[idx] : (def||''); };
+    // ヘッダーなし形式でも、1行目の単価列が数値でなければ見出し行とみなしてスキップ
+    var skipFirst = hasHeader || isNaN(parseFloat((rows[0] && rows[0][1]) || ''));
     rows.forEach(function(r, i) {
-      if (i === 0) return; // ヘッダースキップ
+      if (i === 0 && skipFirst) return; // ヘッダースキップ
       if (r.length < 2) return;
-      var name, unitPrice, isOrganic, isLimited, limitedTo, origin, allergens, gmoCheck, e, p, f, c, s, w, sf, fiber;
+      var name, unitPrice, isOrganic, isLimited, limitedTo, origin, allergens, gmoCheck, e, p, f, c, s, w, sf, fiber, ash;
+      var categoryVal = '', generalNameVal = '';
       if (hasHeader) {
         // ヘッダー解析成功 → 列番号マッピングで取得
-        var categoryVal = (g(r, ci.category, '')).trim();
+        categoryVal = (g(r, ci.category, '')).trim();
         name        = (g(r, ci.name,        '')).trim();
-        var generalNameVal = (g(r, ci.generalName, '')).trim();
+        generalNameVal = (g(r, ci.generalName, '')).trim();
         unitPrice = +g(r, ci.price,     0)||0;
         isOrganic = g(r, ci.organic,    '0')==='1';
         isLimited = g(r, ci.limited,    '0')==='1';
@@ -3991,7 +3995,7 @@ function importMaterialCSV(input) {
         name=(r[0]||'').trim(); unitPrice=+r[1]||0;
         isOrganic=r[2]==='1'; limitedTo=r[3]||''; isLimited=!!limitedTo;
         origin=''; allergens=''; gmoCheck='';
-        e=+r[4]||0; p=+r[5]||0; f=+r[6]||0; c=+r[7]||0; s=+r[8]||0; w=0; ash=0;
+        e=+r[4]||0; p=+r[5]||0; f=+r[6]||0; c=+r[7]||0; s=+r[8]||0; w=0; ash=0; sf=0; fiber=0;
       }
       if (!name) return;
       var ex = masterData.materialPrices.find(function(m){ return m.name===name; });
@@ -4003,7 +4007,7 @@ function importMaterialCSV(input) {
         masterData.materialPrices.unshift({
           name:name, generalName:generalNameVal||'', category:categoryVal||'', isOrganic:isOrganic, isLimited:isLimited, limitedTo:limitedTo,
           unitPrice:unitPrice, origin:origin, allergens:allergens, gmoCheck:gmoCheck,
-          e:e, w:w, p:p, f:f, c:c, s:s, sf:sf, fiber:fiber
+          e:e, w:w, p:p, f:f, c:c, s:s, sf:sf||0, fiber:fiber||0
         });
       }
       imported++;
