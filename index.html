@@ -1450,11 +1450,7 @@ function updateIngField(i, field, val) {
     // 名前変更 → マスターを即照合して単価・栄養素を自動セット
     var ing = currentSpec.ings[i];
     var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
-    var mat = masterData.materialPrices.find(function(m) {
-      if (!matchMaster(ing.name, m.name)) return false;
-      return !m.limitedTo || m.limitedTo.trim() === '' || m.limitedTo === pname;
-    });
-    if (!mat) mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    var mat = findMaster(ing.name, pname);
     if (!mat) {
       // FOOD_DBからも検索（normName正規化・部分一致対応）
       var fd = findInFoodDB(ing.name);
@@ -1798,18 +1794,14 @@ function addFoodIng(name) {
 
   // マスターDBから取得（優先）
   var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
-  var mat = masterData.materialPrices.find(function(m) {
-    if (!matchMaster(name, m.name)) return false;
-    return !m.limitedTo || m.limitedTo.trim() === '' || m.limitedTo === pname;
-  });
-  if (!mat) mat = masterData.materialPrices.find(function(m){ return matchMaster(name, m.name); });
+  var mat = findMaster(name, pname);
 
   // 内蔵FOOD_DBから取得（マスターにない場合）
   var fd = FOOD_DB[name];
 
   var ing = {
     name: name,
-    country: mat && mat.origin ? mat.origin : (fd ? fd.co||'' : ''),
+    country: resolveOrigin({name:name, country:(fd ? fd.co||'' : '')}, mat),
     allergens: mat && mat.allergens ? mat.allergens : (fd ? (fd.al||[]).join('・') : ''),
     ratio: '', feature: '', addUse: '', gmo: '', amount: 0,
     unitPrice: mat && mat.unitPrice > 0 ? mat.unitPrice : 0,
@@ -1990,11 +1982,10 @@ function rebuildLabelText() {
     if (!ing.name) return '';
     var origin = '';
     // マスターを取得（一般名称と産地のため）
-    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    var mat = findMaster(ing.name);
     // 重量が最大のもの（1位）のみ産地を付ける
     if ((ing.amount||0) === maxAmount && maxAmount > 0) {
-      if (mat && mat.origin) origin = mat.origin;
-      else if (ing.country) origin = ing.country;
+      origin = resolveOrigin(ing, mat);
     }
     var dispName = getDispName(ing);
     return dispName + (origin ? '（'+origin+'）' : '');
@@ -2008,10 +1999,10 @@ function rebuildLabelText() {
   if (!additive.trim()) {
     // isAdditiveがtrueのingから一般名称を収集
     var autoAddList = sorted.filter(function(ing){
-      var m2 = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+      var m2 = findMaster(ing.name);
       return (m2 && m2.isAdditive) || ing.isAdditive;
     }).map(function(ing){
-      var m2 = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+      var m2 = findMaster(ing.name);
       var gn = (m2 && m2.generalName) ? m2.generalName : (ing.generalName || ing.name);
       var use = (m2 && m2.additiveUse) ? m2.additiveUse : (ing.addUse || '');
       return use ? gn + '（' + use + '）' : gn;
@@ -2047,9 +2038,8 @@ function autoLabelText() {
     if (!ing.name) return '';
     // 産地はマスターのoriginまたはing.countryを使用
     var origin = '';
-    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
-    if (mat && mat.origin) origin = mat.origin;
-    else if (ing.country) origin = ing.country;
+    var mat = findMaster(ing.name);
+    origin = resolveOrigin(ing, mat);
     var dispName = getDispName(ing);
     return dispName + (origin ? '（'+origin+'）' : '');
   }).filter(Boolean).join('、');
@@ -2091,7 +2081,7 @@ function syncAllergens() {
     // 規格書の原材料アレルゲン
     if (ing.allergens) ing.allergens.split(/[・、,\s]+/).filter(Boolean).forEach(function(a){ detected.add(a); });
     // マスターのアレルゲン列も参照
-    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    var mat = findMaster(ing.name);
     if (mat && mat.allergens) mat.allergens.split(/[・、,\s]+/).filter(Boolean).forEach(function(a){ detected.add(a); });
   });
   // 28品目アレルゲングリッドと照合（部分一致）
@@ -2463,7 +2453,8 @@ function calcNutrition() {
 function applyGmoCheckToSpec(matName, gmoVal) {
   if (!currentSpec || !currentSpec.ings) return;
   currentSpec.ings.forEach(function(ing) {
-    if (matchMaster(ing.name, matName)) {
+    var mm = findMaster(ing.name);
+    if (mm && mm.name === matName) {
       ing.gmo = (gmoVal === '対象外') ? '' : gmoVal;
     }
   });
@@ -2682,9 +2673,9 @@ function genPreview() {
     // 水・飲料水・水（食品）は原材料情報から除外
     var nm = (ing.name || '').trim();
     if (nm === '水' || nm === '飲料水' || nm === '水（食品）' || nm === '食品水') return;
-    var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+    var mat = findMaster(ing.name);
     var dispName = getDispName(ing);
-    var dispCountry = ing.country || (mat && mat.origin ? mat.origin : '');
+    var dispCountry = resolveOrigin(ing, mat);
     var isAdditive = (mat && mat.isAdditive) || ing.isAdditive;
     var dispFeature = ing.feature || (mat && mat.isOrganic ? '有機' : '');
     rowNum++;
@@ -2969,7 +2960,7 @@ function findInFoodName(name) {
 }
 
 function getDispName(ing) {
-  var mat = masterData.materialPrices.find(function(m){ return matchMaster(ing.name, m.name); });
+  var mat = findMaster(ing.name);
   if (mat && mat.generalName && mat.generalName.trim()) return mat.generalName.trim();
   if (ing.generalName && ing.generalName.trim()) return ing.generalName.trim();
   // FOOD_NAMEから一般名称を検索
@@ -3004,22 +2995,70 @@ function matchMaster(ingName, masterName) {
   return false;
 }
 
+// ===== 産地判定ヘルパー =====
+// 原材料名が「国産」「国内産」で始まるか
+function isDomesticName(s) {
+  return /^(国産|国内産)/.test((s || '').replace(/\s/g, ''));
+}
+// 産地が外国か（空欄・国産・日本・都道府県名は国内扱い）
+function isForeignOrigin(o) {
+  o = (o || '').trim();
+  if (!o) return false;
+  return !/(国産|国内|日本|県|都|府|道)/.test(o);
+}
+// 表示用の産地：マスター優先。ただし名前が「国産〜」なのに外国産地なら「国産」
+function resolveOrigin(ing, mat) {
+  var o = (mat && mat.origin && mat.origin.trim()) ? mat.origin.trim() : (ing.country || '');
+  if (isDomesticName(ing.name) && isForeignOrigin(o)) o = '国産';
+  return o;
+}
+// 空白・全角英数のみ正規化（「国産」等の接頭語は残す）
+function normKeep(s) {
+  return (s || '').replace(/\s/g, '')
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0)-0xFEE0); })
+    .toLowerCase();
+}
+// 照合スコア（0 = 不一致）
+function masterMatchScore(ingName, m) {
+  if (!ingName || !m || !m.name) return 0;
+  // 「国産〜」の原材料に外国産地のマスターは紐付けない
+  if (isDomesticName(ingName) && isForeignOrigin(m.origin)) return 0;
+  if (ingName === m.name) return 1000;
+  if (normKeep(ingName) === normKeep(m.name)) return 900;
+  if (normName(ingName) === normName(m.name)) {
+    // 接頭語（国産・有機など）の有無だけが違う
+    return 800;
+  }
+  if (matchMaster(ingName, m.name)) return 100 + normName(m.name).length; // 長い（具体的な）マスター名を優先
+  return 0;
+}
+// 最も一致度の高いマスターを返す（pname指定時は限定商品の条件も考慮）
+function findMaster(ingName, pname) {
+  var list = (masterData && masterData.materialPrices) || [];
+  var best = null, bestScore = 0, bestAllowed = null, bestAllowedScore = 0;
+  for (var i = 0; i < list.length; i++) {
+    var m = list[i];
+    var sc = masterMatchScore(ingName, m);
+    if (!sc) continue;
+    if (sc > bestScore) { best = m; bestScore = sc; }
+    if (pname !== undefined) {
+      var lt = (m.limitedTo || '').trim();
+      if (!lt || lt === pname) {
+        var sc2 = sc + (lt && lt === pname ? 1 : 0);
+        if (sc2 > bestAllowedScore) { bestAllowed = m; bestAllowedScore = sc2; }
+      }
+    }
+  }
+  return bestAllowed || best;
+}
+
 function applyMasterToSpec() {
   if (!currentSpec || !currentSpec.ings) return;
   var applied = 0;
   var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
   currentSpec.ings.forEach(function(ing) {
     // 限定商品チェック：limitedToが空か商品名と一致するマスターを優先
-    var mat = masterData.materialPrices.find(function(m) {
-      if (!matchMaster(ing.name, m.name)) return false;
-      return !m.limitedTo || m.limitedTo.trim() === '' || m.limitedTo === pname;
-    });
-    if (!mat) {
-      // 限定なしで再検索
-      mat = masterData.materialPrices.find(function(m) {
-        return matchMaster(ing.name, m.name);
-      });
-    }
+    var mat = findMaster(ing.name, pname);
     if (mat) {
       if (mat.unitPrice > 0) ing.unitPrice = mat.unitPrice;
       // 栄養素もマスターから反映（FOOD_DBにない独自食材用）
@@ -3042,6 +3081,7 @@ function applyMasterToSpec() {
       if (mat.isAdditive && mat.additiveUse) ing.addUse = mat.additiveUse;
       // 産地をマスターから反映
       if (mat.origin && mat.origin.trim()) ing.country = mat.origin.trim();
+      if (isDomesticName(ing.name) && isForeignOrigin(ing.country)) ing.country = '国産';
       // GMO確認結果をマスターから反映
       ing.gmo = (!mat.gmoCheck || mat.gmoCheck === '対象外') ? '' : mat.gmoCheck;
       // アレルゲンはマスターの値で常に上書き
@@ -3051,6 +3091,7 @@ function applyMasterToSpec() {
       // マスター未登録 → GMOをクリア・FOOD_DBから栄養素のみ補完
       ing.gmo = '';
       ing.isAdditive = false;
+      if (isDomesticName(ing.name) && isForeignOrigin(ing.country)) ing.country = '国産';
       var fd = findInFoodDB(ing.name);
       if (fd) {
         if (fd.e != null) ing.e = fd.e;
