@@ -88,6 +88,56 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 
 /* マスターパネル追加スタイル */
 .master-section-title{font-size:13px;font-weight:700;color:#1a3a5c;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #cdd8e8}
+/* ===== スマホ・タブレット対応 ===== */
+.mobile-only{display:none}
+@media (max-width: 900px){
+  .header{padding:8px 12px}
+  .header h1{font-size:13px;letter-spacing:0}
+  .header h1 img{width:26px;height:26px}
+  #status-text{display:none}
+  .app{flex-direction:column;height:auto;min-height:calc(100vh - 44px)}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid #ddd;max-height:none}
+  .spec-list{max-height:none;overflow:visible}
+  .main{padding:10px;overflow:visible}
+  .app.show-editor .sidebar{display:none}
+  .app:not(.show-editor) .main{display:none}
+  .mobile-only{display:inline-block}
+  #toolbar{gap:6px}
+  #toolbar strong{flex-basis:100% !important;font-size:14px !important}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .tab{flex-shrink:0;padding:8px 10px}
+  .g2,.g3{grid-template-columns:1fr}
+  .g4{grid-template-columns:1fr 1fr}
+  .card{padding:12px 10px;overflow-x:auto}
+  .ing-table{min-width:980px}
+  .card table{min-width:600px}
+  .a4 table,.card .a4 table{min-width:0}
+  input[type=text],input[type=number],select,textarea{font-size:16px}
+  .ing-table td input,.ing-table td select{font-size:13px}
+  .btn{padding:8px 12px}
+  .btn-sm{padding:6px 10px}
+  .spec-item{padding:12px}
+  .toast{left:12px;right:12px;bottom:12px;text-align:center}
+  .modal{padding:18px}
+  .ing-search-row{flex-wrap:wrap}
+  .ing-search-row .search-box{flex:1 1 100% !important}
+}
+/* ===== ログイン画面 ===== */
+#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#1a3a5c 0%,#0f2740 100%);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+#login-screen.hidden{display:none}
+.login-box{background:#fff;border-radius:12px;padding:28px 26px;width:380px;max-width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.login-box h2{font-size:17px;color:#1a3a5c;margin-bottom:4px;text-align:center}
+.login-box .sub{font-size:12px;color:#888;text-align:center;margin-bottom:20px}
+.login-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;border:1.5px solid #b0bec5;border-radius:6px;background:#fff;font-size:14px;font-weight:600;color:#333;cursor:pointer}
+.login-google:hover{background:#f5f7fa}
+.login-or{display:flex;align-items:center;gap:10px;color:#aaa;font-size:11px;margin:16px 0}
+.login-or:before,.login-or:after{content:"";flex:1;height:1px;background:#e0e0e0}
+.login-box .field{margin-bottom:10px}
+.login-err{font-size:12px;color:#c62828;margin-top:10px;line-height:1.6;display:none}
+.login-setup{margin-top:14px;padding:12px;border:1px solid #f0d58c;background:#fff8e1;border-radius:6px;font-size:12px;line-height:1.7;color:#6d5200;display:none}
+.header-user{display:flex;align-items:center;gap:8px;font-size:12px}
+.header-user button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer}
+@media (max-width: 900px){ #user-email{display:none} }
 </style>
 </head>
 <body>
@@ -97,6 +147,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   <div class="header-right">
     <span class="status-dot" id="status-dot"></span>
     <span id="status-text">接続中...</span>
+    <span class="header-user" id="header-user" style="display:none"><span id="user-email"></span><button onclick="doLogout()">ログアウト</button></span>
   </div>
 </div>
 
@@ -106,6 +157,8 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
       <h3>規格書一覧</h3>
       <button class="btn btn-primary btn-block btn-sm" onclick="newSpec()">＋ 新規作成</button>
       <button class="btn btn-block btn-sm" onclick="loadList()">↻ 更新</button>
+      <input type="text" id="list-search" placeholder="🔍 商品名・名称で検索" oninput="renderList()" style="font-size:12px;padding:5px 8px;margin-top:2px">
+      <div id="list-count" style="font-size:11px;color:#888;margin-top:4px"></div>
     </div>
     <div class="spec-list" id="spec-list">
       <div class="loading"><div class="spinner"></div>読込中...</div>
@@ -128,10 +181,32 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   </div>
 </div>
 
+<div id="login-screen">
+  <div class="login-box">
+    <h2>商品規格書管理システム</h2>
+    <div class="sub">合同会社エニクック ／ ログインしてください</div>
+    <button class="login-google" id="btn-login-google" onclick="loginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Googleアカウントでログイン
+    </button>
+    <div class="login-or">または メールアドレス</div>
+    <div class="field"><input type="text" id="login-email" placeholder="メールアドレス" autocomplete="username"></div>
+    <div class="field"><input type="password" id="login-pass" placeholder="パスワード" autocomplete="current-password" style="width:100%;font-size:13px;padding:6px 9px;border:1.5px solid #b0bec5;border-radius:5px"></div>
+    <button class="btn btn-primary" style="width:100%;padding:9px" onclick="loginEmail()">ログイン</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-setup" id="login-setup">
+      <b>Firebase側のログイン設定がまだ完了していません。</b><br>
+      Firebaseコンソールの「Authentication」でログイン方法を有効にし、「承認済みドメイン」に any-cook.github.io を追加すると、ログインが必須になります。<br>
+      <button class="btn btn-sm" style="margin-top:8px" onclick="continueWithoutLogin()">設定が完了するまでログインせずに使う</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 
 // ===== Firebase設定 =====
@@ -361,16 +436,32 @@ async function loadList() {
 
 function renderList() {
   var el = document.getElementById('spec-list');
+  var cnt = document.getElementById('list-count');
   if (!specListCache.length) {
     el.innerHTML = '<div class="empty-state"><p style="font-size:13px">規格書がありません</p></div>';
+    if (cnt) cnt.textContent = '';
     return;
   }
+  // 検索（商品名・名称・販売先・内容量）
+  var qEl = document.getElementById('list-search');
+  var q = qEl ? qEl.value.replace(/\s/g,'').toLowerCase() : '';
+  var list = specListCache.filter(function(s){
+    if (!q) return true;
+    var b = s.basic || {};
+    var hay = [b.pname, b.ptype, b.buyer, b.amount].join(' ').replace(/\s/g,'').toLowerCase();
+    return hay.indexOf(q) >= 0;
+  });
+  if (cnt) cnt.textContent = q ? (list.length + '件 / 全' + specListCache.length + '件') : ('全' + specListCache.length + '件');
   el.innerHTML = '';
-  specListCache.forEach(function(s) {
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px 10px"><p style="font-size:12px">「' + h(qEl.value) + '」に一致する規格書はありません</p></div>';
+    return;
+  }
+  list.forEach(function(s) {
     var d = (s.updatedAt && typeof s.updatedAt.toDate === 'function') ? new Date(s.updatedAt.toDate()).toLocaleDateString('ja-JP') : '';
     var active = s.id === currentSpecId ? ' active' : '';
     var isSample = s.isSample ? true : false;
-    var itemStyle = isSample ? 'opacity:0.5;border-style:dashed;' : '';
+    var itemStyle = isSample ? 'border-style:dashed;background:#fafaf6;' : '';
     var badge = isSample ? '<span style="font-size:10px;background:#e8f0f8;color:#1a3a5c;border-radius:3px;padding:1px 5px;margin-left:4px">見本</span>' : '';
 
     var wrap = document.createElement('div');
@@ -388,7 +479,8 @@ function renderList() {
       if (s.cost.profitRate) costInfo += '<span style="color:#888">（利益' + s.cost.profitRate + '%）</span>';
     }
     body.innerHTML = '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>'
-      + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + ' | ' + d + '</div>'
+      + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + '</div>'
+      + (d ? '<div class="spec-item-meta" style="margin-top:1px">更新 ' + h(d) + '</div>' : '')
       + (contentAmount ? '<div style="font-size:10px;color:#aaa;margin-top:1px">' + h(contentAmount) + '</div>' : '')
       + (costInfo ? '<div style="font-size:10px;margin-top:2px">' + costInfo + '</div>' : '');
     body.addEventListener('click', (function(id){ return function(){ openSpec(id); }; })(s.id));
@@ -489,6 +581,7 @@ function doDeleteSpec() {
       currentSpec = null; currentSpecId = null;
       var mainArea = document.getElementById('main-area');
       if (mainArea) mainArea.innerHTML = '<div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選ぶか<br>「新規作成」で開始してください</p></div>';
+      setDirty(false); showListMobile();
     }
     renderList();
     toast('「' + name + '」を削除しました ✓');
@@ -501,6 +594,7 @@ function doDeleteSpec() {
 
 // ===== 規格書をコピーして新規作成 =====
 function copySpec(id) {
+  if (!confirmDiscard()) return;
   var src = specListCache.find(function(s){ return s.id === id; });
   if (!src) {
     // Firestoreから直接取得して複製
@@ -530,21 +624,65 @@ function _doCopySpec(src) {
   currentSpec.isSample = false;
   renderList();
   renderEditor();
+  setDirty(true); // コピーはまだ保存されていない
+  showEditorMobile();
   toast('「' + (currentSpec.basic.pname || '') + '」としてコピーしました。内容を編集して保存してください ✓');
 }
 
 function newSpec() {
+  if (!confirmDiscard()) return;
   currentSpecId = null;
   currentSpec = makeEmptySpec();
   renderList();
   renderEditor();
+  setDirty(false);
+  showEditorMobile();
+}
+
+// ===== 未保存の変更の検知 =====
+var isDirty = false;
+function setDirty(v) {
+  isDirty = !!v;
+  var b = document.getElementById('dirty-badge');
+  if (b) b.style.display = isDirty ? 'inline-block' : 'none';
+}
+function confirmDiscard() {
+  if (!isDirty || !currentSpec) return true;
+  var ok = confirm('保存していない変更があります。\n変更を破棄して移動しますか？\n\n（「キャンセル」で編集に戻ります。保存は画面上部の「保存」ボタンから）');
+  if (ok) setDirty(false);
+  return ok;
+}
+function isTrackedTarget(t) {
+  if (!t || !t.closest) return false;
+  if (t.closest('#panel-master') || t.closest('#panel-preview') || t.closest('#toolbar')) return false;
+  if (t.id === 'isearch' || t.id === 'list-search') return false; // 検索欄は対象外
+  return true;
+}
+function initDirtyTracking() {
+  var main = document.getElementById('main-area');
+  if (!main) return;
+  ['input','change'].forEach(function(ev){
+    main.addEventListener(ev, function(e){ if (currentSpec && isTrackedTarget(e.target)) setDirty(true); });
+  });
+  main.addEventListener('click', function(e){
+    if (!currentSpec) return;
+    var t = e.target && e.target.closest ? e.target.closest('button,.sr-item') : null;
+    if (!t || t.classList.contains('tab') || !isTrackedTarget(t)) return;
+    if (/CSV出力|保存|印刷|更新|プレビュー|キャンセル/.test(t.textContent || '')) return;
+    setDirty(true);
+  });
+  window.addEventListener('beforeunload', function(e){
+    if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+  });
 }
 
 // ===== 既存を開く =====
 async function openSpec(id) {
   if (!db) { toast('Firestoreに接続されていません',true); return; }
+  if (!confirmDiscard()) return;
   currentSpecId = id;
   renderList();
+  showEditorMobile();
   document.getElementById('main-area').innerHTML = '<div class="loading"><div class="spinner"></div>読込中...</div>';
   try {
     var doc = await db.collection('product_specs').doc(id).get();
@@ -563,8 +701,16 @@ async function openSpec(id) {
     currentSpec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
     renderEditor();
     onMasterLoaded(function() {
+      if (currentSpecId !== id) return; // 読込中に別の規格書へ切り替えた場合は何もしない
       applyMasterToSpec();
       calcNutritionSilent();
+      // 原材料名（一括表示）が未作成・空欄（以前の不具合で消えたものを含む）、
+      // またはアレルゲン部分だけの場合は自動作成
+      var lt = currentSpec.labelText;
+      if (lt == null || !String(lt).trim() || /^\s*[\/、]?（一部に[^）]+を含む）\s*$/.test(lt)) {
+        rebuildLabelText();
+      }
+      setDirty(false);
     });
   } catch(e) {
     toast('読込失敗: '+e.message, true);
@@ -623,14 +769,16 @@ async function saveSpec() {
   try {
     if (currentSpecId) {
       await db.collection('product_specs').doc(currentSpecId).set(currentSpec);
+      setDirty(false);
       toast('保存しました ✓');
     // 一覧のキャッシュを更新して内容量などを反映
     var idx2 = specListCache.findIndex(function(s){ return s.id === currentSpecId; });
-    if (idx2 >= 0) { var cached = Object.assign({id: currentSpecId}, currentSpec); cached.updatedAt = null; specListCache[idx2] = cached; }
+    if (idx2 >= 0) { var cached = Object.assign({id: currentSpecId}, currentSpec); cached.updatedAt = {toDate: function(){ return new Date(); }}; specListCache[idx2] = cached; }
     renderList();
     } else {
       var ref = await db.collection('product_specs').add(currentSpec);
       currentSpecId = ref.id;
+      setDirty(false);
       toast('新規保存しました ✓');
     }
     loadList();
@@ -658,6 +806,7 @@ async function confirmDelete() {
     if (currentSpecId === delId) {
       currentSpecId = null; currentSpec = null;
       document.getElementById('main-area').innerHTML = '<div class="empty-state"><div style="font-size:48px">📄</div><p>左の一覧から規格書を選ぶか<br>「新規作成」で開始してください</p></div>';
+      setDirty(false); showListMobile();
     }
     toast('削除しました');
     renderList();
@@ -727,6 +876,10 @@ function swTab(name) {
 }
 
 // ===== エディタ描画 =====
+// ===== スマホ表示：一覧と編集画面の切替 =====
+function showEditorMobile() { var a = document.querySelector('.app'); if (a) a.classList.add('show-editor'); window.scrollTo(0, 0); }
+function showListMobile()   { var a = document.querySelector('.app'); if (a) a.classList.remove('show-editor'); window.scrollTo(0, 0); }
+
 function renderEditor() {
   var b  = currentSpec.basic;
   var n  = currentSpec.nutrition;
@@ -737,8 +890,10 @@ function renderEditor() {
   // ---- toolbar ----
   var isSample = currentSpec.isSample ? true : false;
   var toolbarHtml = '<div id="toolbar">'
+    + '<button class="btn btn-sm mobile-only" onclick="showListMobile()">← 一覧</button>'
     + '<strong style="font-size:15px;flex:1">' + h(b.pname || '（新規規格書）')
     + (isSample ? '<span style="font-size:11px;background:#e8f0f8;color:#1a3a5c;padding:2px 8px;border-radius:4px;margin-left:8px">見本</span>' : '')
+    + '<span id="dirty-badge" style="display:'+(isDirty?'inline-block':'none')+';font-size:11px;background:#fff3cd;color:#856404;border:1px solid #f0d58c;padding:2px 8px;border-radius:4px;margin-left:8px;font-weight:500">● 未保存の変更あり</span>'
     + '</strong>'
     + '<button class="btn btn-primary" onclick="saveSpec()">&#x1F4BE; 保存</button>'
     + '<button class="btn btn-sm" onclick="toggleSample()" style="font-size:12px">'
@@ -772,7 +927,7 @@ function renderEditor() {
     + '<div class="g3">'
     +   '<div class="field"><label class="fl">内容量</label>'
     +     '<div style="display:flex;gap:6px;align-items:center">'
-    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'" style="flex:1" oninput="currentSpec.basic.amount=this.value">'
+    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'" style="flex:1" oninput="currentSpec.basic.amount=this.value;calcNutritionSilent()">'
     +       '<label class="btn btn-sm" style="cursor:pointer;white-space:nowrap;margin:0;font-size:11px" title="商品名,内容量(g)のCSVをインポート">'
     +         '📤 CSV'
     +         '<input type="file" accept=".csv" style="display:none" onchange="importAmountCSV(this)">'
@@ -820,7 +975,7 @@ function renderEditor() {
     + '</div>'
     // 検索・追加
     + '<div class="card"><h3>原材料・添加物 入力</h3>'
-    + '<div style="display:flex;gap:8px;margin-bottom:10px">'
+    + '<div class="ing-search-row" style="display:flex;gap:8px;margin-bottom:10px">'
     +   '<div class="search-box" style="flex:1">'
     +     '<input type="text" id="isearch" placeholder="食材名で検索して追加（例：にんじん、有機醤油...）" oninput="searchFood()" onfocus="showFoodResults()" onblur="hideFoodResults()" lang="ja" autocomplete="off">'
     +     '<div class="search-results" id="food-results"></div>'
@@ -956,7 +1111,8 @@ function renderEditor() {
     +     '<button class="btn btn-primary btn-sm" onclick="saveNutritionOnly()">💾 栄養成分を保存</button>'
     +   '</div>'
     + '</div>'
-    + '<p style="font-size:12px;color:#888;margin-bottom:12px">1袋（'+h(b.unit||'—')+'）あたりの値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
+    + '<p style="font-size:12px;color:#888;margin-bottom:4px">'+h(n.unit||'1袋')+'の値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
+    + '<p id="nut-basis" style="font-size:12px;color:#555;margin-bottom:12px"></p>'
     + '<div class="g2" style="margin-bottom:10px">'
     +   fld('エネルギー (kcal)', 'number','n-e', n.e||0, 'step="1"')
     +   fld('水分 (g)',          'number','n-w', n.w||0, 'step="0.1"')
@@ -2369,22 +2525,62 @@ function recalcCost() {
 }
 
 // ===== 栄養再計算 =====
-function calcNutritionSilent() {
-  var e=0, w=0, p=0, f=0, c=0, s=0, sf=0, fiber=0, hasData=false;
-  currentSpec.ings.forEach(function(ing){
-    var amount = ing.amount || 0;
+// ===== 栄養成分：1袋（内容量）あたりに換算 =====
+// 内容量の文字列からg数を取り出す（例：「130g×100袋」→130、「1.2kg」→1200、「200ml」→200）
+function parseContentG(str) {
+  if (!str) return 0;
+  var t = String(str).replace(/[０-９．]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0)-0xFEE0); });
+  var m = t.match(/([\d.]+)\s*(kg|ｋｇ|キロ|g|ｇ|グラム|ml|ｍｌ|mL)/i);
+  if (!m) return 0;
+  var v = parseFloat(m[1]); if (!(v > 0)) return 0;
+  if (/^(kg|ｋｇ|キロ)$/i.test(m[2])) v = v * 1000;
+  return v;
+}
+// 原材料の使用量から栄養価を合計し、内容量（1袋）あたりに換算して返す
+function computeNutritionPerBag() {
+  var r = {e:0,w:0,p:0,f:0,c:0,s:0,sf:0,fiber:0,hasData:false,totalG:0,contentG:0,factor:1};
+  (currentSpec.ings || []).forEach(function(ing){
+    var amount = parseFloat(ing.amount) || 0;
     if (amount <= 0) return;
-    hasData = true;
-    var r = amount / 100;
-    e     += (ing.e||0)     * r;
-    w     += (ing.w||0)     * r;
-    p     += (ing.p||0)     * r;
-    f     += (ing.f||0)     * r;
-    c     += (ing.c||0)     * r;
-    s     += (ing.s||0)     * r;
-    sf    += (ing.sf||0)    * r;
-    fiber += (ing.fiber||0) * r;
+    r.hasData = true;
+    r.totalG += amount;
+    var k = amount / 100;
+    r.e += (ing.e||0)*k; r.w += (ing.w||0)*k; r.p += (ing.p||0)*k; r.f += (ing.f||0)*k;
+    r.c += (ing.c||0)*k; r.s += (ing.s||0)*k; r.sf += (ing.sf||0)*k; r.fiber += (ing.fiber||0)*k;
   });
+  r.totalG = Math.round(r.totalG * 10) / 10;
+  var amtEl = document.getElementById('f-amount');
+  var amtStr = amtEl ? amtEl.value : (currentSpec.basic && currentSpec.basic.amount);
+  r.contentG = parseContentG(amtStr);
+  if (r.contentG > 0 && r.totalG > 0) {
+    r.factor = r.contentG / r.totalG;
+    ['e','w','p','f','c','s','sf','fiber'].forEach(function(key){ r[key] = r[key] * r.factor; });
+  }
+  return r;
+}
+// 表示単位を自動設定（空欄または自動設定した値のときのみ上書き）
+function applyNutritionUnit(nr) {
+  if (!currentSpec.nutrition) currentSpec.nutrition = {};
+  var n = currentSpec.nutrition;
+  var el = document.getElementById('n-unit');
+  var cur = el ? el.value : (n.unit || '');
+  var auto = nr.contentG > 0 ? '1袋（' + nr.contentG + 'g）当たり' : '';
+  if (auto && (!cur || /^1袋（[\d.]+g）当たり$/.test(cur))) {
+    n.unit = auto;
+    if (el) el.value = auto;
+  }
+  var info = document.getElementById('nut-basis');
+  if (info) {
+    info.textContent = nr.contentG > 0
+      ? '原材料の合計 ' + nr.totalG + 'g の栄養価を、内容量 1袋 ' + nr.contentG + 'g あたりに換算しています。'
+      : '※ 基本情報の「内容量」が読み取れないため、原材料合計 ' + nr.totalG + 'g あたりの値です（例：「130g×100袋」と入力すると1袋あたりに換算）。';
+    info.style.color = nr.contentG > 0 ? '#555' : '#c62828';
+  }
+}
+
+function calcNutritionSilent() {
+  var nr = computeNutritionPerBag();
+  var e=nr.e, w=nr.w, p=nr.p, f=nr.f, c=nr.c, s=nr.s, sf=nr.sf, fiber=nr.fiber, hasData=nr.hasData;
   if (hasData) {
     sv('n-e',     Math.round(e));
     sv('n-w',     w.toFixed(1));
@@ -2403,25 +2599,13 @@ function calcNutritionSilent() {
     currentSpec.nutrition.s     = +s.toFixed(2);
     currentSpec.nutrition.sf    = +sf.toFixed(2);
     currentSpec.nutrition.fiber = +fiber.toFixed(1);
+    applyNutritionUnit(nr);
   }
 }
 
 function calcNutrition() {
-  var e=0, w=0, p=0, f=0, c=0, s=0, sf=0, fiber=0, hasData=false;
-  currentSpec.ings.forEach(function(ing){
-    var amount = ing.amount || 0;
-    if (amount <= 0) return;
-    hasData = true;
-    var r = amount / 100;
-    e     += (ing.e||0)     * r;
-    w     += (ing.w||0)     * r;
-    p     += (ing.p||0)     * r;
-    f     += (ing.f||0)     * r;
-    c     += (ing.c||0)     * r;
-    s     += (ing.s||0)     * r;
-    sf    += (ing.sf||0)    * r;
-    fiber += (ing.fiber||0) * r;
-  });
+  var nr = computeNutritionPerBag();
+  var e=nr.e, w=nr.w, p=nr.p, f=nr.f, c=nr.c, s=nr.s, sf=nr.sf, fiber=nr.fiber, hasData=nr.hasData;
   if (hasData) {
     sv('n-e',     Math.round(e));
     sv('n-w',     w.toFixed(1));
@@ -2440,7 +2624,8 @@ function calcNutrition() {
     currentSpec.nutrition.s     = +s.toFixed(2);
     currentSpec.nutrition.sf    = +sf.toFixed(2);
     currentSpec.nutrition.fiber = +fiber.toFixed(1);
-    toast('栄養計算しました ✓');
+    applyNutritionUnit(nr);
+    toast(nr.contentG > 0 ? '栄養計算しました（原材料計'+nr.totalG+'g → 1袋'+nr.contentG+'gに換算）✓' : '栄養計算しました（内容量が未入力のため原材料合計'+nr.totalG+'gの値です）', !(nr.contentG > 0));
   } else {
     toast('使用量(g)を手動追加で入力後、再計算してください', true);
   }
@@ -2807,9 +2992,113 @@ function doPrint() {
 }
 
 
+// ===== ログイン（Firebase Authentication） =====
+// Googleログインを許可するメールのドメインと個別アドレス
+// （メール/パスワードのアカウントはFirebaseコンソールで管理者が作成するため全て許可）
+var ALLOWED_EMAIL_DOMAINS = ['any-cook.com'];
+var ALLOWED_EMAILS = [];
+// これらのエラーは「Firebase側でログイン設定が未完了」を意味する
+var AUTH_SETUP_ERRORS = ['auth/operation-not-allowed','auth/configuration-not-found','auth/unauthorized-domain','auth/admin-restricted-operation','auth/invalid-api-key'];
+var appStarted = false;
+
+function isAllowedUser(user) {
+  if (!user) return false;
+  var providers = (user.providerData || []).map(function(p){ return p.providerId; });
+  if (providers.indexOf('password') >= 0) return true;
+  var email = (user.email || '').toLowerCase();
+  if (!email) return false;
+  if (ALLOWED_EMAILS.map(function(e){ return e.toLowerCase(); }).indexOf(email) >= 0) return true;
+  var dom = email.split('@')[1] || '';
+  return ALLOWED_EMAIL_DOMAINS.indexOf(dom) >= 0;
+}
+function showLoginError(msg) {
+  var el = document.getElementById('login-err');
+  el.innerHTML = msg; el.style.display = msg ? 'block' : 'none';
+}
+function handleAuthError(e) {
+  console.error(e);
+  var code = e && e.code ? e.code : '';
+  if (AUTH_SETUP_ERRORS.indexOf(code) >= 0) {
+    showLoginError('');
+    document.getElementById('login-setup').style.display = 'block';
+    return;
+  }
+  var msgs = {
+    'auth/invalid-email':'メールアドレスの形式が正しくありません。',
+    'auth/user-not-found':'メールアドレスまたはパスワードが違います。',
+    'auth/wrong-password':'メールアドレスまたはパスワードが違います。',
+    'auth/invalid-credential':'メールアドレスまたはパスワードが違います。',
+    'auth/invalid-login-credentials':'メールアドレスまたはパスワードが違います。',
+    'auth/too-many-requests':'試行回数が多すぎます。しばらく待ってから再度お試しください。',
+    'auth/popup-closed-by-user':'ログイン画面が閉じられました。もう一度お試しください。',
+    'auth/cancelled-popup-request':'',
+    'auth/network-request-failed':'ネットワークに接続できません。'
+  };
+  showLoginError(msgs.hasOwnProperty(code) ? msgs[code] : ('ログインに失敗しました（' + h(code || e.message) + '）'));
+}
+function loginGoogle() {
+  showLoginError('');
+  var provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  firebase.auth().signInWithPopup(provider).catch(function(e){
+    if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
+      return firebase.auth().signInWithRedirect(provider).catch(handleAuthError);
+    }
+    handleAuthError(e);
+  });
+}
+function loginEmail() {
+  showLoginError('');
+  var em = document.getElementById('login-email').value.trim();
+  var pw = document.getElementById('login-pass').value;
+  if (!em || !pw) { showLoginError('メールアドレスとパスワードを入力してください。'); return; }
+  firebase.auth().signInWithEmailAndPassword(em, pw).catch(handleAuthError);
+}
+function doLogout() {
+  if (!confirmDiscard()) return;
+  firebase.auth().signOut().then(function(){ location.reload(); });
+}
+function startApp(user) {
+  document.getElementById('login-screen').classList.add('hidden');
+  if (user) {
+    document.getElementById('user-email').textContent = user.email || '';
+    document.getElementById('header-user').style.display = 'flex';
+  }
+  if (appStarted) return;
+  appStarted = true;
+  initFirebase();
+}
+function continueWithoutLogin() {
+  toast('ログインなしで起動しました（Firebaseのログイン設定が完了するまでの暫定措置）', true);
+  startApp(null);
+}
+function initAuth() {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FB_CFG);
+    if (!firebase.auth) throw new Error('auth SDK not loaded');
+  } catch(e) {
+    // 認証ライブラリが読めない環境では従来どおり起動
+    console.error(e);
+    startApp(null);
+    return;
+  }
+  document.getElementById('login-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') loginEmail(); });
+  firebase.auth().getRedirectResult().catch(handleAuthError);
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user && isAllowedUser(user)) { startApp(user); return; }
+    if (user) {
+      var em = user.email || '';
+      firebase.auth().signOut();
+      showLoginError(h(em) + ' はこのシステムの利用を許可されていません。管理者に連絡してください。');
+    }
+    document.getElementById('login-screen').classList.remove('hidden');
+  });
+}
+
 // ===== 起動 =====
 window.addEventListener('load', function() {
-  initFirebase();
+  initDirtyTracking();
+  initAuth();
 });
 
 
