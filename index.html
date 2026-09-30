@@ -428,7 +428,8 @@ async function loadList() {
   try {
     var snap = await db.collection('product_specs').orderBy('updatedAt','desc').get({source: 'server'});
     specListCache = [];
-    snap.forEach(function(doc){ specListCache.push(Object.assign({id:doc.id}, doc.data())); });
+    // 保存データ内の古い id 項目より、Firestore上の本当のドキュメントIDを必ず優先する
+    snap.forEach(function(doc){ var d = doc.data(); delete d.id; d.id = doc.id; specListCache.push(d); });
     renderList();
   } catch(e) {
     document.getElementById('spec-list').innerHTML = '<div style="padding:10px;color:#c62828;font-size:12px">読込失敗: '+e.message+'</div>';
@@ -509,11 +510,9 @@ function renderList() {
   });
 }
 
-// ===== 製品基本情報の記入例（薄文字のプレースホルダー。保存・規格書には反映されない） =====
+// ===== 商品名・名称・内容量の記入例（薄文字のプレースホルダー。保存・規格書には反映されない） =====
 var BASIC_EXAMPLES = {
-  pname:'筑紫ちゃんカレー 中辛', ptype:'有機そうざい', amount:'130g×100袋', expiry:'製造日より365日',
-  country:'日本', storage:'直射日光、高温多湿を避けて常温で保存してください。', storage2:'要冷蔵',
-  degradation:'本品特有の風味がなくなること', contami:'直射日光、高温多湿を避けて常温で保存してください。'
+  pname:'筑紫ちゃんカレー 中辛', ptype:'有機そうざい', amount:'130g×100袋'
 };
 function exPh(key) { return BASIC_EXAMPLES[key] ? ' placeholder="例：' + h(BASIC_EXAMPLES[key]) + '"' : ''; }
 
@@ -521,11 +520,11 @@ function exPh(key) { return BASIC_EXAMPLES[key] ? ' placeholder="例：' + h(BAS
 function makeEmptySpec() {
   return {
     basic: {
-      // 製品基本情報は空欄で開始（記入例は入力欄に薄文字で表示するだけで規格書には出ない）
-      pname:'', ptype:'', amount:'', expiry:'',
-      country:'', storage:'',
-      storage2:'', gmo:'無', preservative:'無', degradation:'',
-      contami:'',
+      // 商品名・名称・内容量は空欄で開始（記入例は薄文字で表示するだけで規格書には出ない）
+      pname:'', ptype:'', amount:'', expiry:'製造日より365日',
+      country:'日本', storage:'直射日光、高温多湿を避けて常温で保存してください。',
+      storage2:'要冷蔵', gmo:'無', preservative:'無', degradation:'本品特有の風味がなくなること',
+      contami:'直射日光、高温多湿を避けて常温で保存してください。',
       mfr:'合同会社 エニクック', maddr:'福岡県筑紫野市阿志岐133-1', created:todayStr(),
       buyer:'', buyerAddr:'', buyerContact:''
     },
@@ -618,10 +617,29 @@ function copySpec(id) {
   _doCopySpec(src);
 }
 
+// ===== 規格書データの不足項目を補完（開く時・コピー時の共通処理） =====
+function ensureSpecDefaults(spec) {
+  delete spec.id; // 以前のコピーで紛れ込んだ元規格書のidを除去
+  var empty = makeEmptySpec();
+  if (!spec.ings) spec.ings = JSON.parse(JSON.stringify(DEFAULT_INGS));
+  if (!spec.procs) spec.procs = JSON.parse(JSON.stringify(DEFAULT_PROCS));
+  // labelTextが未定義の場合はnullにして自動生成を許可
+  if (spec.labelText === undefined) spec.labelText = null;
+  if (!spec.pkg) spec.pkg = empty.pkg;
+  if (!spec.basic) spec.basic = empty.basic;
+  if (!spec.nutrition) spec.nutrition = empty.nutrition;
+  if (!spec.cost) spec.cost = {laborCost:0,utilityCost:0,packagingCost:0,otherCost:0};
+  // lotCostsが保存されていれば必ず保持する
+  if (!spec.cost.lotCosts) spec.cost.lotCosts = [];
+  spec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
+  return spec;
+}
+
 function _doCopySpec(src) {
   // ディープコピー
   currentSpec = JSON.parse(JSON.stringify(src));
-  // IDをクリア（新規として保存されるように）
+  // IDをクリア（新規として保存されるように）。コピー元のid項目も必ず削除し、不足項目を補完
+  ensureSpecDefaults(currentSpec);
   currentSpecId = null;
   // 商品名に「のコピー」を追加
   if (!currentSpec.basic) currentSpec.basic = {};
@@ -698,17 +716,7 @@ async function openSpec(id) {
     var doc = await db.collection('product_specs').doc(id).get();
     if (!doc.exists) { toast('規格書が見つかりません',true); return; }
     currentSpec = doc.data();
-    if (!currentSpec.ings) currentSpec.ings = JSON.parse(JSON.stringify(DEFAULT_INGS));
-    if (!currentSpec.procs) currentSpec.procs = JSON.parse(JSON.stringify(DEFAULT_PROCS));
-    // labelTextが未定義の場合はnullにして自動生成を許可
-    if (currentSpec.labelText === undefined) currentSpec.labelText = null;
-    if (!currentSpec.pkg) currentSpec.pkg = makeEmptySpec().pkg;
-    if (!currentSpec.basic) currentSpec.basic = makeEmptySpec().basic;
-    if (!currentSpec.nutrition) currentSpec.nutrition = makeEmptySpec().nutrition;
-    if (!currentSpec.cost) currentSpec.cost = {laborCost:0,utilityCost:0,packagingCost:0,otherCost:0};
-    // lotCostsが保存されていれば必ず保持する
-    if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
-    currentSpec.ings.forEach(function(ing){ if(ing.unitPrice==null) ing.unitPrice=0; });
+    ensureSpecDefaults(currentSpec);
     renderEditor();
     onMasterLoaded(function() {
       if (currentSpecId !== id) return; // 読込中に別の規格書へ切り替えた場合は何もしない
@@ -775,6 +783,7 @@ async function saveSpec() {
       else if (obj[k] !== null && typeof obj[k] === 'object' && typeof obj[k].toDate !== 'function') sanitize(obj[k]);
     });
   })(currentSpec);
+  delete currentSpec.id; // idはドキュメントIDで管理するため本文には保存しない
   currentSpec.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
   try {
     if (currentSpecId) {
@@ -783,7 +792,7 @@ async function saveSpec() {
       toast('保存しました ✓');
     // 一覧のキャッシュを更新して内容量などを反映
     var idx2 = specListCache.findIndex(function(s){ return s.id === currentSpecId; });
-    if (idx2 >= 0) { var cached = Object.assign({id: currentSpecId}, currentSpec); cached.updatedAt = {toDate: function(){ return new Date(); }}; specListCache[idx2] = cached; }
+    if (idx2 >= 0) { var cached = Object.assign({}, currentSpec, {id: currentSpecId}); cached.updatedAt = {toDate: function(){ return new Date(); }}; specListCache[idx2] = cached; }
     renderList();
     } else {
       var ref = await db.collection('product_specs').add(currentSpec);
