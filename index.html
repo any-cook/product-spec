@@ -47,6 +47,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:14px;b
 input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;padding:6px 9px;border:1.5px solid #b0bec5;border-radius:5px;background:#fff;color:#222;transition:.15s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.1)}
 textarea{resize:vertical;min-height:50px;line-height:1.5}
+.ing-table tr.ing-head th{background-color:#2c4a6e;color:#fff}
 input::placeholder,textarea::placeholder{color:#b8b8b8;opacity:1}
 .ing-table{width:100%;border-collapse:collapse;font-size:12px}
 .ing-table th{background:#eef2f7;padding:4px 5px;border:1px solid #ccc;font-size:11px;font-weight:700;text-align:center}
@@ -80,7 +81,7 @@ input::placeholder,textarea::placeholder{color:#b8b8b8;opacity:1}
 .loading{text-align:center;padding:30px;color:#888;font-size:13px}
 .spinner{width:28px;height:28px;border:3px solid #ddd;border-top-color:#1a3a5c;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:20px;right:20px;background:#1a3a5c;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:400;opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none}
+.toast{position:fixed;bottom:16px;left:50%;margin-left:-180px;width:360px;text-align:center;background:#1a3a5c;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:400;opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 .toast.error{background:#c62828}
 .empty-state{text-align:center;padding:40px 20px;color:#999}
@@ -118,7 +119,7 @@ input::placeholder,textarea::placeholder{color:#b8b8b8;opacity:1}
   .btn{padding:8px 12px}
   .btn-sm{padding:6px 10px}
   .spec-item{padding:12px}
-  .toast{left:12px;right:12px;bottom:12px;text-align:center}
+  .toast{left:12px;right:12px;bottom:12px;width:auto;margin-left:0;text-align:center}
   .modal{padding:18px}
   .ing-search-row{flex-wrap:wrap}
   .ing-search-row .search-box{flex:1 1 100% !important}
@@ -260,7 +261,6 @@ const FOOD_DB = {
   "たまねぎ":{e:37,p:1.0,f:0.1,c:8.8,s:0,al:[],co:"国産"},
   "じゃがいも":{e:76,p:1.8,f:0.1,c:17.6,s:0,al:[],co:"国産"},
   "キャベツ":{e:23,p:1.3,f:0.2,c:5.2,s:0,al:[],co:"国産"},
-  "ほうれん草":{e:20,p:2.2,f:0.4,c:3.1,s:0.04,al:[],co:"国産"},
   "トマト":{e:20,p:0.7,f:0.1,c:4.7,s:0,al:[],co:"国産"},
   "ブロッコリー":{e:33,p:4.3,f:0.5,c:5.2,s:0,al:[],co:"国産"},
   "もやし":{e:15,p:1.7,f:0.1,c:2.6,s:0,al:[],co:"国産"},
@@ -281,9 +281,7 @@ const FOOD_DB = {
   "ゆがき牛肉":{e:235,p:20.7,f:16.7,c:0.5,s:0.08,al:["牛肉"],co:"国産"},
   "オリーブオイル":{e:921,p:0,f:100,c:0,s:0,al:[],co:"国内製造"},
   "サラダ油":{e:921,p:0,f:100,c:0,s:0,al:[],co:"国内製造"},
-  "バター":{e:745,p:0.5,f:81.0,c:0.2,s:1.9,al:["乳"],co:"国内製造"},
   "牛乳":{e:67,p:3.3,f:3.8,c:4.8,s:0.1,al:["乳"],co:"国産"},
-  "卵":{e:151,p:12.3,f:10.3,c:0.3,s:0.4,al:["卵"],co:"国産"},
   "鶏肉":{e:145,p:22.3,f:5.9,c:0,s:0.1,al:[],co:"国産"},
   "有機鶏肉":{e:145,p:22.3,f:5.9,c:0,s:0.1,al:[],co:"国産"},
   "豚肉":{e:263,p:19.3,f:19.2,c:0.2,s:0.1,al:[],co:"国産"},
@@ -293,8 +291,6 @@ const FOOD_DB = {
   "片栗粉":{e:338,p:0.1,f:0.1,c:81.6,s:0,al:[],co:"国内製造"},
   "有機片栗粉":{e:338,p:0.1,f:0.1,c:81.6,s:0,al:[],co:"国内製造"},
   "ごま":{e:605,p:20.3,f:54.2,c:12.1,s:0,al:["ごま"],co:"国産"},
-  "にんにく":{e:136,p:6.4,f:0.9,c:27.5,s:0.01,al:[],co:"国産"},
-  "しょうが":{e:30,p:0.9,f:0.3,c:6.6,s:0.01,al:[],co:"国産"},
   "有機しょうが":{e:30,p:0.9,f:0.3,c:6.6,s:0.01,al:[],co:"国産"},
   "はちみつ":{e:329,p:0.2,f:0,c:79.7,s:0.01,al:[],co:"国産"},
   "しいたけ":{e:23,p:3.0,f:0.4,c:6.4,s:0,al:[],co:"国産"},
@@ -381,9 +377,6 @@ const FOOD_DB = {
   "米酢":{e:46,p:0.2,f:0,c:7.4,s:0,al:[],co:"国内製造"},
   "みそ":{e:192,p:12.5,f:6.0,c:21.9,s:12.4,al:["大豆","小麦"],co:"国内製造"},
   "味噌":{e:192,p:12.5,f:6.0,c:21.9,s:12.4,al:["大豆","小麦"],co:"国内製造"},
-  "コチュジャン":{e:238,p:5.5,f:2.3,c:48.0,s:7.0,al:["大豆","小麦"],co:"国内製造"},
-  "豆板醤":{e:57,p:2.3,f:1.7,c:7.6,s:14.0,al:["大豆","小麦"],co:"国内製造"},
-  "オイスターソース":{e:105,p:7.4,f:0.3,c:18.2,s:11.4,al:["大豆","小麦"],co:"国内製造"}
 };
 
 // ===== ユーティリティ =====
@@ -417,7 +410,7 @@ function initFirebase() {
   } catch(e) {
     document.getElementById('status-text').textContent = '接続エラー';
     console.error(e);
-    alert('Firebase接続エラー: ' + e.message);
+    toast('Firebase接続エラー: ' + e.message, true);
   }
 }
 
@@ -478,7 +471,8 @@ function renderList() {
     }
     if (s.cost && s.cost.sellPrice > 0) {
       costInfo += (costInfo ? ' / ' : '') + '<span style="color:#c0392b;font-weight:700">売価 ' + s.cost.sellPrice.toLocaleString() + '円</span>';
-      if (s.cost.profitRate) costInfo += '<span style="color:#888">（利益' + s.cost.profitRate + '%）</span>';
+      var listRate = s.cost.sellRate || (s.cost.profitRate !== 'all' ? s.cost.profitRate : 20);
+      if (listRate) costInfo += '<span style="color:#888">（利益' + listRate + '%）</span>';
     }
     body.innerHTML = '<div class="spec-item-name">' + h(s.basic && s.basic.pname ? s.basic.pname : '（名称未設定）') + badge + '</div>'
       + '<div class="spec-item-meta">' + h(s.basic && s.basic.ptype ? s.basic.ptype : '') + '</div>'
@@ -595,7 +589,6 @@ function doDeleteSpec() {
     renderList();
     toast('「' + name + '」を削除しました ✓');
   }).catch(function(e) {
-    alert('削除エラー: ' + e.code + '\n' + e.message);
     toast('削除に失敗しました: ' + e.message, true);
   });
 }
@@ -747,6 +740,14 @@ function doDelete() {
 function toggleSample() {
   if (!currentSpec) return;
   currentSpec.isSample = !currentSpec.isSample;
+  if (!currentSpecId) {
+    // 未保存の新規規格書は勝手に保存しない
+    collectForm();
+    renderEditor();
+    setDirty(true);
+    toast(currentSpec.isSample ? '見本に設定しました（「保存」で確定します）' : '見本を解除しました（「保存」で確定します）');
+    return;
+  }
   saveSpec();
   renderEditor();
 }
@@ -761,6 +762,7 @@ async function saveNutritionOnly() {
     var el = document.getElementById('n-' + k);
     if (el) n[k] = (el.type === 'number') ? (parseFloat(el.value) || 0) : el.value;
   });
+  var nm = document.getElementById('n-manual'); if (nm) n.manual = nm.checked;
   try {
     await db.collection('product_specs').doc(currentSpecId).update({ nutrition: n });
     toast('栄養成分を保存しました ✓');
@@ -844,6 +846,7 @@ function collectForm() {
   ['e','p','f','c','s','w','sf','su','fiber','ash','unit','note'].forEach(function(k){
     var el = document.getElementById('n-'+k); if(el) n[k] = el.value;
   });
+  var nm = document.getElementById('n-manual'); if (nm) n.manual = nm.checked;
   var pk = currentSpec.pkg;
   ['puD','puW','puH','puN','puWt','puMat','pcD','pcW','pcH','pcN','pcWt','pcMat'].forEach(function(k){
     var el = document.getElementById('pk-'+k); if(el) pk[k] = el.value;
@@ -917,7 +920,6 @@ function renderEditor() {
     + '<button class="btn btn-primary" onclick="saveSpec()">&#x1F4BE; 保存</button>'
     + '<button class="btn btn-sm" onclick="toggleSample()" style="font-size:12px">'
     +   (isSample ? '&#x1F4CC; 見本解除' : '&#x1F4CC; 見本にする') + '</button>'
-    + '<button class="btn" onclick="swTab(\'preview\')">&#x1F4C4; プレビュー</button>'
     + (currentSpecId ? '<button class="btn btn-danger btn-sm" onclick="doDelete()">&#x1F5D1; 削除</button>' : '')
     + '</div>';
 
@@ -946,7 +948,7 @@ function renderEditor() {
     + '<div class="g3">'
     +   '<div class="field"><label class="fl">内容量</label>'
     +     '<div style="display:flex;gap:6px;align-items:center">'
-    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'"'+exPh('amount')+' style="flex:1" oninput="currentSpec.basic.amount=this.value;calcNutritionSilent()">'
+    +       '<input type="text" id="f-amount" value="'+h(b.amount)+'"'+exPh('amount')+' style="flex:1" oninput="currentSpec.basic.amount=this.value;calcNutritionSilent();recalcCost()">'
     +       '<label class="btn btn-sm" style="cursor:pointer;white-space:nowrap;margin:0;font-size:11px" title="商品名,内容量(g)のCSVをインポート">'
     +         '📤 CSV'
     +         '<input type="file" accept=".csv" style="display:none" onchange="importAmountCSV(this)">'
@@ -1056,7 +1058,7 @@ function renderEditor() {
     +   '<col style="width:30px">'    // 21:削除
     + '</colgroup>'
     + '<thead>'
-    + '<tr style="background:#2c4a6e;color:#fff;font-size:11px">'
+    + '<tr class="ing-head" style="background:#2c4a6e;color:#fff;font-size:11px">'
     +   '<th style="padding:4px 2px;text-align:center">No</th>'
     +   '<th style="padding:4px 2px;text-align:center;background:#e67e22">支給</th>'
     +   '<th style="padding:4px 4px;text-align:left">原材料名</th>'
@@ -1125,29 +1127,31 @@ function renderEditor() {
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
     +   '<h3 style="margin:0">栄養成分情報</h3>'
     +   '<div style="display:flex;gap:6px">'
-    +     '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="loadMasterFromFirestore().then(function(){applyMasterToSpec();renderIngTbody();calcNutritionSilent();toast(\'マスターから再反映しました ✓\');});">🔄 マスターから再反映</button>'
     +     '<button class="btn btn-sm" onclick="calcNutrition()" style="background:#e8f0ff;color:#1a3a5c">🧮 原材料から再計算</button>'
-    +     '<button class="btn btn-primary btn-sm" onclick="saveNutritionOnly()">💾 栄養成分を保存</button>'
     +   '</div>'
     + '</div>'
     + '<p style="font-size:12px;color:#888;margin-bottom:4px">'+h(n.unit||'1袋')+'の値。原材料の使用量・マスターの栄養素から自動計算できます。</p>'
-    + '<p id="nut-basis" style="font-size:12px;color:#555;margin-bottom:12px"></p>'
+    + '<p id="nut-basis" style="font-size:12px;color:#555;margin-bottom:6px"></p>'
+    + '<label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:12px;padding:8px 10px;border-radius:6px;background:'+(n.manual?'#fff3cd':'#f5f7fa')+'" id="n-manual-wrap">'
+    +   '<input type="checkbox" id="n-manual" style="width:18px;height:18px" '+(n.manual?'checked':'')+' onchange="setNutManual(this.checked)">'
+    +   '<span><b>手入力の値（分析値など）を使う</b>　…チェック中は自動計算で上書きしません。数値を直接書き換えると自動でチェックが入ります。</span>'
+    + '</label>'
     + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('エネルギー (kcal)', 'number','n-e', n.e||0, 'step="1"')
-    +   fld('水分 (g)',          'number','n-w', n.w||0, 'step="0.1"')
+    +   fld('エネルギー (kcal)', 'number','n-e', n.e||0, 'step="1" oninput="markNutManual()"')
+    +   fld('水分 (g)',          'number','n-w', n.w||0, 'step="0.1" oninput="markNutManual()"')
     + '</div>'
     + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('たんぱく質 (g)',    'number','n-p', n.p||0, 'step="0.1"')
-    +   fld('脂質 (g)',          'number','n-f', n.f||0, 'step="0.1"')
+    +   fld('たんぱく質 (g)',    'number','n-p', n.p||0, 'step="0.1" oninput="markNutManual()"')
+    +   fld('脂質 (g)',          'number','n-f', n.f||0, 'step="0.1" oninput="markNutManual()"')
     + '</div>'
     + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('炭水化物 (g)',     'number','n-c', n.c||0, 'step="0.1"')
-    +   fld('食塩相当量 (g)',   'number','n-s', n.s||0, 'step="0.01"')
+    +   fld('炭水化物 (g)',     'number','n-c', n.c||0, 'step="0.1" oninput="markNutManual()"')
+    +   fld('食塩相当量 (g)',   'number','n-s', n.s||0, 'step="0.01" oninput="markNutManual()"')
     + '</div>'
 
     + '<div class="g2" style="margin-bottom:10px">'
-    +   fld('飽和脂肪酸 (g)', 'number','n-sf',    n.sf||0,    'step="0.1"')
-    +   fld('食物繊維 (g)',   'number','n-fiber', n.fiber||0, 'step="0.1"')
+    +   fld('飽和脂肪酸 (g)', 'number','n-sf',    n.sf||0,    'step="0.1" oninput="markNutManual()"')
+    +   fld('食物繊維 (g)',   'number','n-fiber', n.fiber||0, 'step="0.1" oninput="markNutManual()"')
     + '</div>'
     + '<div class="g2" style="margin-bottom:10px">'
     +   fld('表示単位（例：1袋180g）','text','n-unit', h(n.unit||''), '')
@@ -1290,11 +1294,11 @@ function renderEditor() {
   });
 
   var costHtml = '<div id="panel-cost" class="panel">'
+    + '<div id="cost-top-summary" style="position:sticky;top:0;z-index:5;background:#1a3a5c;color:#fff;border-radius:8px;padding:12px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.15)"></div>'
     // ① 原材料費明細
     + '<div class="card"><h3>① 原材料費明細</h3>'
     + '<p style="font-size:12px;color:#888;margin-bottom:8px">②原材料タブで重量・単価を入力すると自動計算されます。</p>'
     + '<div id="cost-ing-detail"></div>'
-    + '<div style="margin-top:6px"><button class="btn btn-sm" onclick="loadMasterFromFirestore().then(function(){applyMasterToSpec();renderIngTbody();recalcCost();calcNutritionSilent();toast(\'マスターから再反映しました ✓\');});">🔄 マスターから単価を再反映</button></div>'
     + '</div>'
     // ② ロット別加工費
     + '<div class="card"><h3>② ロット別加工費</h3>'
@@ -1545,7 +1549,7 @@ function selectShippingRate() {
     currentSpec.cost.shipping = cost;
     // 1箱入数を取得してshipPerUnitを計算・保存
     var pcNEl3 = document.getElementById('co-pcN-ship');
-    var pcN3 = +(pcNEl3 ? pcNEl3.value : co.pcN || 1) || 1;
+    var pcN3 = +(pcNEl3 ? pcNEl3.value : (currentSpec.cost && currentSpec.cost.pcN) || 1) || 1;
     var perUnit3 = pcN3 > 0 ? cost / pcN3 : 0;
     currentSpec.cost.shipPerUnit = perUnit3;
     var puEl3 = document.getElementById('co-ship-per-unit');
@@ -1964,7 +1968,7 @@ function showFoodResults() { if(document.getElementById('isearch').value) search
 function hideFoodResults() { setTimeout(function(){ var r=document.getElementById('food-results'); if(r) r.style.display='none'; }, 200); }
 
 function addFoodIng(name) {
-  if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
+  if (!currentSpec) { toast('先に「新規作成」または規格書を開いてください', true); return; }
   if (!currentSpec.ings) currentSpec.ings = [];
 
   // マスターDBから取得（優先）
@@ -2004,10 +2008,10 @@ function addFoodIng(name) {
 
 // ===== マスター原材料を一括追加 =====
 function addAllMasterIngs() {
-  if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
+  if (!currentSpec) { toast('先に「新規作成」または規格書を開いてください', true); return; }
   if (!currentSpec.ings) currentSpec.ings = [];
   if (!masterData.materialPrices.length) {
-    alert('マスターに原材料が登録されていません。\n⑦マスター登録タブで先に登録してください。');
+    toast('マスターに原材料が登録されていません。⑦マスター登録タブで先に登録してください。', true);
     return;
   }
   var pname = currentSpec.basic && currentSpec.basic.pname ? currentSpec.basic.pname : '';
@@ -2098,9 +2102,9 @@ function toggleCustForm() {
 }
 
 function addCustIng() {
-  if (!currentSpec) { alert('先に「新規作成」または規格書を開いてください'); return; }
+  if (!currentSpec) { toast('先に「新規作成」または規格書を開いてください', true); return; }
   var name = gv('cf-name');
-  if (!name) { alert('原材料名を入力してください'); return; }
+  if (!name) { toast('原材料名を入力してください', true); return; }
   if (!currentSpec.ings) currentSpec.ings = [];
   currentSpec.ings.push({
     name:name, country:gv('cf-country'), allergens:gv('cf-al'),
@@ -2138,10 +2142,16 @@ function updateLabelWithAdditive() {
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
-function rebuildLabelText() {
-  // ボタンクリック時は完全再生成（手動編集上書き）
-  var el = document.getElementById('label-text');
-  if (!el) return;
+// 製造国が日本（国内製造）か
+function isDomesticCountry(c) {
+  c = (c || '').replace(/\s/g, '');
+  return !c || /^(日本|日本国|国産|国内|国内製造|japan)$/i.test(c);
+}
+// 一括表示の原材料名を組み立てる（「再生成」・開いた時・新規の自動作成で共通）
+//  ・重量順、重量1位の原材料だけに原料原産地を付ける
+//  ・添加物は「/」の後ろに、アレルゲンは末尾に
+//  ・「（原産国：〇〇）」は製造国が日本以外（輸入品）の場合のみ付ける
+function buildLabelText() {
   var sorted = currentSpec.ings.slice().sort(function(a, b) {
     var wa = a.amount||0, wb = b.amount||0;
     if (wa===0&&wb===0) return 0; if (wa===0) return 1; if (wb===0) return -1;
@@ -2149,91 +2159,69 @@ function rebuildLabelText() {
   });
   var countryText = '';
   var basicCountry = currentSpec.basic && currentSpec.basic.country ? currentSpec.basic.country : '';
-  if (basicCountry) countryText = '（原産国：' + basicCountry + '）';
-  // 重量1位のみ産地を表示
+  var cEl = document.getElementById('f-country');
+  if (cEl) basicCountry = cEl.value;
+  if (!isDomesticCountry(basicCountry)) countryText = '（原産国：' + basicCountry.trim() + '）';
   var maxAmount = 0;
   sorted.forEach(function(ing){ if ((ing.amount||0) > maxAmount) maxAmount = ing.amount||0; });
-  var nameList = sorted.map(function(ing, idx) {
-    if (!ing.name) return '';
+  var firstDone = false;
+  var nonAdd = sorted.filter(function(ing){
+    if (!ing.name) return false;
+    var m2 = findMaster(ing.name);
+    return !((m2 && m2.isAdditive) || ing.isAdditive);
+  });
+  var nameList = nonAdd.map(function(ing) {
     var origin = '';
-    // マスターを取得（一般名称と産地のため）
     var mat = findMaster(ing.name);
     // 重量が最大のもの（1位）のみ産地を付ける
-    if ((ing.amount||0) === maxAmount && maxAmount > 0) {
+    if (!firstDone && (ing.amount||0) === maxAmount && maxAmount > 0) {
       origin = resolveOrigin(ing, mat);
+      firstDone = true;
     }
-    var dispName = getDispName(ing);
-    return dispName + (origin ? '（'+origin+'）' : '');
-  }).filter(Boolean).join('、');
+    return getDispName(ing) + (origin ? '（'+origin+'）' : '');
+  }).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
-  // 添加物を反映（/添加物 形式）
-  // 添加物フラグがtrueのingを自動集約（additiveTextが空でも添加物ingがあれば生成）
+  // 添加物（手入力の添加物欄が空なら、添加物フラグの原材料から自動集約）
   var additive = currentSpec.additiveText || '';
+  var addEl = document.getElementById('additive-text');
+  if (addEl) additive = addEl.value;
   if (!additive.trim()) {
-    // isAdditiveがtrueのingから一般名称を収集
-    var autoAddList = sorted.filter(function(ing){
+    additive = sorted.filter(function(ing){
       var m2 = findMaster(ing.name);
-      return (m2 && m2.isAdditive) || ing.isAdditive;
+      return ing.name && ((m2 && m2.isAdditive) || ing.isAdditive);
     }).map(function(ing){
       var m2 = findMaster(ing.name);
       var gn = (m2 && m2.generalName) ? m2.generalName : (ing.generalName || ing.name);
       var use = (m2 && m2.additiveUse) ? m2.additiveUse : (ing.addUse || '');
       return use ? gn + '（' + use + '）' : gn;
-    });
-    additive = autoAddList.join('、');
+    }).join('、');
   }
   var labelVal = countryText + nameList;
   if (additive.trim()) labelVal += '/' + additive.trim();
   labelVal += allergenText;
-  el.value = labelVal;
-  if (currentSpec) currentSpec.labelText = el.value;
+  return labelVal;
+}
+
+function rebuildLabelText() {
+  // ボタンクリック時は完全再生成（手動編集上書き）
+  var el = document.getElementById('label-text');
+  if (!el || !currentSpec) return;
+  el.value = buildLabelText();
+  currentSpec.labelText = el.value;
 }
 
 function autoLabelText() {
   var el = document.getElementById('label-text');
-  if (!el) return;
-  // 重量多い順にソート（0のものは元の順序を保持）
-  var sorted = currentSpec.ings.slice().sort(function(a, b) {
-    var wa = a.amount || 0, wb = b.amount || 0;
-    if (wa === 0 && wb === 0) return 0;
-    if (wa === 0) return 1;
-    if (wb === 0) return -1;
-    return wb - wa;
-  });
-  // 原産国：基本情報の製造国 または 原材料の産地から生成
-  var countryText = '';
-  var basicCountry = currentSpec.basic && currentSpec.basic.country ? currentSpec.basic.country : '';
-  if (basicCountry) {
-    countryText = '（原産国：' + basicCountry + '）';
-  }
-  // 「原材料名（産地）」形式で生成
-  var nameList = sorted.map(function(ing) {
-    if (!ing.name) return '';
-    // 産地はマスターのoriginまたはing.countryを使用
-    var origin = '';
-    var mat = findMaster(ing.name);
-    origin = resolveOrigin(ing, mat);
-    var dispName = getDispName(ing);
-    return dispName + (origin ? '（'+origin+'）' : '');
-  }).filter(Boolean).join('、');
-  var checked = [];
-  document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
-  // labelTextが未設定(null/undefined)の場合のみ自動生成
-  // 空文字('')は手動で消去した状態として保持する
-  var alPattern = /\/（一部に[^）]+を含む）$|、（一部に[^）]+を含む）$/;
-  if (currentSpec.labelText == null) {
-    // 初回生成
-    el.value = countryText + nameList + allergenText;
+  if (!el || !currentSpec) return;
+  if (currentSpec.labelText == null || !String(el.value).trim()) {
+    // 未作成なら「再生成」と同じ内容で作成
+    el.value = buildLabelText();
     currentSpec.labelText = el.value;
   } else {
-    // 既存テキストのアレルゲン部分だけ更新（手動編集・消去を保持）
-    var currentVal = el.value || '';
-    var baseText = currentVal.replace(alPattern, '');
-    el.value = baseText + allergenText;
-    currentSpec.labelText = el.value;
+    // 既存テキストはアレルゲン部分だけ更新（手動編集を保持）
+    updateAllergenPartOnly();
   }
 }
 
@@ -2244,7 +2232,7 @@ function renderAllergenGrid() {
   var al = currentSpec.allergens || [];
   var html = '';
   ALL_ALLERGENS.forEach(function(a){
-    html += '<label class="al-chip"><input type="checkbox" value="'+a+'" '+(al.indexOf(a)>=0?'checked':'')+' onchange="updateAllergenPartOnly()"> '+a+'</label>';
+    html += '<label class="al-chip"><input type="checkbox" value="'+a+'" '+(al.indexOf(a)>=0?'checked':'')+' onchange="this.dataset.auto=\'\';updateAllergenPartOnly()"> '+a+'</label>';
   });
   g.innerHTML = html;
   syncAllergens();
@@ -2260,13 +2248,16 @@ function syncAllergens() {
     if (mat && mat.allergens) mat.allergens.split(/[・、,\s]+/).filter(Boolean).forEach(function(a){ detected.add(a); });
   });
   // 28品目アレルゲングリッドと照合（部分一致）
+  // 原材料から自動で付いたチェック（data-auto=1）は、該当原材料が無くなったら外す。
+  // 手動で付けたチェックはそのまま残す。
   document.querySelectorAll('#allergen-grid input').forEach(function(cb){
     var val = cb.value;
     var hit = false;
     detected.forEach(function(a){
       if (a.indexOf(val) >= 0 || val.indexOf(a) >= 0) hit = true;
     });
-    if (hit) cb.checked = true;
+    if (hit) { cb.checked = true; cb.dataset.auto = '1'; }
+    else if (cb.dataset.auto === '1') { cb.checked = false; cb.dataset.auto = ''; }
   });
   // アレルゲン部分のみ更新（手動編集を保持）
   updateAllergenPartOnly();
@@ -2363,7 +2354,10 @@ function recalcCost() {
   if (!currentSpec.cost) currentSpec.cost = {};
 
   // ① 原材料費
-  var ingMaterial = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0) : 0;
+  var ingMaterialTotal = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0) : 0;
+  // 原材料の合計重量 → 内容量（1袋）に換算（栄養成分と同じ考え方）
+  var basis = getBagBasis();
+  var ingMaterial = ingMaterialTotal * basis.factor;
 
   // ② ロット別加工費（1袋あたり）
   var lotCosts = co.lotCosts || [];
@@ -2456,9 +2450,15 @@ function recalcCost() {
       +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">原材料費</th></tr></thead>'
       +'<tbody>'+rows+'</tbody>'
       +'<tfoot><tr style="border-top:2px solid #1a3a5c;background:#f0f4f8">'
-      +'<td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700">原材料費合計</td>'
-      +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+ingMaterial.toFixed(1)+' 円</td>'
-      +'</tr></tfoot>'
+      +'<td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700">原材料費合計（原材料 '+basis.totalG+'g 分）</td>'
+      +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+ingMaterialTotal.toFixed(1)+' 円</td>'
+      +'</tr>'
+      +(basis.converted && Math.abs(basis.factor - 1) > 0.001
+        ? '<tr style="background:#fff8e1"><td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700;color:#856404">1袋あたり（内容量 '+basis.contentG+'g に換算）</td>'
+          +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#856404">'+ingMaterial.toFixed(1)+' 円</td></tr>'
+        : '')
+      +(basis.converted ? '' : '<tr><td colspan="4" style="padding:4px 8px;font-size:11px;color:#c62828">※ 基本情報の「内容量」が読み取れないため、原材料合計をそのまま1袋分として計算しています。</td></tr>')
+      +'</tfoot>'
       +'</table>';
   }
 
@@ -2467,12 +2467,12 @@ function recalcCost() {
   if (!resEl) return;
 
   // 使用量合計（1袋の重量）を計算
-  var totalWeightG = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){
-    return s + (+(ing.amount)||0);
-  }, 0) : 0;
+  var matLabel = basis.converted
+    ? '① 原材料費　（1袋 ' + basis.contentG + 'g 換算）'
+    : '① 原材料費　（原材料合計 ' + basis.totalG + 'g）';
 
   var items = [
-    {label:'① 原材料費　（1袋 '+totalWeightG.toFixed(1)+'g）', val:ingMaterial, color:'#333'},
+    {label:matLabel, val:ingMaterial, color:'#333'},
     {label:'② ロット別加工費（1袋あたり）', val:lotPerBag, color:'#333'},
     {label:'③ 加工費・労務費',  val:labor,       color:'#333'},
     {label:'③ 光熱費',          val:utility,     color:'#333'},
@@ -2492,15 +2492,18 @@ function recalcCost() {
   });
 
   // 利益XX% → 送料 → 合計
+  var shipCeil = Math.ceil(shipping);
   var profRateForResult = co.profitRate || 20;
   var showRatesInResult = profRateForResult === 'all' ? [10,20,30] : [+profRateForResult];
+  var topRows = [];
   showRatesInResult.forEach(function(rate) {
     var sellP2   = subtotal / (1 - rate / 100);
     var profitP2 = sellP2 - subtotal;
-    // 合計: 送料込みモードは売価のみ、送料別モードは売価+送料
+    // 合計: 送料込み（合計に含める）は売価+送料、送料別（合計に含めない）は売価のみ
     var finalP = shippingMode === 'include'
-               ? Math.ceil(sellP2)
-               : Math.ceil(sellP2) + shipping;
+               ? Math.ceil(sellP2) + shipCeil
+               : Math.ceil(sellP2);
+    topRows.push({rate: rate, sell: Math.ceil(sellP2), total: finalP});
 
     // 利益行
     rhtml += '<tr style="background:#dcfce7;border-top:2px solid #22c55e">'
@@ -2510,16 +2513,16 @@ function recalcCost() {
       +'<span style="font-size:12px;color:#888;margin-left:8px">（利益: '+Math.ceil(profitP2).toLocaleString()+'円）</span>'
       +'</td></tr>';
 
-    // 送料行（送料別モードかつ送料あり）
-    if (shippingMode !== 'include' && shipping > 0) {
+    // 送料行（送料あり）：込みなら合計に加算、別なら参考表示
+    if (shipping > 0) {
       rhtml += '<tr style="background:#fff8f0;border-top:1px dashed #f0a020">'
-        +'<td style="padding:6px 12px;color:#c0392b">送料（別途）</td>'
-        +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#c0392b">'+Math.ceil(shipping).toLocaleString()+' 円</td>'
+        +'<td style="padding:6px 12px;color:#c0392b">'+(shippingMode === 'include' ? '＋ 送料（1袋あたり）' : '送料（別途・合計に含めない）')+'</td>'
+        +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#c0392b">'+shipCeil.toLocaleString()+' 円</td>'
         +'</tr>';
     }
 
-    // 合計行（送料込みモード: 売価 / 送料別モード: 売価+送料）
-    var totalLabel2 = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料込み）';
+    // 合計行
+    var totalLabel2 = shippingMode === 'include' ? '合計（送料込み）' : '合計（送料別）';
     rhtml += '<tr style="border-top:2px solid #c0392b;background:#fef3f0">'
       +'<td style="padding:9px 12px;font-size:16px;font-weight:700;color:#c0392b">'+totalLabel2+'</td>'
       +'<td style="padding:9px 12px;text-align:right;font-size:22px;font-weight:700;color:#c0392b">'
@@ -2530,16 +2533,31 @@ function recalcCost() {
   rhtml += '</table>';
   resEl.innerHTML = rhtml;
 
-  // 原価・売価をcostに保存（一覧表示用）
+  // 原価・売価をcostに保存（一覧表示用）。選択した利益率（profitRate）は上書きしない
   if (currentSpec && currentSpec.cost) {
     currentSpec.cost.subtotal = Math.ceil(subtotal);
     var _rate = co.profitRate || 20;
-    var _rates = _rate === 'all' ? [10,20,30] : [+_rate];
-    var _mainRate = _rates[0];
+    var _mainRate = _rate === 'all' ? 20 : +_rate; // 「全て」の場合、一覧には20%の売価を表示
     var _sellP = subtotal / (1 - _mainRate / 100);
-    var _finalP = shippingMode === 'include' ? Math.ceil(_sellP) : Math.ceil(_sellP) + shipping;
+    var _finalP = shippingMode === 'include' ? Math.ceil(_sellP) + shipCeil : Math.ceil(_sellP);
     currentSpec.cost.sellPrice = _finalP;
-    currentSpec.cost.profitRate = _mainRate;
+    currentSpec.cost.sellRate = _mainRate;
+  }
+
+  // 上部サマリーと原材料タブのバナー
+  var bt = document.getElementById('banner-total');
+  if (bt) bt.textContent = Math.ceil(subtotal).toLocaleString() + ' 円';
+  var ts = document.getElementById('cost-top-summary');
+  if (ts) {
+    var sh = '<div style="display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline">'
+      + '<div><div style="font-size:11px;opacity:.8">1袋あたり原価</div><div style="font-size:22px;font-weight:700">' + Math.ceil(subtotal).toLocaleString() + ' 円</div></div>';
+    topRows.forEach(function(r){
+      sh += '<div><div style="font-size:11px;opacity:.8">利益' + r.rate + '% の売価</div><div style="font-size:18px;font-weight:700;color:#bbf7d0">' + r.sell.toLocaleString() + ' 円</div></div>'
+         +  '<div><div style="font-size:11px;opacity:.8">' + (shippingMode === 'include' ? '合計（送料込み）' : '合計（送料別）') + '</div><div style="font-size:18px;font-weight:700;color:#fecaca">' + r.total.toLocaleString() + ' 円</div></div>';
+    });
+    sh += '</div>';
+    if (!basis.converted) sh += '<div style="font-size:11px;margin-top:6px;color:#fde68a">※ 内容量が未入力のため、原材料合計 ' + basis.totalG + 'g を1袋として計算しています</div>';
+    ts.innerHTML = sh;
   }
 }
 
@@ -2555,6 +2573,18 @@ function parseContentG(str) {
   if (/^(kg|ｋｇ|キロ)$/i.test(m[2])) v = v * 1000;
   return v;
 }
+// 原材料の合計重量と内容量（1袋）から換算係数を求める（原価・栄養で共通）
+function getBagBasis() {
+  var totalG = 0;
+  ((currentSpec && currentSpec.ings) || []).forEach(function(ing){ var a = parseFloat(ing.amount) || 0; if (a > 0) totalG += a; });
+  totalG = Math.round(totalG * 10) / 10;
+  var amtEl = document.getElementById('f-amount');
+  var amtStr = amtEl ? amtEl.value : (currentSpec && currentSpec.basic && currentSpec.basic.amount);
+  var contentG = parseContentG(amtStr);
+  var factor = (contentG > 0 && totalG > 0) ? contentG / totalG : 1;
+  return {totalG: totalG, contentG: contentG, factor: factor, converted: contentG > 0 && totalG > 0};
+}
+
 // 原材料の使用量から栄養価を合計し、内容量（1袋）あたりに換算して返す
 function computeNutritionPerBag() {
   var r = {e:0,w:0,p:0,f:0,c:0,s:0,sf:0,fiber:0,hasData:false,totalG:0,contentG:0,factor:1};
@@ -2597,8 +2627,26 @@ function applyNutritionUnit(nr) {
   }
 }
 
+// 栄養成分の手入力モード（分析値などを自動計算で上書きしない）
+function setNutManual(on) {
+  if (!currentSpec.nutrition) currentSpec.nutrition = {};
+  currentSpec.nutrition.manual = !!on;
+  var cb = document.getElementById('n-manual'); if (cb) cb.checked = !!on;
+  var wrap = document.getElementById('n-manual-wrap'); if (wrap) wrap.style.background = on ? '#fff3cd' : '#f5f7fa';
+  if (!on) calcNutritionSilent();
+}
+function markNutManual() {
+  if (currentSpec && currentSpec.nutrition && !currentSpec.nutrition.manual) setNutManual(true);
+}
+
 function calcNutritionSilent() {
   var nr = computeNutritionPerBag();
+  if (currentSpec.nutrition && currentSpec.nutrition.manual) {
+    // 手入力モード：値は変えず、説明だけ更新
+    var info = document.getElementById('nut-basis');
+    if (info) { info.textContent = '手入力の値を使用中（自動計算はしていません）。'; info.style.color = '#856404'; }
+    return;
+  }
   var e=nr.e, w=nr.w, p=nr.p, f=nr.f, c=nr.c, s=nr.s, sf=nr.sf, fiber=nr.fiber, hasData=nr.hasData;
   if (hasData) {
     sv('n-e',     Math.round(e));
@@ -2623,6 +2671,12 @@ function calcNutritionSilent() {
 }
 
 function calcNutrition() {
+  if (currentSpec.nutrition && currentSpec.nutrition.manual) {
+    if (!confirm('手入力の栄養成分（分析値など）を、原材料からの自動計算の値に置き換えますか？')) return;
+    currentSpec.nutrition.manual = false;
+    var cb = document.getElementById('n-manual'); if (cb) cb.checked = false;
+    var wrap = document.getElementById('n-manual-wrap'); if (wrap) wrap.style.background = '#f5f7fa';
+  }
   var nr = computeNutritionPerBag();
   var e=nr.e, w=nr.w, p=nr.p, f=nr.f, c=nr.c, s=nr.s, sf=nr.sf, fiber=nr.fiber, hasData=nr.hasData;
   if (hasData) {
@@ -2967,11 +3021,11 @@ function genPreview() {
   html += '<div style="margin-top:3px;font-size:7pt;font-weight:700">アレルギー：'+(al.length?al.join('・'):'なし')+'</div>';
   html += '</div>';
   html += '<div><div class="sec">▼ 注意表示</div>';
-  html += '<div class="lbox" style="font-size:6.5pt;line-height:1.3">'+(currentSpec.notes||'').replace(/\n/g,'<br>')+'</div>';
+  html += '<div class="lbox" style="font-size:6.5pt;line-height:1.3">'+h(currentSpec.notes||'').replace(/\n/g,'<br>')+'</div>';
   html += '<div class="sec">▼ 調理方法</div>';
-  html += '<div class="lbox" style="font-size:6.5pt;line-height:1.3">'+(currentSpec.cooking||'').replace(/\n/g,'<br>')+'</div></div>';
+  html += '<div class="lbox" style="font-size:6.5pt;line-height:1.3">'+h(currentSpec.cooking||'').replace(/\n/g,'<br>')+'</div></div>';
   html += '</div>';
-  html += '<div class="footer">▼ 特記事項：'+(currentSpec.special||'').replace(/\n/g,' ')+'</div>';
+  html += '<div class="footer">▼ 特記事項：'+h(currentSpec.special||'').replace(/\n/g,' ')+'</div>';
 
   a4.innerHTML = html;
   } catch(gpe) {
@@ -3151,6 +3205,7 @@ async function loadMasterFromFirestore() {
     var doc = await db.collection('masters').doc('all').get({source:'server'});
     if (doc.exists) {
       var d = doc.data();
+      masterStamp = d._stamp || 0; // 同時編集チェック用
       if (d.materialPrices)   masterData.materialPrices   = d.materialPrices;
       if (d.processingCosts)  masterData.processingCosts  = d.processingCosts;
       if (d.packagingMaster)  {
@@ -3196,10 +3251,21 @@ async function loadMasterFromFirestore() {
   }
 }
 
+var masterStamp = 0;
 async function saveMasterToFirestore() {
   if (!db) { toast('Firestoreに接続されていません', true); return; }
   try {
+    // 読み込んだ後に他の人がマスターを保存していないか確認
+    var cur = await db.collection('masters').doc('all').get({source:'server'});
+    var serverStamp = cur.exists ? (cur.data()._stamp || 0) : 0;
+    if (serverStamp && serverStamp !== masterStamp) {
+      var who = cur.data()._by ? '（' + cur.data()._by + '）' : '';
+      if (!confirm('マスターは読み込んだ後に他の人' + who + 'が更新しています。\nこのまま保存すると、その変更を上書きします。\n\n「OK」で上書き保存／「キャンセル」で中止（「再読込」で最新を取得してから編集してください）')) return;
+    }
+    masterData._stamp = Date.now();
+    try { var u = firebase.auth && firebase.auth().currentUser; masterData._by = u && u.email ? u.email : ''; } catch(ue) { masterData._by = ''; }
     await db.collection('masters').doc('all').set(masterData);
+    masterStamp = masterData._stamp;
     toast('マスターを保存しました ✓');
     updateAccordionTitles(); // 件数のみ更新（テーブル再描画しない）
   } catch(e) { toast('マスター保存失敗: ' + e.message, true); }
@@ -3436,7 +3502,7 @@ function applyMasterToSpec() {
     currentSpec.cost.otherCost = addCosts.reduce(function(s,a){ return s + (a.cost||0); }, 0);
   }
   if (applied > 0) {
-    toast('マスターから ' + applied + '品目の単価・栄養素を反映しました ✓');
+    // 開くたびの通知は出さない（再反映ボタンでは呼び出し側で通知）
     renderIngTbody();
     calcNutritionSilent();
   }
