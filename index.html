@@ -2187,13 +2187,58 @@ function prefillCustNut() {
 function fillMatNutFromDB(i) {
   var m = masterData.materialPrices[i];
   if (!m || !m.name) return;
-  var allZero = CUST_NUT_KEYS.every(function(k){ return !(+m[k]); });
-  if (!allZero) return;
-  var fd = findInFoodDB(m.name);
-  if (!fd) return;
-  CUST_NUT_KEYS.forEach(function(k){ if (fd[k] != null) m[k] = fd[k]; });
+  var hit = findInFoodDBKey(m.name);
+  if (!hit) return;
+  var n = 0;
+  CUST_NUT_KEYS.forEach(function(k){
+    // 0（未入力）の項目だけ、内蔵データに数値があれば入れる
+    if (!(+m[k]) && +hit.data[k] > 0) { m[k] = hit.data[k]; n++; }
+  });
+  if (!n) return;
   renderMatTable();
-  toast('「' + m.name + '」の栄養成分を内蔵データから入力しました。確認して「マスター全保存」してください');
+  toast('「' + m.name + '」の栄養成分 ' + n + '項目を内蔵データ（' + hit.key + '）から入力しました。確認して「マスター全保存」してください');
+}
+
+
+// 原材料マスター全体：栄養成分が0（未入力）の項目を、内蔵データに数値があれば一括で更新
+var NUT_LABELS = {e:'kcal', w:'水分', p:'たんぱく質', f:'脂質', c:'炭水化物', s:'食塩', sf:'飽和脂肪酸', fiber:'食物繊維'};
+function fillZeroNutritionFromDB() {
+  var changes = [];
+  masterData.materialPrices.forEach(function(m, i){
+    if (!m || !m.name) return;
+    var hit = findInFoodDBKey(m.name);
+    if (!hit) return;
+    var upd = {};
+    CUST_NUT_KEYS.forEach(function(k){
+      if (!(+m[k]) && +hit.data[k] > 0) upd[k] = hit.data[k];
+    });
+    if (Object.keys(upd).length) changes.push({i: i, name: m.name, key: hit.key, upd: upd});
+  });
+  if (!changes.length) {
+    toast('更新できる項目はありませんでした（0の項目に対応する内蔵データの数値がありません）');
+    return;
+  }
+  var fieldCount = changes.reduce(function(s, c){ return s + Object.keys(c.upd).length; }, 0);
+  var lines = changes.slice(0, 15).map(function(c){
+    return '・' + c.name + (c.key !== c.name ? '（内蔵:' + c.key + '）' : '') + '　'
+      + Object.keys(c.upd).map(function(k){ return NUT_LABELS[k] + ' ' + c.upd[k]; }).join(' / ');
+  });
+  if (changes.length > 15) lines.push('…ほか ' + (changes.length - 15) + '品目');
+  if (!confirm('栄養成分が0の項目を、内蔵の成分データで更新します。\n' + changes.length + '品目・' + fieldCount + '項目\n\n'
+      + lines.join('\n') + '\n\n※ 既に数値が入っている項目は変更しません。\n※（内蔵:〇〇）は名前の近い食品のデータです。違う場合はキャンセルして個別に入力してください。\n\nOKでマスターを更新して保存します。')) return;
+  changes.forEach(function(c){
+    var m = masterData.materialPrices[c.i];
+    Object.keys(c.upd).forEach(function(k){ m[k] = c.upd[k]; });
+  });
+  try { renderMatTable(); } catch(e) {}
+  saveMasterToFirestore().then(function(){
+    if (currentSpec) {
+      applyMasterToSpec();
+      try { renderIngTbody(); } catch(e2) {}
+      calcNutritionSilent();
+    }
+    toast(changes.length + '品目・' + fieldCount + '項目の栄養成分を更新しました ✓');
+  });
 }
 
 // ===== 一括表示テキスト自動生成 =====
@@ -3359,23 +3404,44 @@ function normName(s) {
     .replace(/ヲ/g,'オ').replace(/ヴ/g,'ブ') // カタカナ異字体
     .replace(/[−－‐]/g,'-');          // ハイフン統一
 }
-function findInFoodDB(name) {
-  // 完全一致
-  if (FOOD_DB[name]) return FOOD_DB[name];
-  // normName正規化後に一致検索
+// 内蔵成分データの表記ゆれ（同じ食品の別の書き方）
+var FOOD_DB_ALIASES = {
+  '玉ねぎ':'たまねぎ','玉葱':'たまねぎ','タマネギ':'たまねぎ','人参':'にんじん','ニンジン':'にんじん',
+  'ジャガイモ':'じゃがいも','馬鈴薯':'じゃがいも','だいこん':'大根','ダイコン':'大根','ゴボウ':'ごぼう','牛蒡':'ごぼう',
+  'カボチャ':'かぼちゃ','南瓜':'かぼちゃ','レンコン':'れんこん','蓮根':'れんこん','シイタケ':'しいたけ','椎茸':'しいたけ',
+  'ニンニク':'にんにく','大蒜':'にんにく','ショウガ':'しょうが','ナス':'なす','茄子':'なす','長葱':'長ねぎ','葱':'ねぎ',
+  'はくさい':'白菜','ハクサイ':'白菜','ほうれんそう':'ほうれん草','ホウレンソウ':'ほうれん草','モヤシ':'もやし',
+  'カレールウ':'カレールー','しょうゆ':'醤油','しょう油':'醤油','ゴマ油':'ごま油','胡麻油':'ごま油','鶏卵':'卵','たまご':'卵'
+};
+// 内蔵成分データを探す（別の食品を拾わないよう厳しめ）
+//  1) 完全一致 2) 正規化して一致 3) 表記ゆれ 4) 内蔵データの名前（3文字以上）を含む名前（例：にんじんダイス→にんじん）
+//  ※「玉ねぎ」→「炒め玉ねぎ」のように、別の食品名の一部に当たるだけのものは使わない
+function findInFoodDBKey(name) {
+  if (!name) return null;
+  if (FOOD_DB[name]) return {key: name, data: FOOD_DB[name]};
   var n1 = normName(name);
   var keys = Object.keys(FOOD_DB);
   for (var i = 0; i < keys.length; i++) {
-    if (normName(keys[i]) === n1) return FOOD_DB[keys[i]];
+    if (normName(keys[i]) === n1) return {key: keys[i], data: FOOD_DB[keys[i]]};
   }
-  // 部分一致（3文字以上）
+  var aliasKeys = Object.keys(FOOD_DB_ALIASES).sort(function(a, b){ return b.length - a.length; });
+  for (var a = 0; a < aliasKeys.length; a++) {
+    var an = normName(aliasKeys[a]);
+    if (n1 === an || (an.length >= 2 && n1.indexOf(an) === 0)) {
+      var target = FOOD_DB_ALIASES[aliasKeys[a]];
+      if (FOOD_DB[target]) return {key: target, data: FOOD_DB[target]};
+    }
+  }
+  var best = null;
   for (var j = 0; j < keys.length; j++) {
     var n2 = normName(keys[j]);
-    var shorter = n1.length <= n2.length ? n1 : n2;
-    var longer  = n1.length <= n2.length ? n2 : n1;
-    if (shorter.length >= 3 && longer.indexOf(shorter) !== -1) return FOOD_DB[keys[j]];
+    if (n2.length >= 3 && n1.indexOf(n2) !== -1 && (!best || n2.length > normName(best).length)) best = keys[j];
   }
-  return null;
+  return best ? {key: best, data: FOOD_DB[best]} : null;
+}
+function findInFoodDB(name) {
+  var hit = findInFoodDBKey(name);
+  return hit ? hit.data : null;
 }
 
 // 原材料の表示名（一般名称）を取得する共通関数
@@ -3622,6 +3688,7 @@ function renderMasterPanel() {
     +   '<button class="btn btn-sm" onclick="exportMaterialCSV()">📥 CSV出力</button>'
     +   '<label class="btn btn-sm" style="cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importMaterialCSV(this)"></label>'
     +   '<button class="btn btn-sm" onclick="addMaterialRow()">＋ 行追加</button>'
+    +   '<button class="btn btn-sm" style="background:#f3e8ff;color:#4a2080;border-color:#c9b3e6" onclick="fillZeroNutritionFromDB()" title="栄養成分が0（未入力）の項目に、内蔵の成分データの数値を入れます">🧪 0の栄養成分を内蔵データで補完</button>'
     +   '<select id="mat-sort-key" style="font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:5px" onchange="sortMaterialPrices(this.value)">'
     +     '<option value="">並び替え...</option>'
     +     '<option value="name">原材料名（あ→ん）</option>'
