@@ -1010,7 +1010,7 @@ function renderEditor() {
     + '<div id="cust-form" style="display:none;background:#f5f5f0;padding:12px;border-radius:6px;margin-bottom:10px;border:1px solid #ddd">'
     +   '<p style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">新規原材料を手動追加</p>'
     +   '<div class="g3" style="margin-bottom:8px">'
-    +     '<div class="field"><label class="fl">原材料名 *</label><input type="text" id="cf-name" placeholder="例：有機にんじん"></div>'
+    +     '<div class="field"><label class="fl">原材料名 *</label><input type="text" id="cf-name" placeholder="例：有機にんじん" onchange="prefillCustNut()"></div>'
     +     '<div class="field"><label class="fl">国名</label><input type="text" id="cf-country" placeholder="国産 / 国内製造"></div>'
     +     '<div class="field"><label class="fl">アレルゲン</label><input type="text" id="cf-al" placeholder="大豆・小麦 等"></div>'
     +   '</div>'
@@ -1020,12 +1020,22 @@ function renderEditor() {
     +     '<div class="field"><label class="fl">特色原材料</label><input type="text" id="cf-feat" placeholder="有機 等"></div>'
     +     '<div class="field"><label class="fl">添加物用途</label><input type="text" id="cf-use" placeholder="甘味料 等"></div>'
     +   '</div>'
-    +   '<div class="g4" style="margin-bottom:8px">'
-    +     '<div class="field"><label class="fl">エネルギー(kcal/100g)</label><input type="number" id="cf-e" placeholder="0"></div>'
+    +   '<p style="font-size:12px;font-weight:700;color:#4a2080;margin:4px 0 4px">栄養成分（100gあたり）<span id="cf-nut-note" style="font-weight:400;color:#856404;margin-left:8px"></span></p>'
+    +   '<div class="g4" style="margin-bottom:6px">'
+    +     '<div class="field"><label class="fl">エネルギー(kcal)</label><input type="number" id="cf-e" placeholder="0" step="1"></div>'
+    +     '<div class="field"><label class="fl">水分(g)</label><input type="number" id="cf-w" placeholder="0" step="0.1"></div>'
     +     '<div class="field"><label class="fl">たんぱく質(g)</label><input type="number" id="cf-p" placeholder="0" step="0.1"></div>'
     +     '<div class="field"><label class="fl">脂質(g)</label><input type="number" id="cf-f" placeholder="0" step="0.1"></div>'
-    +     '<div class="field"><label class="fl">炭水化物(g)</label><input type="number" id="cf-c" placeholder="0" step="0.1"></div>'
     +   '</div>'
+    +   '<div class="g4" style="margin-bottom:8px">'
+    +     '<div class="field"><label class="fl">炭水化物(g)</label><input type="number" id="cf-c" placeholder="0" step="0.1"></div>'
+    +     '<div class="field"><label class="fl">食塩相当量(g)</label><input type="number" id="cf-s" placeholder="0" step="0.01"></div>'
+    +     '<div class="field"><label class="fl">飽和脂肪酸(g)</label><input type="number" id="cf-sf" placeholder="0" step="0.01"></div>'
+    +     '<div class="field"><label class="fl">食物繊維(g)</label><input type="number" id="cf-fiber" placeholder="0" step="0.1"></div>'
+    +   '</div>'
+    +   '<label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:10px;cursor:pointer">'
+    +     '<input type="checkbox" id="cf-to-master" checked style="width:16px;height:16px"> 原材料マスターにも同時に登録する（単価・産地・アレルゲン・栄養成分8項目）'
+    +   '</label>'
     +   '<div style="display:flex;gap:6px">'
     +     '<button class="btn btn-primary btn-sm" onclick="addCustIng()">追加</button>'
     +     '<button class="btn btn-sm" id="cust-cancel-btn">キャンセル</button>'
@@ -2106,19 +2116,84 @@ function addCustIng() {
   var name = gv('cf-name');
   if (!name) { toast('原材料名を入力してください', true); return; }
   if (!currentSpec.ings) currentSpec.ings = [];
-  currentSpec.ings.push({
+  var nut = {};
+  CUST_NUT_KEYS.forEach(function(k){ nut[k] = +gv('cf-'+k) || 0; });
+  var ing = {
     name:name, country:gv('cf-country'), allergens:gv('cf-al'),
     ratio:'', feature:gv('cf-feat'), addUse:gv('cf-use'), gmo:'',
-    amount:+gv('cf-g')||0, unitPrice:+gv('cf-price')||0,
-    e:+gv('cf-e')||0, p:+gv('cf-p')||0, f:+gv('cf-f')||0, c:+gv('cf-c')||0, s:+gv('cf-s')||0
-  });
+    amount:+gv('cf-g')||0, unitPrice:+gv('cf-price')||0
+  };
+  CUST_NUT_KEYS.forEach(function(k){ ing[k] = nut[k]; });
+  currentSpec.ings.push(ing);
+
+  // 原材料マスターにも同時登録
+  var toMaster = document.getElementById('cf-to-master');
+  var masterMsg = '';
+  if (toMaster && toMaster.checked) {
+    var rec = {
+      name: name, origin: ing.country, allergens: ing.allergens, unitPrice: ing.unitPrice,
+      isOrganic: ing.feature === '有機', isAdditive: !!ing.addUse, additiveUse: ing.addUse || ''
+    };
+    CUST_NUT_KEYS.forEach(function(k){ rec[k] = nut[k]; });
+    var ex = masterData.materialPrices.find(function(m){ return m.name === name; });
+    if (!ex) {
+      masterData.materialPrices.unshift(Object.assign({
+        generalName: findInFoodName(name) || '', category: '', isLimited: false, limitedTo: '', gmoCheck: ''
+      }, rec));
+      masterMsg = '・マスターにも登録しました';
+    } else if (confirm('原材料マスターに「' + name + '」は登録済みです。\n今入力した単価・産地・アレルゲン・栄養成分で、マスターを更新しますか？\n\n「キャンセル」でマスターはそのまま（規格書にだけ追加）')) {
+      Object.keys(rec).forEach(function(k){
+        // 空欄の項目でマスターの既存値を消さない
+        if (rec[k] === '' || rec[k] === false) return;
+        ex[k] = rec[k];
+      });
+      masterMsg = '・マスターを更新しました';
+    }
+    if (masterMsg) {
+      saveMasterToFirestore().then(function(){
+        try { renderMatTable(); updateAccordionTitles(); } catch(e2) {}
+      });
+    }
+  }
+
   var cfEl = document.getElementById('cust-form');
   if (cfEl) cfEl.style.display='none';
-  ['cf-name','cf-country','cf-al','cf-e','cf-p','cf-f','cf-c','cf-s','cf-g','cf-price','cf-feat','cf-use'].forEach(function(id){ sv(id,''); });
+  ['cf-name','cf-country','cf-al','cf-g','cf-price','cf-feat','cf-use'].concat(CUST_NUT_KEYS.map(function(k){ return 'cf-'+k; })).forEach(function(id){ sv(id,''); });
+  var note = document.getElementById('cf-nut-note'); if (note) note.textContent = '';
   renderIngTbody();
   syncAllergens();
   calcNutritionSilent();
-  toast('原材料を追加しました ✓');
+  toast('原材料を追加しました' + masterMsg + ' ✓');
+}
+
+// ===== 栄養成分8項目（kcal・水分・たんぱく質・脂質・炭水化物・食塩相当量・飽和脂肪酸・食物繊維） =====
+var CUST_NUT_KEYS = ['e','w','p','f','c','s','sf','fiber'];
+// 手動追加：原材料名を入れたら、マスター or 内蔵データの栄養成分を空欄にだけ下書き入力
+function prefillCustNut() {
+  var name = gv('cf-name').trim();
+  var note = document.getElementById('cf-nut-note');
+  if (note) note.textContent = '';
+  if (!name) return;
+  var allEmpty = CUST_NUT_KEYS.every(function(k){ return !gv('cf-'+k); });
+  if (!allEmpty) return;
+  var src = masterData.materialPrices.find(function(m){ return m.name === name; });
+  var label = 'マスター登録済みの値を入力しました';
+  if (!src) { src = findInFoodDB(name); label = '内蔵の成分データから入力しました（確認・修正してください）'; }
+  if (!src) return;
+  CUST_NUT_KEYS.forEach(function(k){ if (src[k] != null && src[k] !== 0) sv('cf-'+k, src[k]); });
+  if (note) note.textContent = '※ ' + label;
+}
+// マスター表：原材料名を入れた時、栄養成分が全て0なら内蔵データから入力
+function fillMatNutFromDB(i) {
+  var m = masterData.materialPrices[i];
+  if (!m || !m.name) return;
+  var allZero = CUST_NUT_KEYS.every(function(k){ return !(+m[k]); });
+  if (!allZero) return;
+  var fd = findInFoodDB(m.name);
+  if (!fd) return;
+  CUST_NUT_KEYS.forEach(function(k){ if (fd[k] != null) m[k] = fd[k]; });
+  renderMatTable();
+  toast('「' + m.name + '」の栄養成分を内蔵データから入力しました。確認して「マスター全保存」してください');
 }
 
 // ===== 一括表示テキスト自動生成 =====
@@ -4000,7 +4075,7 @@ function renderMatTable() {
       + ' style="width:100%;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px">'
       + catOpts + '</select></td>';
     // 原材料名
-    html += mkTdBg(m.name||'',        'name',        i, 'masterData.materialPrices', 'text', '#f0f4ff');
+    html += mkTdBg(m.name||'',        'name',        i, 'masterData.materialPrices', 'text', '#f0f4ff').replace('=this.value"', '=this.value;fillMatNutFromDB(' + i + ')"');
     // 一般名称
     html += mkTdBg(m.generalName||'', 'generalName', i, 'masterData.materialPrices', 'text', '#f0fff4');
     // 単価
