@@ -284,6 +284,8 @@ const FOOD_DB = {
   "牛乳":{e:67,p:3.3,f:3.8,c:4.8,s:0.1,al:["乳"],co:"国産"},
   "鶏肉":{e:145,p:22.3,f:5.9,c:0,s:0.1,al:[],co:"国産"},
   "有機鶏肉":{e:145,p:22.3,f:5.9,c:0,s:0.1,al:[],co:"国産"},
+  // 日本食品標準成分表2020年版（八訂）にわとり［若どり・主品目］もも 皮つき 生（食品番号11221）
+  "鶏もも肉":{e:190,p:16.6,f:14.2,c:0,s:0.2,w:68.5,sf:4.37,fiber:0,al:["鶏肉"],co:""},
   "豚肉":{e:263,p:19.3,f:19.2,c:0.2,s:0.1,al:[],co:"国産"},
   "牛肉":{e:235,p:20.7,f:16.7,c:0.5,s:0.08,al:["牛肉"],co:"国産"},
   "有機牛肉":{e:235,p:20.7,f:16.7,c:0.5,s:0.08,al:["牛肉"],co:"国産"},
@@ -3411,7 +3413,9 @@ var FOOD_DB_ALIASES = {
   'カボチャ':'かぼちゃ','南瓜':'かぼちゃ','レンコン':'れんこん','蓮根':'れんこん','シイタケ':'しいたけ','椎茸':'しいたけ',
   'ニンニク':'にんにく','大蒜':'にんにく','ショウガ':'しょうが','ナス':'なす','茄子':'なす','長葱':'長ねぎ','葱':'ねぎ',
   'はくさい':'白菜','ハクサイ':'白菜','ほうれんそう':'ほうれん草','ホウレンソウ':'ほうれん草','モヤシ':'もやし',
-  'カレールウ':'カレールー','しょうゆ':'醤油','しょう油':'醤油','ゴマ油':'ごま油','胡麻油':'ごま油','鶏卵':'卵','たまご':'卵'
+  'カレールウ':'カレールー','しょうゆ':'醤油','しょう油':'醤油','ゴマ油':'ごま油','胡麻油':'ごま油','鶏卵':'卵','たまご':'卵',
+  // 鶏もも（国産鶏もも・ブラジル産鶏もも・若鶏もも 等）→ 鶏もも肉（皮つき）
+  '鶏もも':'鶏もも肉','鶏モモ':'鶏もも肉','とりもも':'鶏もも肉','トリモモ':'鶏もも肉','若鶏もも':'鶏もも肉','若どりもも':'鶏もも肉'
 };
 // 内蔵成分データを探す（別の食品を拾わないよう厳しめ）
 //  1) 完全一致 2) 正規化して一致 3) 表記ゆれ 4) 内蔵データの名前（3文字以上）を含む名前（例：にんじんダイス→にんじん）
@@ -3424,10 +3428,15 @@ function findInFoodDBKey(name) {
   for (var i = 0; i < keys.length; i++) {
     if (normName(keys[i]) === n1) return {key: keys[i], data: FOOD_DB[keys[i]]};
   }
+  // 「ブラジル産」「北海道産」などの産地の前置きを外して表記ゆれを照合
+  var n1b = n1.replace(/^[^\d]{1,8}?産(?!地)/, '');
+  // 皮なしは皮つきのデータで代用しない
+  var skinless = /皮なし|皮無し|皮無/.test(n1b);
   var aliasKeys = Object.keys(FOOD_DB_ALIASES).sort(function(a, b){ return b.length - a.length; });
   for (var a = 0; a < aliasKeys.length; a++) {
     var an = normName(aliasKeys[a]);
-    if (n1 === an || (an.length >= 2 && n1.indexOf(an) === 0)) {
+    if (skinless && FOOD_DB_ALIASES[aliasKeys[a]] === '鶏もも肉') continue;
+    if (n1b === an || (an.length >= 2 && n1b.indexOf(an) === 0)) {
       var target = FOOD_DB_ALIASES[aliasKeys[a]];
       if (FOOD_DB[target]) return {key: target, data: FOOD_DB[target]};
     }
@@ -3435,6 +3444,7 @@ function findInFoodDBKey(name) {
   var best = null;
   for (var j = 0; j < keys.length; j++) {
     var n2 = normName(keys[j]);
+    if (skinless && keys[j] === '鶏もも肉') continue;
     if (n2.length >= 3 && n1.indexOf(n2) !== -1 && (!best || n2.length > normName(best).length)) best = keys[j];
   }
   return best ? {key: best, data: FOOD_DB[best]} : null;
