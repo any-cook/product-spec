@@ -1354,6 +1354,13 @@ function renderEditor() {
     +     '<input type="radio" name="profit-rate" value="all" onchange="currentSpec.cost.profitRate=\'all\';recalcCost()" style="width:18px;height:18px"'+(co.profitRate==="all"?' checked':'')+'>全て表示'
     +   '</label>'
     + '</div>'
+    + '<div style="font-size:13px;margin:-2px 0 6px;color:#333;font-weight:700">利益の計算方法</div>'
+    + '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;font-size:13px">'
+    +   '<label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer"><input type="radio" name="profit-method" value="markup" style="width:16px;height:16px;margin-top:2px" onchange="currentSpec.cost.profitMethod=\'markup\';recalcCost()"'+(co.profitMethod==='markup'?' checked':'')+'>'
+    +     '<span><b>原価に上乗せ</b>　売価＝原価×(1＋利益率)　<span style="color:#888">例：原価100円・20% → 売価120円（利益20円）</span></span></label>'
+    +   '<label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer"><input type="radio" name="profit-method" value="margin" style="width:16px;height:16px;margin-top:2px" onchange="currentSpec.cost.profitMethod=\'margin\';recalcCost()"'+(co.profitMethod!=='markup'?' checked':'')+'>'
+    +     '<span><b>売価に対する利益率</b>　売価＝原価÷(1−利益率)　<span style="color:#888">例：原価100円・20% → 売価125円（利益25円＝売価の20%）</span></span></label>'
+    + '</div>'
     + '<div id="profit-table-inline"></div>'
     + '</div>'
         // ⑤ 送料設定
@@ -2477,9 +2484,9 @@ function recalcCost() {
 
   // ① 原材料費
   var ingMaterialTotal = currentSpec.ings ? currentSpec.ings.reduce(function(s,ing){ return s+ingCost(ing); },0) : 0;
-  // 原材料の合計重量 → 内容量（1袋）に換算（栄養成分と同じ考え方）
+  // 原材料の使用量は1袋分（歩留まり込み）として入力されている前提。換算はしない
   var basis = getBagBasis();
-  var ingMaterial = ingMaterialTotal * basis.factor;
+  var ingMaterial = ingMaterialTotal;
 
   // ② ロット別加工費（1袋あたり）
   var lotCosts = co.lotCosts || [];
@@ -2572,14 +2579,9 @@ function recalcCost() {
       +'<th style="padding:4px 8px;font-size:11px;text-align:right;border-bottom:1px solid #ccc">原材料費</th></tr></thead>'
       +'<tbody>'+rows+'</tbody>'
       +'<tfoot><tr style="border-top:2px solid #1a3a5c;background:#f0f4f8">'
-      +'<td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700">原材料費合計（原材料 '+basis.totalG+'g 分）</td>'
+      +'<td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700">原材料費合計（1袋 使用量 '+basis.totalG+'g）</td>'
       +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#1a3a5c">'+ingMaterialTotal.toFixed(1)+' 円</td>'
       +'</tr>'
-      +(basis.converted && Math.abs(basis.factor - 1) > 0.001
-        ? '<tr style="background:#fff8e1"><td colspan="3" style="padding:5px 8px;font-size:12px;font-weight:700;color:#856404">1袋あたり（内容量 '+basis.contentG+'g に換算）</td>'
-          +'<td style="padding:5px 8px;text-align:right;font-size:14px;font-weight:700;color:#856404">'+ingMaterial.toFixed(1)+' 円</td></tr>'
-        : '')
-      +(basis.converted ? '' : '<tr><td colspan="4" style="padding:4px 8px;font-size:11px;color:#c62828">※ 基本情報の「内容量」が読み取れないため、原材料合計をそのまま1袋分として計算しています。</td></tr>')
       +'</tfoot>'
       +'</table>';
   }
@@ -2589,9 +2591,7 @@ function recalcCost() {
   if (!resEl) return;
 
   // 使用量合計（1袋の重量）を計算
-  var matLabel = basis.converted
-    ? '① 原材料費　（1袋 ' + basis.contentG + 'g 換算）'
-    : '① 原材料費　（原材料合計 ' + basis.totalG + 'g）';
+  var matLabel = '① 原材料費　（1袋 使用量 ' + basis.totalG + 'g）';
 
   var items = [
     {label:matLabel, val:ingMaterial, color:'#333'},
@@ -2609,9 +2609,21 @@ function recalcCost() {
     if (item.val === 0) return;
     rhtml += '<tr style="border-bottom:1px solid #eee">'
       +'<td style="padding:6px 12px;color:#444">'+item.label+'</td>'
-      +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#222">'+Math.ceil(item.val).toLocaleString()+' 円</td>'
+      +'<td style="padding:6px 12px;text-align:right;font-weight:600;color:#222">'+item.val.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})+' 円</td>'
       +'</tr>';
   });
+
+  // 原価合計（円未満切り上げ）。利益・売価はこの金額から計算して表示と計算を一致させる
+  var costC = Math.ceil(subtotal);
+  rhtml += '<tr style="border-top:2px solid #1a3a5c;background:#f0f4f8">'
+    +'<td style="padding:7px 12px;font-weight:700;color:#1a3a5c">原価合計（1袋）</td>'
+    +'<td style="padding:7px 12px;text-align:right;font-size:16px;font-weight:700;color:#1a3a5c">'+costC.toLocaleString()+' 円</td></tr>';
+  var profitMethod = co.profitMethod === 'markup' ? 'markup' : 'margin';
+  function sellPrice(rate) {
+    return profitMethod === 'markup'
+      ? Math.ceil(costC * (1 + rate / 100))
+      : Math.ceil(costC / (1 - rate / 100));
+  }
 
   // 利益XX% → 送料 → 合計
   var shipCeil = Math.ceil(shipping);
@@ -2619,20 +2631,18 @@ function recalcCost() {
   var showRatesInResult = profRateForResult === 'all' ? [10,20,30] : [+profRateForResult];
   var topRows = [];
   showRatesInResult.forEach(function(rate) {
-    var sellP2   = subtotal / (1 - rate / 100);
-    var profitP2 = sellP2 - subtotal;
+    var sellP2   = sellPrice(rate);
+    var profitP2 = sellP2 - costC;
     // 合計: 送料込み（合計に含める）は売価+送料、送料別（合計に含めない）は売価のみ
-    var finalP = shippingMode === 'include'
-               ? Math.ceil(sellP2) + shipCeil
-               : Math.ceil(sellP2);
-    topRows.push({rate: rate, sell: Math.ceil(sellP2), total: finalP});
+    var finalP = shippingMode === 'include' ? sellP2 + shipCeil : sellP2;
+    topRows.push({rate: rate, sell: sellP2, total: finalP});
 
-    // 利益行
+    // 利益行（売価＝原価合計＋利益 が必ず一致）
     rhtml += '<tr style="background:#dcfce7;border-top:2px solid #22c55e">'
-      +'<td style="padding:7px 12px;font-weight:700;color:#15803d">利益 '+rate+'%</td>'
+      +'<td style="padding:7px 12px;font-weight:700;color:#15803d">売価（利益 '+rate+'%'+(profitMethod === 'markup' ? '・原価に上乗せ' : '・売価に対して')+'）</td>'
       +'<td style="padding:7px 12px;text-align:right;font-size:17px;font-weight:700;color:#15803d">'
-      +Math.ceil(sellP2).toLocaleString()+' 円'
-      +'<span style="font-size:12px;color:#888;margin-left:8px">（利益: '+Math.ceil(profitP2).toLocaleString()+'円）</span>'
+      +sellP2.toLocaleString()+' 円'
+      +'<span style="font-size:12px;color:#888;margin-left:8px">（原価 '+costC.toLocaleString()+'円＋利益 '+profitP2.toLocaleString()+'円）</span>'
       +'</td></tr>';
 
     // 送料行（送料あり）：込みなら合計に加算、別なら参考表示
@@ -2660,25 +2670,24 @@ function recalcCost() {
     currentSpec.cost.subtotal = Math.ceil(subtotal);
     var _rate = co.profitRate || 20;
     var _mainRate = _rate === 'all' ? 20 : +_rate; // 「全て」の場合、一覧には20%の売価を表示
-    var _sellP = subtotal / (1 - _mainRate / 100);
-    var _finalP = shippingMode === 'include' ? Math.ceil(_sellP) + shipCeil : Math.ceil(_sellP);
+    var _sellP = sellPrice(_mainRate);
+    var _finalP = shippingMode === 'include' ? _sellP + shipCeil : _sellP;
     currentSpec.cost.sellPrice = _finalP;
     currentSpec.cost.sellRate = _mainRate;
   }
 
   // 上部サマリーと原材料タブのバナー
   var bt = document.getElementById('banner-total');
-  if (bt) bt.textContent = Math.ceil(subtotal).toLocaleString() + ' 円';
+  if (bt) bt.textContent = costC.toLocaleString() + ' 円';
   var ts = document.getElementById('cost-top-summary');
   if (ts) {
     var sh = '<div style="display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline">'
-      + '<div><div style="font-size:11px;opacity:.8">1袋あたり原価</div><div style="font-size:22px;font-weight:700">' + Math.ceil(subtotal).toLocaleString() + ' 円</div></div>';
+      + '<div><div style="font-size:11px;opacity:.8">1袋あたり原価</div><div style="font-size:22px;font-weight:700">' + costC.toLocaleString() + ' 円</div></div>';
     topRows.forEach(function(r){
       sh += '<div><div style="font-size:11px;opacity:.8">利益' + r.rate + '% の売価</div><div style="font-size:18px;font-weight:700;color:#bbf7d0">' + r.sell.toLocaleString() + ' 円</div></div>'
          +  '<div><div style="font-size:11px;opacity:.8">' + (shippingMode === 'include' ? '合計（送料込み）' : '合計（送料別）') + '</div><div style="font-size:18px;font-weight:700;color:#fecaca">' + r.total.toLocaleString() + ' 円</div></div>';
     });
     sh += '</div>';
-    if (!basis.converted) sh += '<div style="font-size:11px;margin-top:6px;color:#fde68a">※ 内容量が未入力のため、原材料合計 ' + basis.totalG + 'g を1袋として計算しています</div>';
     ts.innerHTML = sh;
   }
 }
@@ -2703,8 +2712,8 @@ function getBagBasis() {
   var amtEl = document.getElementById('f-amount');
   var amtStr = amtEl ? amtEl.value : (currentSpec && currentSpec.basic && currentSpec.basic.amount);
   var contentG = parseContentG(amtStr);
-  var factor = (contentG > 0 && totalG > 0) ? contentG / totalG : 1;
-  return {totalG: totalG, contentG: contentG, factor: factor, converted: contentG > 0 && totalG > 0};
+  // 歩留まりがあるため、使用量（1袋分）を内容量に換算しない
+  return {totalG: totalG, contentG: contentG, factor: 1, converted: false};
 }
 
 // 原材料の使用量から栄養価を合計し、内容量（1袋）あたりに換算して返す
@@ -2723,10 +2732,7 @@ function computeNutritionPerBag() {
   var amtEl = document.getElementById('f-amount');
   var amtStr = amtEl ? amtEl.value : (currentSpec.basic && currentSpec.basic.amount);
   r.contentG = parseContentG(amtStr);
-  if (r.contentG > 0 && r.totalG > 0) {
-    r.factor = r.contentG / r.totalG;
-    ['e','w','p','f','c','s','sf','fiber'].forEach(function(key){ r[key] = r[key] * r.factor; });
-  }
+  // 歩留まりがあるため内容量への換算はしない（使用量＝1袋分として合計）
   return r;
 }
 // 表示単位を自動設定（空欄または自動設定した値のときのみ上書き）
@@ -2742,10 +2748,8 @@ function applyNutritionUnit(nr) {
   }
   var info = document.getElementById('nut-basis');
   if (info) {
-    info.textContent = nr.contentG > 0
-      ? '原材料の合計 ' + nr.totalG + 'g の栄養価を、内容量 1袋 ' + nr.contentG + 'g あたりに換算しています。'
-      : '※ 基本情報の「内容量」が読み取れないため、原材料合計 ' + nr.totalG + 'g あたりの値です（例：「130g×100袋」と入力すると1袋あたりに換算）。';
-    info.style.color = nr.contentG > 0 ? '#555' : '#c62828';
+    info.textContent = '原材料の使用量（1袋分 合計 ' + nr.totalG + 'g）から計算した値です。';
+    info.style.color = '#555';
   }
 }
 
@@ -2820,7 +2824,7 @@ function calcNutrition() {
     currentSpec.nutrition.sf    = +sf.toFixed(2);
     currentSpec.nutrition.fiber = +fiber.toFixed(1);
     applyNutritionUnit(nr);
-    toast(nr.contentG > 0 ? '栄養計算しました（原材料計'+nr.totalG+'g → 1袋'+nr.contentG+'gに換算）✓' : '栄養計算しました（内容量が未入力のため原材料合計'+nr.totalG+'gの値です）', !(nr.contentG > 0));
+    toast('栄養計算しました（1袋分 使用量 ' + nr.totalG + 'g）✓');
   } else {
     toast('使用量(g)を手動追加で入力後、再計算してください', true);
   }
