@@ -48,6 +48,24 @@ input[type=text],input[type=number],select,textarea{width:100%;font-size:13px;pa
 input:focus,select:focus,textarea:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.1)}
 textarea{resize:vertical;min-height:50px;line-height:1.5}
 .ing-table tr.ing-head th{background-color:#2c4a6e;color:#fff}
+/* 4. 原材料表：栄養成分の列を隠す */
+.ing-table.hide-nut .nutcol{display:none}
+/* 2. マスター表：0（未入力）の栄養成分 */
+input.nut-zero{background:#fff3cd !important;border-color:#e0b84c !important}
+/* 7. 原価計算タブの折りたたみ */
+#panel-cost .card > h3.collapsible{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+#panel-cost .card > h3.collapsible:before{content:"▼";font-size:10px;color:#888;width:12px}
+#panel-cost .card.collapsed > h3.collapsible:before{content:"▶"}
+#panel-cost .card.collapsed > h3.collapsible{margin-bottom:0;border-bottom:none;padding-bottom:0}
+#panel-cost .card.collapsed > :not(h3){display:none !important}
+#panel-cost .card > h3 .sum-hint{margin-left:auto;font-size:12px;color:#888;font-weight:400}
+/* 1. 規格書プレビューの未入力警告 */
+.print-warn{background:#fff8e1;border:1.5px solid #f0c040;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#6d5200;line-height:1.7}
+.print-warn b{color:#a05a00}
+/* 6. 保存履歴 */
+.hist-list{max-height:55vh;overflow-y:auto;font-size:13px}
+.hist-list div{padding:6px 4px;border-bottom:1px solid #eee}
+.hist-list .hd{color:#1a3a5c;font-weight:700}
 input::placeholder,textarea::placeholder{color:#b8b8b8;opacity:1}
 .ing-table{width:100%;border-collapse:collapse;font-size:12px}
 .ing-table th{background:#eef2f7;padding:4px 5px;border:1px solid #ccc;font-size:11px;font-weight:700;text-align:center}
@@ -160,6 +178,14 @@ input::placeholder,textarea::placeholder{color:#b8b8b8;opacity:1}
       <button class="btn btn-primary btn-block btn-sm" onclick="newSpec()">＋ 新規作成</button>
       <button class="btn btn-block btn-sm" onclick="loadList()">↻ 更新</button>
       <input type="text" id="list-search" placeholder="🔍 商品名・名称で検索" oninput="renderList()" style="font-size:12px;padding:5px 8px;margin-top:2px">
+      <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+        <select id="list-sort" onchange="renderList()" style="font-size:12px;padding:3px 4px;flex:1">
+          <option value="updated">更新日（新しい順）</option>
+          <option value="updated-asc">更新日（古い順）</option>
+          <option value="name">商品名順</option>
+        </select>
+        <label style="font-size:11px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="list-show-sample" checked onchange="renderList()" style="vertical-align:middle"> 見本</label>
+      </div>
       <div id="list-count" style="font-size:11px;color:#888;margin-top:4px"></div>
     </div>
     <div class="spec-list" id="spec-list">
@@ -442,13 +468,23 @@ function renderList() {
   // 検索（商品名・名称・販売先・内容量）
   var qEl = document.getElementById('list-search');
   var q = qEl ? qEl.value.replace(/\s/g,'').toLowerCase() : '';
+  var showSample = document.getElementById('list-show-sample');
+  showSample = !showSample || showSample.checked;
   var list = specListCache.filter(function(s){
+    if (!showSample && s.isSample) return false;
     if (!q) return true;
     var b = s.basic || {};
     var hay = [b.pname, b.ptype, b.buyer, b.amount].join(' ').replace(/\s/g,'').toLowerCase();
     return hay.indexOf(q) >= 0;
   });
-  if (cnt) cnt.textContent = q ? (list.length + '件 / 全' + specListCache.length + '件') : ('全' + specListCache.length + '件');
+  // 並び替え
+  var sortEl = document.getElementById('list-sort');
+  var sortBy = sortEl ? sortEl.value : 'updated';
+  function tms(x){ return (x.updatedAt && typeof x.updatedAt.toDate === 'function') ? x.updatedAt.toDate().getTime() : 0; }
+  if (sortBy === 'name') list = list.slice().sort(function(a, b2){ return ((a.basic&&a.basic.pname)||'').localeCompare((b2.basic&&b2.basic.pname)||'', 'ja'); });
+  else if (sortBy === 'updated-asc') list = list.slice().sort(function(a, b2){ return tms(a) - tms(b2); });
+  else list = list.slice().sort(function(a, b2){ return tms(b2) - tms(a); });
+  if (cnt) cnt.textContent = (list.length !== specListCache.length) ? (list.length + '件 / 全' + specListCache.length + '件') : ('全' + specListCache.length + '件');
   el.innerHTML = '';
   if (!list.length) {
     el.innerHTML = '<div class="empty-state" style="padding:20px 10px"><p style="font-size:12px">「' + h(qEl.value) + '」に一致する規格書はありません</p></div>';
@@ -638,7 +674,9 @@ function _doCopySpec(src) {
   currentSpecId = null;
   // 商品名に「のコピー」を追加
   if (!currentSpec.basic) currentSpec.basic = {};
+  var srcName = currentSpec.basic.pname || '';
   currentSpec.basic.pname = (currentSpec.basic.pname || '') + '　のコピー';
+  currentSpec.history = [{at: new Date().toISOString(), by: currentUserEmail(), action: '「' + srcName + '」からコピー'}];
   // 作成日を今日に更新
   currentSpec.basic.created = todayStr();
   // updatedAtをクリア
@@ -788,11 +826,13 @@ async function saveSpec() {
     });
   })(currentSpec);
   delete currentSpec.id; // idはドキュメントIDで管理するため本文には保存しない
+  addHistory(currentSpecId ? '保存' : '新規作成');
   currentSpec.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
   try {
     if (currentSpecId) {
       await db.collection('product_specs').doc(currentSpecId).set(currentSpec);
       setDirty(false);
+      var ls = document.getElementById('last-saved'); if (ls) ls.textContent = lastHistoryText();
       toast('保存しました ✓');
     // 一覧のキャッシュを更新して内容量などを反映
     var idx2 = specListCache.findIndex(function(s){ return s.id === currentSpecId; });
@@ -802,6 +842,7 @@ async function saveSpec() {
       var ref = await db.collection('product_specs').add(currentSpec);
       currentSpecId = ref.id;
       setDirty(false);
+      var ls2 = document.getElementById('last-saved'); if (ls2) ls2.textContent = lastHistoryText();
       toast('新規保存しました ✓');
     }
     loadList();
@@ -890,13 +931,14 @@ function swTab(name) {
   if (name === 'master') renderMasterTables();
   if (name === 'package') refreshPackagingSelects();
   if (name === 'cost') {
+    setupCostCollapsibles();
     refreshLotSelector();
     renderLotCostList();
     // 送料設定を再描画（選択状態を正しく表示）
     var shipWrap = document.getElementById('lot-proc-sel-wrap');
     recalcCost();
   }
-  if (name === 'preview') genPreview();
+  if (name === 'preview') { genPreview(); renderPrintWarn(); }
 }
 
 // ===== エディタ描画 =====
@@ -917,9 +959,11 @@ function renderEditor() {
     + '<button class="btn btn-sm mobile-only" onclick="showListMobile()">← 一覧</button>'
     + '<strong style="font-size:15px;flex:1">' + h(b.pname || '（新規規格書）')
     + (isSample ? '<span style="font-size:11px;background:#e8f0f8;color:#1a3a5c;padding:2px 8px;border-radius:4px;margin-left:8px">見本</span>' : '')
+    + '<span id="last-saved" style="display:block;font-size:11px;color:#888;font-weight:400;margin-top:2px">'+h(lastHistoryText())+'</span>'
     + '<span id="dirty-badge" style="display:'+(isDirty?'inline-block':'none')+';font-size:11px;background:#fff3cd;color:#856404;border:1px solid #f0d58c;padding:2px 8px;border-radius:4px;margin-left:8px;font-weight:500">● 未保存の変更あり</span>'
     + '</strong>'
-    + '<button class="btn btn-primary" onclick="saveSpec()">&#x1F4BE; 保存</button>'
+    + '<button class="btn btn-primary" onclick="saveSpec()" title="保存（Ctrl+S）">&#x1F4BE; 保存</button>'
+    + '<button class="btn btn-sm" onclick="showHistory()" title="保存履歴">🕘 履歴</button>'
     + '<button class="btn btn-sm" onclick="toggleSample()" style="font-size:12px">'
     +   (isSample ? '&#x1F4CC; 見本解除' : '&#x1F4CC; 見本にする') + '</button>'
     + (currentSpecId ? '<button class="btn btn-danger btn-sm" onclick="doDelete()">&#x1F5D1; 削除</button>' : '')
@@ -1005,6 +1049,7 @@ function renderEditor() {
     +   '</div>'
     +   '<button class="btn btn-sm" onclick="toggleCustForm()">＋ 手動追加</button>'
     +   '<button class="btn btn-sm" style="background:#e8f4e8;color:#155a32" onclick="loadMasterFromFirestore().then(function(){applyMasterToSpec();renderIngTbody();calcNutritionSilent();toast(\'マスターから再反映しました ✓\');});">🔄 マスターから栄養素・単価を再反映</button>'
+    +   '<button class="btn btn-sm" id="btn-toggle-nut" onclick="toggleNutCols()" style="background:#f3e8ff;color:#4a2080">'+(hideNutCols?'🧪 栄養成分の列を表示':'🧪 栄養成分の列を隠す')+'</button>'
     +   '<button class="btn btn-sm" style="background:#fff3cd;color:#856404" onclick="exportIngCSV()">📥 CSV出力</button>'
     +   '<label class="btn btn-sm" style="background:#fff3cd;color:#856404;cursor:pointer;margin:0">📤 CSV入力<input type="file" accept=".csv" style="display:none" onchange="importIngCSV(this)"></label>'
     + '</div>'
@@ -1045,7 +1090,7 @@ function renderEditor() {
     + '</div>'
     // テーブル
     + '<div style="overflow-x:auto;margin-top:8px">'
-    + '<table class="ing-table" style="table-layout:fixed;width:100%">'
+    + '<table class="ing-table'+(hideNutCols?' hide-nut':'')+'" style="table-layout:fixed;width:100%">'
     + '<colgroup>'
     +   '<col style="width:28px">'    // 1:No
     +   '<col style="width:32px">'    // 2:支給
@@ -1056,14 +1101,14 @@ function renderEditor() {
     +   '<col style="width:75px">'    // 7:単価
     +   '<col style="width:65px">'    // 8:原材料費
     +   '<col style="width:52px">'    // 9:配合比
-    +   '<col style="width:40px">'    // 10:kcal
-    +   '<col style="width:40px">'    // 11:水分
-    +   '<col style="width:40px">'    // 12:蛋白質
-    +   '<col style="width:38px">'    // 13:脂質
-    +   '<col style="width:42px">'    // 14:炭水化物
-    +   '<col style="width:40px">'    // 15:食塩
-    +   '<col style="width:40px">'    // 16:飽和脂肪酸
-    +   '<col style="width:40px">'    // 17:食物繊維
+    +   '<col class="nutcol" style="width:40px">'    // 10:kcal
+    +   '<col class="nutcol" style="width:40px">'    // 11:水分
+    +   '<col class="nutcol" style="width:40px">'    // 12:蛋白質
+    +   '<col class="nutcol" style="width:38px">'    // 13:脂質
+    +   '<col class="nutcol" style="width:42px">'    // 14:炭水化物
+    +   '<col class="nutcol" style="width:40px">'    // 15:食塩
+    +   '<col class="nutcol" style="width:40px">'    // 16:飽和脂肪酸
+    +   '<col class="nutcol" style="width:40px">'    // 17:食物繊維
     +   '<col style="width:50px">'    // 18:特色
     +   '<col style="width:52px">'    // 19:添加物
     +   '<col style="width:52px">'    // 20:GMO
@@ -1080,14 +1125,14 @@ function renderEditor() {
     +   '<th style="padding:4px 3px;text-align:center;background:#155a32">単価(円/kg)</th>'
     +   '<th style="padding:4px 3px;text-align:center;background:#155a32">原材料費</th>'
     +   '<th style="padding:4px 3px;text-align:center;background:#155a32">配合比</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">kcal</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">水分<br>g</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">蛋白質<br>g</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">脂質<br>g</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">炭水化物<br>g</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">食塩<br>相当量g</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">飽和<br>脂肪酸g</th>'
-    +   '<th style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">食物<br>繊維g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">kcal</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">水分<br>g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">蛋白質<br>g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">脂質<br>g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">炭水化物<br>g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">食塩<br>相当量g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">飽和<br>脂肪酸g</th>'
+    +   '<th class="nutcol" style="padding:4px 2px;text-align:center;background:#4a2080;font-size:10px">食物<br>繊維g</th>'
     +   '<th style="padding:4px 3px;text-align:center;background:#3a3010">特色</th>'
     +   '<th style="padding:4px 3px;text-align:center;background:#3a3010">添加物</th>'
     +   '<th style="padding:4px 3px;text-align:center;background:#3a3010">GMO</th>'
@@ -1102,14 +1147,14 @@ function renderEditor() {
     +   '<td style="border-top:2px solid #2c4a6e;background:#c8ebd8"></td>'
     +   '<td id="foot-cost" style="padding:5px 4px;text-align:right;border-top:2px solid #2c4a6e;font-size:12px;color:#0f5132;background:#c8ebd8">—</td>'
     +   '<td style="padding:5px 4px;text-align:center;border-top:2px solid #2c4a6e;font-size:12px;background:#c8ebd8;color:#1a3a5c">100%</td>'
-    +   '<td id="foot-nut-e" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-w" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-p" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-f" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-c" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-s" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-sf" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
-    +   '<td id="foot-nut-fib" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-e" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-w" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-p" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-f" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-c" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-s" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-sf" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
+    +   '<td class="nutcol" id="foot-nut-fib" style="text-align:right;padding:2px 3px;border-top:2px solid #2c4a6e;font-size:11px;color:#5b3a8c;background:#f0ebff">—</td>'
     +   '<td colspan="3" style="border-top:2px solid #2c4a6e"></td>'
     +   '<td style="border-top:2px solid #2c4a6e"></td>'
     + '</tr>'
@@ -1375,6 +1420,7 @@ function renderEditor() {
 
   // ---- 規格書プレビュー ----
   var prevHtml = '<div id="panel-preview" class="panel">'
+    + '<div id="print-warn" class="print-warn" style="display:none"></div>'
     + '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">'
     +   '<strong>商品規格書 A4プレビュー</strong>'
     +   '<button class="btn btn-sm" onclick="genPreview()">↻ 更新</button>'
@@ -1826,14 +1872,14 @@ function renderIngTbody() {
     // 配合比
     html += '<td id="ratio-cell-'+i+'" style="text-align:center;background:#e8f4fd;font-size:12px;color:#1a3a5c;font-weight:600">'+(ing.ratio||'0.0')+'%</td>';
     // 栄養素（使用量あたり計算値）
-    html += '<td id="nut-e-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutE   : '—')+'</td>';
-    html += '<td id="nut-w-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutW   : '—')+'</td>';
-    html += '<td id="nut-p-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutP   : '—')+'</td>';
-    html += '<td id="nut-f-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutF   : '—')+'</td>';
-    html += '<td id="nut-c-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutC   : '—')+'</td>';
-    html += '<td id="nut-s-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutS   : '—')+'</td>';
-    html += '<td id="nut-sf-'+i+'"  style="'+nutStyle+'">'+(hasNut||r>0 ? nutSF  : '—')+'</td>';
-    html += '<td id="nut-fib-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutFib : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-e-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutE   : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-w-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutW   : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-p-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutP   : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-f-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutF   : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-c-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutC   : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-s-'+i+'"   style="'+nutStyle+'">'+(hasNut||r>0 ? nutS   : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-sf-'+i+'"  style="'+nutStyle+'">'+(hasNut||r>0 ? nutSF  : '—')+'</td>';
+    html += '<td class="nutcol" id="nut-fib-'+i+'" style="'+nutStyle+'">'+(hasNut||r>0 ? nutFib : '—')+'</td>';
     // 特色原材料
     html += '<td><input type="text" value="'+h(ing.feature)+'" oninput="updateIngField('+i+',\'feature\',this.value)"></td>';
     // 添加物用途
@@ -3107,7 +3153,7 @@ function genPreview() {
   html += '<tr><td colspan="2">炭水化物</td><td style="text-align:right">'+h(n.c)+'</td><td>g</td></tr>';
   html += '<tr><td colspan="2">水分</td><td style="text-align:right">'+h(n.w)+'</td><td>g</td></tr>';
   html += '<tr><td colspan="2">食塩相当量</td><td style="text-align:right">'+h(n.s)+'</td><td>g</td></tr>';
-  html += '</table><div class="note">（'+h(n.note)+'）'+h(n.unit)+'</div>';
+  html += '</table><div class="note">'+(String(n.note||'').trim() ? '（'+h(n.note)+'）' : '')+h(n.unit)+'</div>';
   html += '</div></div>';
   var chkIngTable = document.getElementById('chk-show-ing-table');
   var showIngTable = !chkIngTable || chkIngTable.checked;
@@ -3161,7 +3207,44 @@ function genPreview() {
 }
 
 // ===== 印刷 =====
+// 印刷前チェック：規格書の必須項目の未入力を洗い出す
+function checkSpecForPrint() {
+  if (!currentSpec) return [];
+  var b = currentSpec.basic || {}, n = currentSpec.nutrition || {};
+  var miss = [];
+  function empty(v){ return !String(v == null ? '' : v).trim(); }
+  if (empty(b.pname))   miss.push('商品名');
+  if (empty(b.ptype))   miss.push('名称');
+  if (empty(b.amount))  miss.push('内容量');
+  if (empty(b.expiry))  miss.push('賞味期限');
+  if (empty(b.storage)) miss.push('保存方法（開封前）');
+  if (empty(b.mfr))     miss.push('製造者名');
+  if (empty(b.maddr))   miss.push('製造者の所在地');
+  var ings = (currentSpec.ings || []).filter(function(i){ return i.name; });
+  if (!ings.length) miss.push('原材料（1件も登録されていません）');
+  else {
+    var noAmt = ings.filter(function(i){ return !(+i.amount > 0); }).map(function(i){ return i.name; });
+    if (noAmt.length) miss.push('原材料の重量（' + noAmt.slice(0,5).join('、') + (noAmt.length > 5 ? ' ほか' : '') + '）');
+  }
+  var lt = String(currentSpec.labelText || '').replace(/[\/、]?（一部に[^）]+を含む）\s*$/, '').trim();
+  if (!lt) miss.push('一括表示の原材料名');
+  if (!(+n.e > 0)) miss.push('栄養成分（エネルギーが0）');
+  if (!(currentSpec.allergens || []).length) miss.push('アレルゲン（チェックなし。含まない場合は問題ありません）');
+  return miss;
+}
+function renderPrintWarn() {
+  var el = document.getElementById('print-warn');
+  if (!el) return;
+  var miss = checkSpecForPrint();
+  if (!miss.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<b>⚠ 未入力・要確認の項目があります（' + miss.length + '件）</b><br>' + miss.map(function(m){ return '・' + h(m); }).join('<br>');
+}
+
 function doPrint() {
+  collectForm();
+  var miss = checkSpecForPrint();
+  if (miss.length && !confirm('次の項目が未入力・要確認です。\n\n' + miss.map(function(m){ return '・' + m; }).join('\n') + '\n\nこのまま印刷・PDF保存しますか？')) return;
   genPreview();
   var a4content = document.getElementById('a4-body').innerHTML;
   var printCSS = [
@@ -3291,6 +3374,95 @@ function initAuth() {
       showLoginError(h(em) + ' はこのシステムの利用を許可されていません。管理者に連絡してください。');
     }
     document.getElementById('login-screen').classList.remove('hidden');
+  });
+}
+
+// ===== 4. 原材料表：栄養成分の列の表示切替（端末ごとに記憶） =====
+var hideNutCols = false;
+try { hideNutCols = localStorage.getItem('ps_hideNutCols') === '1'; } catch(e) {}
+function toggleNutCols() {
+  hideNutCols = !hideNutCols;
+  try { localStorage.setItem('ps_hideNutCols', hideNutCols ? '1' : '0'); } catch(e) {}
+  document.querySelectorAll('.ing-table').forEach(function(t){ t.classList.toggle('hide-nut', hideNutCols); });
+  var b = document.getElementById('btn-toggle-nut');
+  if (b) b.textContent = hideNutCols ? '🧪 栄養成分の列を表示' : '🧪 栄養成分の列を隠す';
+}
+
+// ===== 5. Ctrl+S（Macは⌘+S）で保存 =====
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    var login = document.getElementById('login-screen');
+    if (login && !login.classList.contains('hidden')) return;
+    var masterPanel = document.getElementById('panel-master');
+    if (masterPanel && masterPanel.classList.contains('active')) { saveMasterToFirestore(); return; }
+    if (currentSpec) saveSpec();
+  }
+});
+
+// ===== 6. 保存履歴 =====
+function currentUserEmail() {
+  try { var u = firebase.auth && firebase.auth().currentUser; return u && u.email ? u.email : ''; } catch(e) { return ''; }
+}
+function fmtDateTime(iso) {
+  var d = new Date(iso); if (isNaN(d)) return '';
+  function z(n){ return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '/' + z(d.getMonth()+1) + '/' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
+}
+function addHistory(action) {
+  if (!currentSpec.history) currentSpec.history = [];
+  currentSpec.history.push({at: new Date().toISOString(), by: currentUserEmail(), action: action});
+  if (currentSpec.history.length > 50) currentSpec.history = currentSpec.history.slice(-50);
+}
+function lastHistoryText() {
+  var hs = (currentSpec && currentSpec.history) || [];
+  if (!hs.length) return '';
+  var l = hs[hs.length - 1];
+  return '最終保存 ' + fmtDateTime(l.at) + (l.by ? '（' + l.by + '）' : '');
+}
+function showHistory() {
+  var hs = ((currentSpec && currentSpec.history) || []).slice().reverse();
+  var ov = document.getElementById('hist-modal');
+  if (!ov) {
+    ov = document.createElement('div'); ov.id = 'hist-modal'; ov.className = 'modal-overlay';
+    ov.innerHTML = '<div class="modal" style="width:480px"><h2>🕘 保存履歴</h2><div class="hist-list" id="hist-list"></div>'
+      + '<div class="modal-footer"><button class="btn" onclick="document.getElementById(\'hist-modal\').classList.remove(\'open\')">閉じる</button></div></div>';
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('open'); });
+    document.body.appendChild(ov);
+  }
+  document.getElementById('hist-list').innerHTML = hs.length
+    ? hs.map(function(x){ return '<div><span class="hd">' + h(fmtDateTime(x.at)) + '</span>　' + h(x.action || '保存') + (x.by ? '<br><span style="color:#888;font-size:12px">' + h(x.by) + '</span>' : '') + '</div>'; }).join('')
+    : '<div style="color:#888">まだ履歴はありません（この機能の追加後に保存した分から記録されます）。</div>';
+  ov.classList.add('open');
+}
+
+// ===== 7. 原価計算タブの折りたたみ（端末ごとに記憶） =====
+var COST_COLLAPSE_DEFAULT = {'① 原材料費明細':true, '② ロット別加工費':true, '③ 商品別追加コスト':true, '⑤ 送料設定':true};
+function costCardKey(h3) { return (h3.getAttribute('data-title') || h3.textContent || '').trim(); }
+function getCostCollapsed() {
+  try { var v = JSON.parse(localStorage.getItem('ps_costCollapsed') || 'null'); if (v) return v; } catch(e) {}
+  return COST_COLLAPSE_DEFAULT;
+}
+function setupCostCollapsibles() {
+  var state = getCostCollapsed();
+  document.querySelectorAll('#panel-cost .card > h3').forEach(function(h3){
+    if (h3.classList.contains('collapsible')) return;
+    var title = h3.textContent.trim();
+    if (/利益率|合計金額/.test(title)) return; // 利益率・合計は常に表示
+    h3.setAttribute('data-title', title);
+    h3.classList.add('collapsible');
+    h3.title = 'クリックで開く／閉じる';
+    var hint = document.createElement('span'); hint.className = 'sum-hint'; h3.appendChild(hint);
+    var card = h3.parentNode;
+    if (state[title]) card.classList.add('collapsed');
+    hint.textContent = card.classList.contains('collapsed') ? 'クリックで開く' : '';
+    h3.addEventListener('click', function(){
+      card.classList.toggle('collapsed');
+      hint.textContent = card.classList.contains('collapsed') ? 'クリックで開く' : '';
+      var st = getCostCollapsed(); st = JSON.parse(JSON.stringify(st));
+      st[title] = card.classList.contains('collapsed');
+      try { localStorage.setItem('ps_costCollapsed', JSON.stringify(st)); } catch(e) {}
+    });
   });
 }
 
@@ -3714,6 +3886,9 @@ function renderMasterPanel() {
     +   '</select>'
     + '</div>'
     + '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap">'
+    +   '<input type="text" id="mat-search" placeholder="🔍 原材料名・一般名称で検索" oninput="matSearchText=this.value;renderMatTable()" style="width:220px;font-size:12px;padding:4px 8px;margin-right:6px">'
+    +   '<label style="font-size:12px;margin-right:10px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="mat-zero-only" onchange="matZeroOnly=this.checked;renderMatTable()" style="vertical-align:middle"> 栄養成分に0がある行だけ</label>'
+    +   '<span id="mat-filter-count" style="font-size:11px;color:#888;margin-right:8px"></span>'
     +   '<span style="font-size:12px;font-weight:700;color:#7b3f00">分類で絞り込み：</span>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'\')" style="background:#7b3f00;color:#fff">全て</button>'
     +   '<button class="btn btn-sm" onclick="filterMatByCategory(\'肉類\')">肉類</button>'
@@ -4088,9 +4263,9 @@ function mkTdBg(val, field, idx, arr, type, bg) {
 // 栄養素専用セル：変更時にマスター→規格書反映＋栄養再計算
 function mkTdNut(val, field, matIdx) {
   var q = "'";
-  return '<td style="padding:1px 2px"><input type="number" value="' + (val||0) + '"'
+  return '<td style="padding:1px 2px"><input type="number" value="' + (val||0) + '"' + (+val ? '' : ' class="nut-zero" title="未入力（0）"')
     + ' style="width:100%;font-size:12px;padding:2px 4px;border:1px solid #b0bec5;border-radius:3px;background:#fff;box-sizing:border-box"'
-    + ' onchange="masterData.materialPrices[' + matIdx + '][' + q + field + q + ']=+this.value;applyMasterToSpec();renderIngTbody();calcNutritionSilent()"></td>';
+    + ' onchange="masterData.materialPrices[' + matIdx + '][' + q + field + q + ']=+this.value;this.classList.toggle(\'nut-zero\', !(+this.value));applyMasterToSpec();renderIngTbody();calcNutritionSilent()"></td>';
 }
 
 function mkTd(val, field, idx, arr, type) {
@@ -4112,12 +4287,24 @@ function filterMatByCategory(cat) {
   renderMatTable();
 }
 
+var matSearchText = '';
+var matZeroOnly = false;
 function renderMatTable() {
   var tbody = document.getElementById('master-mat-tbody'); if(!tbody) return;
   // 分類フィルタリング
   var list = matCategoryFilter
     ? masterData.materialPrices.filter(function(m){ return (m.category||'') === matCategoryFilter; })
     : masterData.materialPrices;
+  // 名前検索・0のある行だけ
+  var q = (matSearchText || '').replace(/\s/g,'').toLowerCase();
+  if (q) list = list.filter(function(m){
+    return ((m.name||'') + ' ' + (m.generalName||'')).replace(/\s/g,'').toLowerCase().indexOf(q) >= 0 || (m.name === '');
+  });
+  if (matZeroOnly) list = list.filter(function(m){
+    return CUST_NUT_KEYS.some(function(k){ return !(+m[k]); });
+  });
+  var cntEl = document.getElementById('mat-filter-count');
+  if (cntEl) cntEl.textContent = (q || matZeroOnly || matCategoryFilter) ? ('表示 ' + list.length + ' / 全' + masterData.materialPrices.length + '件') : '';
   var GMO_CROPS = ['大豆','とうもろこし','ばれいしょ','なたね','綿実','アルファルファ','てん菜','パパイヤ','からしな'];
   var html = '';
   list.forEach(function(m) {
