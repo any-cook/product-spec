@@ -845,7 +845,7 @@ async function openSpec(id) {
       // 原材料名（一括表示）が未作成・空欄（以前の不具合で消えたものを含む）、
       // またはアレルゲン部分だけの場合は自動作成
       var lt = currentSpec.labelText;
-      if (lt == null || !String(lt).trim() || /^\s*[\/、]?（一部に[^）]+を含む）\s*$/.test(lt)) {
+      if (lt == null || !String(lt).trim() || /^\s*[\/／、]?（一部に[^）]+を含む）\s*$/.test(lt)) {
         rebuildLabelText();
       }
       setDirty(false);
@@ -2433,6 +2433,17 @@ function fillZeroNutritionFromDB() {
 }
 
 // ===== 一括表示テキスト自動生成 =====
+// ===== 一括表示の区切り：添加物の前は全角「／」、アレルギー表示の前には区切りを入れない =====
+var AL_SUFFIX_RE = /[\/／、]?（一部に[^）]+を含む）\s*$/;
+function normalizeLabelSeparators(t) {
+  t = String(t == null ? '' : t);
+  var m = t.match(AL_SUFFIX_RE);
+  var al = m ? m[0].replace(/^[\/／、]/, '') : '';
+  var base = m ? t.slice(0, t.length - m[0].length) : t;
+  base = base.replace(/\//g, '／').replace(/／+$/, '');
+  return base + al;
+}
+
 // ===== 添加物を一括表示に反映 =====
 function updateLabelWithAdditive() {
   var el = document.getElementById('label-text');
@@ -2440,14 +2451,14 @@ function updateLabelWithAdditive() {
   var additive = (currentSpec.additiveText || '').trim();
   var cur = el.value;
   // アレルゲン部分を末尾から分離
-  var alMatch = cur.match(/(\/（[^）]*を含む[^）]*）|、（一部に[^）]+を含む）)$/);
-  var alText = alMatch ? alMatch[1] : '';
-  var base = alMatch ? cur.slice(0, cur.length - alText.length) : cur;
-  // 既存の添加物部分（/...）を除去
-  base = base.replace(/\/[^/（（）]+$/, '').replace(/\/+$/, '');
+  var alMatch = cur.match(AL_SUFFIX_RE);
+  var alText = alMatch ? alMatch[0].replace(/^[\/／、]/, '') : '';
+  var base = alMatch ? cur.slice(0, cur.length - alMatch[0].length) : cur;
+  // 既存の添加物部分（／...）を除去
+  base = base.replace(/[\/／][^\/／（）]+$/, '').replace(/[\/／]+$/, '');
   // 新しい値を組み立て
   var newVal = base;
-  if (additive) newVal += '/' + additive;
+  if (additive) newVal += '／' + additive;
   newVal += alText;
   el.value = newVal;
   if (currentSpec) currentSpec.labelText = el.value;
@@ -2493,7 +2504,7 @@ function buildLabelText() {
   }).join('、');
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
+  var allergenText = checked.length ? '（一部に'+checked.join('・')+'を含む）' : '';
   // 添加物（手入力の添加物欄が空なら、添加物フラグの原材料から自動集約）
   var additive = currentSpec.additiveText || '';
   var addEl = document.getElementById('additive-text');
@@ -2510,7 +2521,7 @@ function buildLabelText() {
     }).join('、');
   }
   var labelVal = countryText + nameList;
-  if (additive.trim()) labelVal += '/' + additive.trim();
+  if (additive.trim()) labelVal += '／' + additive.trim();
   labelVal += allergenText;
   return labelVal;
 }
@@ -2594,10 +2605,10 @@ function updateAllergenPartOnly() {
   if (!el) return;
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
-  var allergenText = checked.length ? '/（一部に'+checked.join('・')+'を含む）' : '';
+  var allergenText = checked.length ? '（一部に'+checked.join('・')+'を含む）' : '';
   var currentVal = el.value || '';
-  var baseText = currentVal.replace(/\/（一部に[^）]+を含む）$/, '').replace(/、（一部に[^）]+を含む）$/, '');
-  el.value = baseText + allergenText;
+  var baseText = currentVal.replace(AL_SUFFIX_RE, '');
+  el.value = normalizeLabelSeparators(baseText) + allergenText;
   if (currentSpec) currentSpec.labelText = el.value;
 }
 
@@ -3239,10 +3250,8 @@ function genPreview() {
   var pk = currentSpec.pkg;
   var al = currentSpec.allergens || [];
   var labelText = currentSpec.labelText || currentSpec.ings.map(function(i){ return i.name; }).join('、');
-  // 添加物テキストが空の場合、末尾に残った不要な/を除去
-  if (!(currentSpec.additiveText || '').trim()) {
-    labelText = labelText.replace(/\/+([（(]一部に)/g, '$1').replace(/\/+$/g, '').replace(/\/+([（(]一部に)/g, '$1');
-  }
+  // 添加物の前は全角「／」、アレルギー表示の前には区切りを入れない（以前に保存した表記も整える）
+  labelText = normalizeLabelSeparators(labelText);
 
   var ingRows = '';
   var sortedIngs = currentSpec.ings.slice().sort(function(a, b){
@@ -3410,7 +3419,7 @@ function checkSpecIssuesRaw() {
     var noAmt = ings.filter(function(i){ return !(+i.amount > 0); }).map(function(i){ return i.name; });
     if (noAmt.length) miss.push('原材料の重量（' + noAmt.slice(0,5).join('、') + (noAmt.length > 5 ? ' ほか' : '') + '）');
   }
-  var lt = String(currentSpec.labelText || '').replace(/[\/、]?（一部に[^）]+を含む）\s*$/, '').trim();
+  var lt = String(currentSpec.labelText || '').replace(AL_SUFFIX_RE, '').trim();
   if (!lt) miss.push('一括表示の原材料名');
   if (!(+n.e > 0)) miss.push('栄養成分（エネルギーが0）');
   if (!(currentSpec.allergens || []).length) miss.push('アレルゲン（チェックなし。含まない場合は問題ありません）');
