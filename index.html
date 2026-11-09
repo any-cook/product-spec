@@ -1611,7 +1611,7 @@ function addLotFromProcMasterByIndex(idx) {
   if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
   var total = (m.laborCost||0) + (m.utilityCost||0);
   // 生産割合(%)が設定されていれば参考袋数として設定
-  var refBags = m.bags && m.bags > 0 ? m.bags : (m.productionRatio && m.productionRatio > 0 ? m.productionRatio : 1);
+  var refBags = m.bags && m.bags > 0 ? m.bags : 1;
   currentSpec.cost.lotCosts.push({
     label: m.condition || m.productName || ('加工条件'+(+idx+1)),
     cost:  total,
@@ -2473,35 +2473,80 @@ function isDomesticCountry(c) {
 //  ・重量順、重量1位の原材料だけに原料原産地を付ける
 //  ・添加物は「/」の後ろに、アレルゲンは末尾に
 //  ・「（原産国：〇〇）」は製造国が日本以外（輸入品）の場合のみ付ける
+// ----- 一括表示用の補助 -----
+// 水は一括表示に含めない
+function isWaterIng(ing) {
+  var n = String(ing && ing.name || '').replace(/[\s　]/g, '');
+  return /^(水|お水|湯|お湯|熱湯|水道水|飲料水|精製水|浄水|井戸水|仕込み水|仕込水|加水|水（[^）]*）|水\([^)]*\))$/.test(n);
+}
+// 用途名（調味・増粘剤 など）か
+function isPurposeWord(w) {
+  w = String(w || '').trim();
+  if (!w || /[（(]/.test(w) || w.length > 8) return false;
+  return /(料|剤|調味|かんすい|香料|酸味|苦味|乳化|膨張|ガムベース|イーストフード)$/.test(w);
+}
+// 用途名と物質名を併記する用途（食品表示基準）
+var USE_WITH_SUBSTANCE = ['甘味料','着色料','保存料','増粘剤','安定剤','ゲル化剤','糊料','増粘安定剤','酸化防止剤','発色剤','漂白剤','防かび剤','防ばい剤'];
+function normParen(t) { return String(t || '').replace(/\(/g, '（').replace(/\)/g, '）').replace(/\s/g, ''); }
+
 function buildLabelText() {
-  var sorted = currentSpec.ings.slice().sort(function(a, b) {
-    var wa = a.amount||0, wb = b.amount||0;
-    if (wa===0&&wb===0) return 0; if (wa===0) return 1; if (wb===0) return -1;
-    return wb - wa;
-  });
   var countryText = '';
   var basicCountry = currentSpec.basic && currentSpec.basic.country ? currentSpec.basic.country : '';
   var cEl = document.getElementById('f-country');
   if (cEl) basicCountry = cEl.value;
   if (!isDomesticCountry(basicCountry)) countryText = '（原産国：' + basicCountry.trim() + '）';
-  var maxAmount = 0;
-  sorted.forEach(function(ing){ if ((ing.amount||0) > maxAmount) maxAmount = ing.amount||0; });
-  var firstDone = false;
-  var nonAdd = sorted.filter(function(ing){
-    if (!ing.name) return false;
+
+  // 原材料（同じ表示名はまとめて重量を合算）と添加物に分ける
+  var groups = {}, order = [], adds = [], addSeen = {};
+  function addIng(dispName, amount, ing) {
+    var key = normParen(dispName);
+    if (!groups[key]) { groups[key] = {name: dispName, amount: 0, ings: []}; order.push(key); }
+    groups[key].amount += (+amount || 0);
+    groups[key].ings.push(ing);
+  }
+  function addAdd(text) {
+    text = String(text || '').trim(); if (!text) return;
+    var key = normParen(text);
+    if (addSeen[key]) return;
+    addSeen[key] = true; adds.push(text);
+  }
+  currentSpec.ings.forEach(function(ing) {
+    if (!ing.name || isWaterIng(ing)) return;
     var m2 = findMaster(ing.name);
-    return !((m2 && m2.isAdditive) || ing.isAdditive);
-  });
-  var nameList = nonAdd.map(function(ing) {
-    var origin = '';
-    var mat = findMaster(ing.name);
-    // 重量が最大のもの（1位）のみ産地を付ける
-    if (!firstDone && (ing.amount||0) === maxAmount && maxAmount > 0) {
-      origin = resolveOrigin(ing, mat);
-      firstDone = true;
+    var isAdd = (m2 && m2.isAdditive) || ing.isAdditive;
+    if (!isAdd) { addIng(getDispName(ing), ing.amount, ing); return; }
+    var gn = ((m2 && m2.generalName) ? m2.generalName : (ing.generalName || ing.name)).trim();
+    var use = ((m2 && m2.additiveUse) ? m2.additiveUse : (ing.addUse || '')).trim();
+    if (!use) { addAdd(gn); return; }
+    if (isPurposeWord(use)) {
+      // 甘味料・増粘剤などは「用途名（物質名）」、それ以外（調味・乳化剤など）は名称のみ
+      if (USE_WITH_SUBSTANCE.indexOf(use) >= 0 && gn.indexOf(use) < 0) addAdd(use + '（' + gn + '）');
+      else addAdd(gn);
+    } else if (isPurposeWord(gn)) {
+      // 名称に用途、用途欄に物質名が入っている場合（例：増粘剤／加工でん粉）
+      addAdd(gn + '（' + use + '）');
+    } else {
+      // 複合原材料（例：チキンブイヨン／調味料(アミノ酸等)）：
+      // 名称は原材料として重量順に、用途欄の添加物は添加物として表示
+      addIng(gn, ing.amount, ing);
+      addAdd(use);
     }
-    return getDispName(ing) + (origin ? '（'+origin+'）' : '');
+  });
+  var list = order.map(function(k){ return groups[k]; }).sort(function(a, b2){
+    var wa = a.amount || 0, wb = b2.amount || 0;
+    if (wa === 0 && wb === 0) return 0; if (wa === 0) return 1; if (wb === 0) return -1;
+    return wb - wa;
+  });
+  var nameList = list.map(function(g, i) {
+    var origin = '';
+    // 重量が最大のもの（1位）のみ産地を付ける
+    if (i === 0 && g.amount > 0) {
+      var ing0 = g.ings.slice().sort(function(x, y){ return (y.amount||0) - (x.amount||0); })[0];
+      origin = resolveOrigin(ing0, findMaster(ing0.name));
+    }
+    return g.name + (origin ? '（' + origin + '）' : '');
   }).join('、');
+
   var checked = [];
   document.querySelectorAll('#allergen-grid input:checked').forEach(function(cb){ checked.push(cb.value); });
   var allergenText = checked.length ? '（一部に'+checked.join('・')+'を含む）' : '';
@@ -2509,17 +2554,7 @@ function buildLabelText() {
   var additive = currentSpec.additiveText || '';
   var addEl = document.getElementById('additive-text');
   if (addEl) additive = addEl.value;
-  if (!additive.trim()) {
-    additive = sorted.filter(function(ing){
-      var m2 = findMaster(ing.name);
-      return ing.name && ((m2 && m2.isAdditive) || ing.isAdditive);
-    }).map(function(ing){
-      var m2 = findMaster(ing.name);
-      var gn = (m2 && m2.generalName) ? m2.generalName : (ing.generalName || ing.name);
-      var use = (m2 && m2.additiveUse) ? m2.additiveUse : (ing.addUse || '');
-      return use ? gn + '（' + use + '）' : gn;
-    }).join('、');
-  }
+  if (!additive.trim()) additive = adds.join('、');
   var labelVal = countryText + nameList;
   if (additive.trim()) labelVal += '／' + additive.trim();
   labelVal += allergenText;
@@ -2626,7 +2661,7 @@ function addLotFromProcMaster() {
   masterData.processingCosts.forEach(function(m) {
     var total = (m.laborCost||0) + (m.utilityCost||0);
     if (!total) return;
-    var refBags2 = m.bags && m.bags > 0 ? m.bags : (m.productionRatio && m.productionRatio > 0 ? m.productionRatio : 1);
+    var refBags2 = m.bags && m.bags > 0 ? m.bags : 1;
     currentSpec.cost.lotCosts.push({
       label: m.condition || m.productName || '',
       cost:  total,
@@ -4229,9 +4264,8 @@ function applyMasterToSpec() {
   var proc = masterData.processingCosts.find(function(p){ return p.productName === pname; });
   if (proc) {
     if (!currentSpec.cost) currentSpec.cost = {};
-    // lotCostsは上書きしない（既存データを保持）
-    currentSpec.cost.laborCost   = proc.laborCost   || 0;
-    currentSpec.cost.utilityCost = proc.utilityCost || 0;
+    // 加工費マスターの金額は「1ロット分」。1袋あたりの③に入れると袋数倍の過大計上になるため、
+    // ②ロット別加工費（ロット金額÷袋数）で計上する（ここでは③を上書きしない）
     if (!currentSpec.cost.lotCosts) currentSpec.cost.lotCosts = [];
   }
   var pkg = masterData.packagingCosts.find(function(p){ return p.productName === pname; });
@@ -4240,7 +4274,8 @@ function applyMasterToSpec() {
     currentSpec.cost.packagingCost = pkg.cost || 0;
   }
   // 追加コスト合計
-  var addCosts = masterData.additionalCosts.filter(function(a){ return a.productName === pname; });
+  // 原価計算タブの表示と同じ条件（商品名が一致、または商品名が空＝全商品共通）で合計
+  var addCosts = masterData.additionalCosts.filter(function(a){ return !a.productName || a.productName === pname; });
   if (addCosts.length > 0) {
     if (!currentSpec.cost) currentSpec.cost = {};
     currentSpec.cost.otherCost = addCosts.reduce(function(s,a){ return s + (a.cost||0); }, 0);
