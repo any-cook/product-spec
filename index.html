@@ -3958,7 +3958,7 @@ async function renderSpecQuotePanel() {
     + '<div id="qt-spec-list"></div></div>';
   document.getElementById('qt-new-from-spec').addEventListener('click', function(){
     collectForm();
-    currentQuote = makeEmptyQuote();
+    currentQuote = makeNewQuote();
     currentQuote.items = [quoteItemFromSpec(currentSpec)];
     currentQuoteId = null;
     renderQuoteEditor();
@@ -3968,8 +3968,9 @@ async function renderSpecQuotePanel() {
   if (!mine.length) { list.innerHTML = '<p style="color:#888;font-size:13px">この商品の見積書はまだありません。</p>'; return; }
   mine.forEach(function(q){
     var row = document.createElement('div'); row.className = 'qt-list-item';
-    row.innerHTML = '<div><div style="font-weight:700;color:#1a3a5c">' + h(q.customer || '（宛先未入力）') + (q.person ? '　<span style="font-weight:400">' + h(q.person) + ' 様</span>' : '') + '</div>'
-      + '<div style="font-size:12px;color:#666">' + h(qtWareki(q.date)) + '</div></div>';
+    var it0 = (q.items || []).find(function(i){ var k = normParen(i.name); return k && (k.indexOf(key) >= 0 || key.indexOf(k) >= 0); }) || {};
+    row.innerHTML = '<div><div style="font-weight:700;color:#1a3a5c">' + h(q.customer || '（宛先未入力）') + (q.person ? '　<span style="font-weight:400">' + h(q.person) + ' 様</span>' : '') + qtStatusBadge(q.status) + '</div>'
+      + '<div style="font-size:12px;color:#666">' + h(qtWareki(q.date)) + (it0.price ? '　単価 ' + h(qtPrice(it0.price)) : '') + (it0.lot ? '　ロット ' + h(qtUnit(it0.lot, '袋')) : '') + '</div></div>';
     var bc = document.createElement('button'); bc.className = 'btn btn-sm'; bc.textContent = 'コピー';
     bc.addEventListener('click', function(ev){ ev.stopPropagation(); copyQuote(q); });
     row.appendChild(bc);
@@ -3997,8 +3998,45 @@ function makeEmptyQuote() {
     notes: '価格変動の際は、別途打ち合わせ。\n九州は翌日、関西・関東方面は翌々日着になります。\nPB商品は受注より約30日後納品になります。\n消費税は、別途申し受けます。\n当商品は限定の為、数量に過不足が生じる場合がございますのでご了承下さい。',
     footer: 'ロット割れは1袋につきプラス20円です。\n初回製造は100袋、2回目製造は350袋、3回目製造は700袋のロットになります。',
     showSeal: true,
+    status: '作成中',
     items: []
   };
+}
+var QT_COND_KEYS = ['validity','place','payment','freight','notes','footer','showSeal'];
+function makeNewQuote() {
+  var q = makeEmptyQuote();
+  var d = masterData && masterData.quoteDefaults;
+  if (d) QT_COND_KEYS.forEach(function(k){ if (d[k] !== undefined) q[k] = d[k]; });
+  return q;
+}
+var QT_STATUS = ['作成中','提出済','受注','失注'];
+var QT_STATUS_COLOR = {'作成中':'#64748b','提出済':'#2563eb','受注':'#16a34a','失注':'#9ca3af'};
+function qtStatusBadge(st) {
+  st = st || '作成中';
+  return '<span style="font-size:11px;color:#fff;background:' + (QT_STATUS_COLOR[st] || '#64748b') + ';padding:1px 8px;border-radius:10px;margin-left:6px;font-weight:400">' + h(st) + '</span>';
+}
+// 品名から規格書を探す（明細の原価・利益表示、規格書からの入力用）
+function qtFindSpec(it) {
+  if (!it) return null;
+  if (it.specId) { var a = specListCache.find(function(s){ return s.id === it.specId && !s.deleted; }); if (a) return a; }
+  var n = normParen(it.name);
+  if (!n) return null;
+  var hits = specListCache.filter(function(s){ return !s.deleted && normParen(s.basic && s.basic.pname) === n; });
+  if (hits.length <= 1) return hits[0] || null;
+  // 同名が複数あるときは量目が合うもの
+  var w = String(it.weight || '').replace(/[^\d.]/g, '');
+  return hits.find(function(s){ return String(parseContentG(s.basic && s.basic.amount)) === w; }) || hits[0];
+}
+function qtProfitHint(it) {
+  var sp = qtFindSpec(it);
+  var cost = sp && sp.cost ? +sp.cost.subtotal : 0;
+  var price = +String(it.price || '').replace(/[^\d.]/g, '');
+  if (!cost) return '<span style="color:#bbb">—</span>';
+  if (!price) return '<span style="color:#888">原価 ' + cost.toLocaleString() + '円</span>';
+  var prof = price - cost;
+  var rate = Math.round(prof / price * 1000) / 10;
+  var col = prof < 0 ? '#c62828' : (rate < 10 ? '#d97706' : '#15803d');
+  return '<span style="color:#888">原価 ' + cost.toLocaleString() + '円</span><br><b style="color:' + col + '">利益 ' + prof.toLocaleString() + '円（' + rate + '%）</b>';
 }
 function qtWareki(iso) {
   var d = iso ? new Date(iso + 'T00:00:00') : new Date();
@@ -4090,14 +4128,34 @@ async function openQuoteList() {
     + '<button class="btn btn-sm mobile-only" onclick="showListMobile()">← 一覧</button>'
     + '<strong style="font-size:16px;color:#1a3a5c;flex:1">📝 見積書</strong>'
     + '<button class="btn btn-primary" onclick="newQuote()">＋ 新しい見積書</button></div>'
-    + '<div class="card"><h3>見積書一覧（' + quoteListCache.length + '件）</h3><div id="qt-list"></div></div>';
+    + '<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'
+    +   '<h3 style="margin:0;border:none;flex:1">見積書一覧（' + quoteListCache.length + '件）</h3>'
+    +   '<input type="text" id="qt-search" placeholder="🔍 宛先・商品名で検索" style="width:220px;font-size:13px">'
+    +   '<select id="qt-status-filter" style="width:auto;font-size:13px"><option value="">すべての状態</option>' + QT_STATUS.map(function(st){ return '<option>' + st + '</option>'; }).join('') + '</select>'
+    + '</div><div id="qt-list"></div></div>';
   main.innerHTML = html;
+  document.getElementById('qt-search').addEventListener('input', renderQuoteListItems);
+  document.getElementById('qt-status-filter').addEventListener('change', renderQuoteListItems);
+  renderQuoteListItems();
+}
+function renderQuoteListItems() {
   var el = document.getElementById('qt-list');
-  if (!quoteListCache.length) { el.innerHTML = '<p style="color:#888;font-size:13px">まだ見積書はありません。「＋ 新しい見積書」または規格書の「📝 見積書」から作成できます。</p>'; return; }
-  quoteListCache.forEach(function(q){
+  if (!el) return;
+  el.innerHTML = '';
+  if (!quoteListCache.length) { el.innerHTML = '<p style="color:#888;font-size:13px">まだ見積書はありません。「＋ 新しい見積書」または規格書の「📝 見積書」タブから作成できます。</p>'; return; }
+  var kw = normParen((document.getElementById('qt-search') || {}).value || '').toLowerCase();
+  var stf = (document.getElementById('qt-status-filter') || {}).value || '';
+  var shown = quoteListCache.filter(function(q){
+    if (stf && (q.status || '作成中') !== stf) return false;
+    if (!kw) return true;
+    var hay = normParen([q.customer, q.person].concat((q.items || []).map(function(i){ return i.name; })).join(' ')).toLowerCase();
+    return hay.indexOf(kw) >= 0;
+  });
+  if (!shown.length) { el.innerHTML = '<p style="color:#888;font-size:13px">条件に合う見積書はありません。</p>'; return; }
+  shown.forEach(function(q){
     var row = document.createElement('div'); row.className = 'qt-list-item';
     var names = (q.items || []).map(function(i){ return i.name; }).filter(Boolean);
-    row.innerHTML = '<div><div style="font-weight:700;color:#1a3a5c">' + h(q.customer || '（宛先未入力）') + (q.person ? '　<span style="font-weight:400">' + h(q.person) + ' 様</span>' : '') + '</div>'
+    row.innerHTML = '<div><div style="font-weight:700;color:#1a3a5c">' + h(q.customer || '（宛先未入力）') + (q.person ? '　<span style="font-weight:400">' + h(q.person) + ' 様</span>' : '') + qtStatusBadge(q.status) + '</div>'
       + '<div style="font-size:12px;color:#666">' + h(qtWareki(q.date)) + '　' + h(names.slice(0, 3).join('、') + (names.length > 3 ? ' ほか' : '')) + '</div></div>';
     var bx = document.createElement('div'); bx.style.cssText = 'display:flex;gap:6px;flex:none';
     var bc = document.createElement('button'); bc.className = 'btn btn-sm'; bc.textContent = 'コピー'; bc.title = 'コピーして新しい見積書を作成';
@@ -4112,7 +4170,7 @@ async function openQuoteList() {
 function newQuote(items) {
   if (!currentQuote && !leaveSpecForQuote()) return;
   if (quoteDirty && !confirm('保存していない見積書の変更があります。破棄しますか？')) return;
-  currentQuote = makeEmptyQuote();
+  currentQuote = makeNewQuote();
   if (items) currentQuote.items = items;
   currentQuoteId = null;
   renderQuoteEditor();
@@ -4121,7 +4179,7 @@ function newQuote(items) {
 function quoteItemFromSpec(spec) {
   var b = spec.basic || {}, c = spec.cost || {};
   var g = parseContentG(b.amount);
-  return {name: b.pname || '', price: c.sellPrice ? String(c.sellPrice) : '', weight: g ? String(g) : (b.amount || ''), perBox: '', lot: '', remark: ''};
+  return {name: b.pname || '', price: c.sellPrice ? String(c.sellPrice) : '', weight: g ? String(g) : (b.amount || ''), perBox: '', lot: '', remark: '', specId: spec.id || currentSpecId || ''};
 }
 function newQuoteFromSpec() {
   if (!currentSpec) return;
@@ -4141,6 +4199,7 @@ function openQuote(q) {
 function copyQuote(q) {
   var c = JSON.parse(JSON.stringify(q)); delete c.id; delete c.savedAt; delete c.savedBy;
   c.date = makeEmptyQuote().date;
+  c.status = '作成中';
   currentQuote = c; currentQuoteId = null;
   renderQuoteEditor();
   quoteDirty = true;
@@ -4158,77 +4217,150 @@ function qtField(label, key, type, ph) {
 }
 function renderQuoteEditor() {
   var q = currentQuote;
-  var specOpts = '<option value="">規格書から…</option>' + specListCache.filter(function(s){ return !s.deleted; }).map(function(s, i){
-    return '<option value="' + h(s.id) + '">' + h((s.basic && s.basic.pname) || '（名称未設定）') + '</option>';
-  }).join('');
+  if (!q.items) q.items = [];
+  var specNames = {};
+  specListCache.forEach(function(s){ if (!s.deleted && s.basic && s.basic.pname) specNames[s.basic.pname] = 1; });
+  var custNames = {};
+  quoteListCache.forEach(function(x){ if (x.customer) custNames[x.customer] = 1; });
   var rows = '';
   for (var i = 0; i < QT_ROWS; i++) {
     var it = q.items[i] || {};
+    var filled = Object.keys(it).some(function(k){ return k !== 'specId' && String(it[k] || '').trim(); });
+    function inp(f, ph, extra) { return '<td><input data-qi="' + i + '" data-qf="' + f + '" value="' + h(it[f] || '') + '" placeholder="' + (i === 0 ? ph : '') + '"' + (extra || '') + '></td>'; }
     rows += '<tr>'
-      + '<td><input data-qi="' + i + '" data-qf="name" value="' + h(it.name || '') + '" placeholder="' + (i === 0 ? '例：旨辛鍋スープ' : '') + '"></td>'
-      + '<td><input data-qi="' + i + '" data-qf="price" value="' + h(it.price || '') + '" placeholder="' + (i === 0 ? '例：425' : '') + '" inputmode="decimal"></td>'
-      + '<td><input data-qi="' + i + '" data-qf="weight" value="' + h(it.weight || '') + '" placeholder="' + (i === 0 ? '例：700' : '') + '"></td>'
-      + '<td><input data-qi="' + i + '" data-qf="perBox" value="' + h(it.perBox || '') + '" placeholder="' + (i === 0 ? '例：40' : '') + '"></td>'
-      + '<td><input data-qi="' + i + '" data-qf="lot" value="' + h(it.lot || '') + '" placeholder="' + (i === 0 ? '例：270' : '') + '"></td>'
-      + '<td><input data-qi="' + i + '" data-qf="remark" value="' + h(it.remark || '') + '"></td>'
-      + '<td style="width:120px"><select data-qspec="' + i + '" style="font-size:11px;padding:3px;width:100%">' + specOpts + '</select></td>'
-      + '</tr>';
+      + '<td style="text-align:center;color:#aaa;font-size:11px;width:22px">' + (i + 1) + '</td>'
+      + inp('name', '例：旨辛鍋スープ', ' list="qt-spec-names" autocomplete="off"')
+      + inp('price', '例：425', ' inputmode="decimal"')
+      + inp('weight', '例：700')
+      + inp('perBox', '例：40')
+      + inp('lot', '例：270')
+      + inp('remark', '')
+      + '<td style="font-size:11px;line-height:1.35;padding:2px 4px;min-width:96px" id="qt-hint-' + i + '">' + (filled ? qtProfitHint(it) : '') + '</td>'
+      + '<td style="white-space:nowrap;text-align:center;padding:0 2px">'
+      +   '<button class="btn btn-sm" style="padding:0 4px;font-size:11px;min-width:0" data-qmv="' + i + '" data-dir="-1" title="上へ"' + (i === 0 ? ' disabled' : '') + '>↑</button>'
+      +   '<button class="btn btn-sm" style="padding:0 4px;font-size:11px;min-width:0" data-qmv="' + i + '" data-dir="1" title="下へ"' + (i === QT_ROWS - 1 ? ' disabled' : '') + '>↓</button>'
+      +   '<button class="btn btn-sm" style="padding:0 4px;font-size:11px;min-width:0;color:#c62828" data-qdel="' + i + '" title="この行を消す">✕</button>'
+      + '</td></tr>';
   }
+  var statusOpts = QT_STATUS.map(function(st){ return '<option' + ((q.status || '作成中') === st ? ' selected' : '') + '>' + st + '</option>'; }).join('');
   var html = '<div id="qt-toolbar" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
     + (quoteInSpec ? '<button class="btn btn-sm" onclick="backToSpecQuotes()">← この商品の見積書</button>' : '<button class="btn btn-sm" onclick="openQuoteList()">← 見積書一覧</button>')
     + '<strong style="font-size:16px;color:#1a3a5c;flex:1">📝 御見積書' + (currentQuoteId ? '' : '（新規）') + '<span id="qt-dirty" style="display:none;font-size:11px;background:#fff3cd;color:#856404;border:1px solid #f0d58c;padding:2px 8px;border-radius:4px;margin-left:8px;font-weight:500">● 未保存</span></strong>'
+    + '<label style="font-size:12px;color:#555">状態 <select data-qk="status" style="width:auto;font-size:12px;padding:3px 6px">' + statusOpts + '</select></label>'
     + '<button class="btn btn-primary" onclick="saveQuote()" title="保存（Ctrl+S）">💾 保存</button>'
     + '<button class="btn" style="background:#1a3a5c;color:#fff" onclick="printQuote()">🖨 印刷・PDF保存</button></div>'
+    + '<datalist id="qt-spec-names">' + Object.keys(specNames).map(function(n){ return '<option value="' + h(n) + '">'; }).join('') + '</datalist>'
+    + '<datalist id="qt-cust-names">' + Object.keys(custNames).map(function(n){ return '<option value="' + h(n) + '">'; }).join('') + '</datalist>'
     + '<div class="qt-wrap"><div class="qt-form">'
     +   '<div class="card"><h3>宛先・日付</h3><div class="g2">'
-    +     qtField('会社名', 'customer', 'text', '例：日本食研 株式会社')
+    +     '<div class="field" style="margin-bottom:8px"><label class="fl" title="過去の宛先から選ぶと、前回の担当者・条件を入れます">会社名（過去の宛先は候補から選択可）</label><input type="text" data-qk="customer" list="qt-cust-names" autocomplete="off" value="' + h(q.customer || '') + '" placeholder="例：日本食研 株式会社"></div>'
     +     qtField('ご担当者名（空欄なら会社名に「御中」）', 'person', 'text', '例：速水')
-    +     qtField('見積日', 'date', 'date')
+    +     '<div class="field" style="margin-bottom:8px"><label class="fl">見積日</label><div style="display:flex;gap:6px"><input type="date" data-qk="date" value="' + h(q.date || '') + '" style="flex:1"><button class="btn btn-sm" id="qt-today">今日</button></div></div>'
     +     '<div class="field" style="margin-bottom:8px"><label class="fl">敬称</label><select data-qk="honorific"><option' + (q.honorific === '様' || !q.honorific ? ' selected' : '') + '>様</option><option' + (q.honorific === '殿' ? ' selected' : '') + '>殿</option></select></div>'
     +   '</div></div>'
-    +   '<div class="card"><h3>取引条件</h3><div class="g2">'
+    +   '<div class="card"><h3>明細（最大' + QT_ROWS + '行）</h3>'
+    +   '<p style="font-size:12px;color:#888;margin:-4px 0 6px">品名に商品名を入れると候補が出ます。規格書の商品を選ぶと量目・単価（原価計算タブの売価）が入り、右に原価と利益が出ます（印刷はされません）。数字だけ入れると「¥」「g」「袋」を自動で付けます。</p>'
+    +   '<div style="overflow-x:auto"><table class="qt-items"><thead><tr><th></th><th style="min-width:140px">品名</th><th style="min-width:64px">単価(円)</th><th style="min-width:58px">量目(g)</th><th style="min-width:54px">1箱入数</th><th style="min-width:58px">ロット</th><th style="min-width:80px">備考</th><th>原価・利益<br><span style="font-weight:400;font-size:10px">（印刷されません）</span></th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    +   '</div>'
+    +   '<div class="card"><h3 style="display:flex;align-items:center;gap:8px">取引条件・注意書き<span style="flex:1"></span>'
+    +     '<button class="btn btn-sm" id="qt-save-defaults" style="font-weight:400" title="新しい見積書を作る時の初期値として保存">⭐ この条件を初期値にする</button></h3><div class="g2">'
     +     qtField('有効期限', 'validity') + qtField('受渡場所', 'place') + qtField('取引方法', 'payment') + qtField('運賃', 'freight')
     +   '</div>' + qtField('注意書き（1行ずつ）', 'notes', 'textarea')
+    +   qtField('表の下の文章（1行ずつ）', 'footer', 'textarea')
     +   '<label style="font-size:13px;cursor:pointer"><input type="checkbox" data-qk="showSeal"' + (q.showSeal ? ' checked' : '') + '> 社印を表示する</label></div>'
-    +   '<div class="card"><h3>明細（最大' + QT_ROWS + '行）</h3>'
-    +   '<p style="font-size:12px;color:#888;margin:-4px 0 6px">右端の「規格書から…」で商品名・量目・売価（原価計算タブの合計）を入れられます。数字だけ入れると「¥」「g」「袋」を自動で付けます。</p>'
-    +   '<div style="overflow-x:auto"><table class="qt-items"><thead><tr><th style="min-width:130px">品名</th><th>単価(円)</th><th>量目(g)</th><th>1箱入数</th><th>ロット</th><th>備考</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-    +   '<div style="margin-top:10px">' + qtField('表の下の文章（1行ずつ）', 'footer', 'textarea') + '</div></div>'
     + '</div>'
     + '<div class="qt-prev"><div style="font-size:12px;color:#555;margin-bottom:6px">プレビュー（A4）</div><div id="qt-preview"></div></div>'
     + '</div>';
   var main = quoteHost();
   main.innerHTML = html;
   main.querySelectorAll('[data-qk]').forEach(function(el){
-    el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', function(){
+    el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' || el.type === 'date' ? 'change' : 'input', function(){
       var k = el.getAttribute('data-qk');
       currentQuote[k] = el.type === 'checkbox' ? el.checked : el.value;
       markQuoteDirty();
     });
   });
+  // 過去の宛先を選んだら、前回の担当者・条件を入れる（新規作成時）
+  var cust = main.querySelector('[data-qk="customer"]');
+  cust.addEventListener('change', function(){ qtApplyCustomer(cust.value); });
+  document.getElementById('qt-today').addEventListener('click', function(){
+    currentQuote.date = makeEmptyQuote().date; renderQuoteEditor(); markQuoteDirty();
+  });
+  document.getElementById('qt-save-defaults').addEventListener('click', qtSaveDefaults);
   main.querySelectorAll('[data-qi]').forEach(function(el){
     el.addEventListener('input', function(){
       var i = +el.getAttribute('data-qi'), f = el.getAttribute('data-qf');
       while (currentQuote.items.length <= i) currentQuote.items.push({});
       currentQuote.items[i][f] = el.value;
+      if (f === 'name') delete currentQuote.items[i].specId;
+      var hint = document.getElementById('qt-hint-' + i);
+      if (hint) hint.innerHTML = qtProfitHint(currentQuote.items[i]);
       markQuoteDirty();
     });
+    if (el.getAttribute('data-qf') === 'name') {
+      el.addEventListener('change', function(){
+        var i = +el.getAttribute('data-qi');
+        var it = currentQuote.items[i] || {};
+        var sp = qtFindSpec(it);
+        if (!sp) return;
+        var src = quoteItemFromSpec(sp);
+        it.specId = sp.id;
+        if (!String(it.weight || '').trim()) it.weight = src.weight;
+        if (!String(it.price || '').trim()) it.price = src.price;
+        renderQuoteEditor(); markQuoteDirty();
+        var nx = quoteHost().querySelector('[data-qi="' + i + '"][data-qf="perBox"]'); if (nx) nx.focus();
+      });
+    }
+    // Enterで次の入力欄へ
+    el.addEventListener('keydown', function(e){
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      var all = Array.prototype.slice.call(quoteHost().querySelectorAll('[data-qi]'));
+      var nx = all[all.indexOf(el) + 1]; if (nx) nx.focus();
+    });
   });
-  main.querySelectorAll('[data-qspec]').forEach(function(sel){
-    sel.addEventListener('change', function(){
-      var id = sel.value; if (!id) return;
-      var sp = specListCache.find(function(x){ return x.id === id; });
-      if (!sp) return;
-      var i = +sel.getAttribute('data-qspec');
-      while (currentQuote.items.length <= i) currentQuote.items.push({});
-      var it = quoteItemFromSpec(sp), cur = currentQuote.items[i];
-      ['name','price','weight'].forEach(function(f){ cur[f] = it[f]; });
-      renderQuoteEditor();
-      markQuoteDirty();
+  main.querySelectorAll('[data-qmv]').forEach(function(bt){
+    bt.addEventListener('click', function(){
+      var i = +bt.getAttribute('data-qmv'), j = i + (+bt.getAttribute('data-dir'));
+      var its = currentQuote.items;
+      while (its.length <= Math.max(i, j)) its.push({});
+      if (j < 0 || j >= QT_ROWS) return;
+      var t = its[i]; its[i] = its[j]; its[j] = t;
+      renderQuoteEditor(); markQuoteDirty();
+    });
+  });
+  main.querySelectorAll('[data-qdel]').forEach(function(bt){
+    bt.addEventListener('click', function(){
+      currentQuote.items.splice(+bt.getAttribute('data-qdel'), 1);
+      renderQuoteEditor(); markQuoteDirty();
     });
   });
   updateQuotePreview();
   var dt = document.getElementById('qt-dirty'); if (dt) dt.style.display = quoteDirty ? 'inline-block' : 'none';
+}
+function qtApplyCustomer(name) {
+  if (!name) return;
+  var prev = quoteListCache.filter(function(x){ return x.customer === name; })
+    .sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); })[0];
+  if (!prev) return;
+  var fresh = makeNewQuote();
+  var changed = false;
+  ['person','honorific'].concat(QT_COND_KEYS).forEach(function(k){
+    // まだ初期値のままの項目だけ前回の内容で置き換える
+    var cur = currentQuote[k], init = fresh[k];
+    if ((cur === init || cur === '' || cur == null) && prev[k] !== undefined && prev[k] !== cur) { currentQuote[k] = prev[k]; changed = true; }
+  });
+  if (changed) {
+    renderQuoteEditor(); markQuoteDirty();
+    toast('「' + name + '」の前回の見積書（' + qtWareki(prev.date) + '）から担当者・条件を入れました');
+  }
+}
+function qtSaveDefaults() {
+  if (!confirm('今の「取引条件・注意書き・表の下の文章・社印の表示」を、新しい見積書の初期値にしますか？')) return;
+  var d = {};
+  QT_COND_KEYS.forEach(function(k){ d[k] = currentQuote[k]; });
+  masterData.quoteDefaults = d;
+  saveMasterToFirestore(true).then(function(){ toast('見積書の初期値を保存しました ✓'); });
 }
 function markQuoteDirty() {
   quoteDirty = true;
@@ -4241,7 +4373,7 @@ function updateQuotePreview() {
 }
 function cleanQuote(q) {
   var c = JSON.parse(JSON.stringify(q));
-  c.items = (c.items || []).filter(function(it){ return it && Object.keys(it).some(function(k){ return String(it[k] || '').trim(); }); });
+  c.items = (c.items || []).filter(function(it){ return it && Object.keys(it).some(function(k){ return k !== 'specId' && String(it[k] || '').trim(); }); });
   return c;
 }
 async function saveQuote() {
@@ -4254,6 +4386,9 @@ async function saveQuote() {
     if (currentQuoteId) await db.collection('quotes').doc(currentQuoteId).set(data);
     else { var ref = await db.collection('quotes').add(data); currentQuoteId = ref.id; }
     currentQuote = data; delete currentQuote.id;
+    var ci = quoteListCache.findIndex(function(x){ return x.id === currentQuoteId; });
+    var cached = Object.assign({}, data, {id: currentQuoteId});
+    if (ci >= 0) quoteListCache[ci] = cached; else quoteListCache.push(cached);
     quoteDirty = false;
     var dt = document.getElementById('qt-dirty'); if (dt) dt.style.display = 'none';
     toast('見積書を保存しました ✓');
@@ -4337,6 +4472,7 @@ async function loadMasterFromFirestore() {
       if (d.packagingCosts)   masterData.packagingCosts   = d.packagingCosts;
       if (d.shippingCosts)    masterData.shippingCosts    = d.shippingCosts;
       if (d.additionalCosts)  masterData.additionalCosts  = d.additionalCosts;
+      if (d.quoteDefaults)    masterData.quoteDefaults    = d.quoteDefaults;
       if (d.cautionMaster)    masterData.cautionMaster    = d.cautionMaster;
       if (d.cookingMaster)    masterData.cookingMaster    = d.cookingMaster;
       // master-areaが存在すれば再描画
