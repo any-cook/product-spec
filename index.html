@@ -98,8 +98,8 @@ input.nut-zero{background:#fff3cd !important;border-color:#e0b84c !important}
 .qt-page .qt-top{display:flex;justify-content:space-between}
 .qt-page .qt-left{width:96mm}
 .qt-page .qt-cond{width:62mm}
-.qt-page .qt-cust{font-size:14pt;font-weight:700;padding-left:8mm}
-.qt-page .qt-person{font-size:14pt;font-weight:700;text-align:right;padding-right:10mm;margin-top:1.5mm;width:84mm;border-bottom:1.5px solid #111;padding-bottom:1mm;margin-bottom:6mm}
+.qt-page .qt-cust{font-size:15pt;font-weight:400;padding-left:6mm;letter-spacing:.06em;width:84mm}
+.qt-page .qt-person{font-size:15pt;font-weight:400;text-align:right;padding-right:1mm;margin-top:1mm;width:84mm;letter-spacing:.06em;border-bottom:1.5px solid #111;padding-bottom:1mm;margin-bottom:6mm}
 .qt-page .qt-cond div{border-bottom:1px solid #111;padding:2.2mm 1mm 1mm;font-size:10pt;display:flex;white-space:nowrap}
 .qt-page .qt-cond div span:first-child{width:22mm;flex:none}
 .qt-page .qt-right{width:84mm;position:relative}
@@ -4075,7 +4075,7 @@ function quotePageHTML(q) {
     + '<div class="qt-title">御見積書</div>'
     + '<div class="qt-top"><div class="qt-left">'
     +   '<div class="qt-cust">' + h(q.customer || '') + (q.person ? '' : '　' + hon) + '</div>'
-    +   '<div class="qt-person">' + (q.person ? h(q.person) + ' ' + h(hon) : '&nbsp;') + '</div>'
+    +   '<div class="qt-person">' + (q.person ? h(q.person) + '<span style="margin-left:.6em">' + h(hon) + '</span>' : '&nbsp;') + '</div>'
     +   '<div class="qt-cond">'
     +     '<div style="font-size:9.5pt">下記のとおり御見積り申し上げます。</div>'
     +     '<div><span>有効期限</span><span>' + h(q.validity || '') + '</span></div>'
