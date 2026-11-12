@@ -3996,7 +3996,7 @@ function makeEmptyQuote() {
     customer: '', person: '', honorific: '様',
     date: d.getFullYear() + '-' + ('0' + (d.getMonth()+1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2),
     validity: '次回お見積りまで', place: '御社指定場所(福岡)', payment: '月末締翌月末払い', freight: '送料込み(福岡)',
-    notes: '価格変動の際は、別途打ち合わせ。\n九州は翌日、関西・関東方面は翌々日着になります。\nPB商品は受注より約30日後納品になります。\n消費税は、別途申し受けます。\n当商品は限定の為、数量に過不足が生じる場合がございますのでご了承下さい。',
+    notes: '価格変動の際は、別途打ち合わせ。\n九州・関西は翌日、関東方面は翌々日着になります。\nPB商品は受注より約30日後納品になります。\n消費税は、別途申し受けます。\n当商品は限定の為、数量に過不足が生じる場合がございますのでご了承下さい。',
     footer: 'ロット割れは1袋につきプラス20円です。\n初回製造は100袋、2回目製造は350袋、3回目製造は700袋のロットになります。',
     showSeal: true,
     status: '作成中',
@@ -4008,6 +4008,8 @@ function makeNewQuote() {
   var q = makeEmptyQuote();
   var d = masterData && masterData.quoteDefaults;
   if (d) QT_COND_KEYS.forEach(function(k){ if (d[k] !== undefined) q[k] = d[k]; });
+  // 以前の初期値の文言を新しい文言に置き換える
+  if (q.notes) q.notes = String(q.notes).replace('九州は翌日、関西・関東方面は翌々日着になります。', '九州・関西は翌日、関東方面は翌々日着になります。');
   return q;
 }
 var QT_STATUS = ['作成中','提出済','受注','失注'];
