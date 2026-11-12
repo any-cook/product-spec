@@ -4411,11 +4411,23 @@ function printQuote() {
   var w = window.open('', '_blank', 'width=900,height=900');
   if (!w) { toast('ポップアップがブロックされました。許可してから再度お試しください', true); return; }
   w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + h(fname) + '<' + '/title><style>'
-    + '*{box-sizing:border-box;margin:0;padding:0}@page{size:A4;margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    + css.join('\n') + '.qt-page{box-shadow:none !important;transform:none !important;margin:0 !important;min-height:0 !important;height:296mm;overflow:hidden;page-break-after:avoid;break-after:avoid}'
+    + '*{box-sizing:border-box;margin:0;padding:0}@page{size:A4 portrait;margin:8mm}html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + css.join('\n')
+    // 印刷では用紙の余白（8mm）の内側に収める。高さは中身なりにして、はみ出す時は縮小する
+    + '.qt-page{box-shadow:none !important;transform:none !important;margin:0 auto !important;width:194mm !important;min-height:0 !important;height:auto !important;padding:4mm 3mm 2mm !important;overflow:visible;break-inside:avoid;page-break-inside:avoid}'
     + '<' + '/style><' + '/head><body>' + quotePageHTML(q) + '<' + '/body><' + '/html>');
   w.document.close();
-  setTimeout(function(){ w.print(); }, 700);
+  setTimeout(function(){
+    try {
+      // 1枚（印刷できる高さ 約270mm）に収まらない場合は全体を縮小
+      var pg = w.document.querySelector('.qt-page');
+      var mm = 96 / 25.4;
+      var maxH = 270 * mm;
+      if (pg && pg.scrollHeight > maxH) pg.style.zoom = String(Math.floor(maxH / pg.scrollHeight * 100) / 100);
+    } catch(e) {}
+    w.focus();
+    w.print();
+  }, 700);
 }
 
 // ===== 起動 =====
